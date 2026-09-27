@@ -1,0 +1,43 @@
+# Environment
+.env
+.env.*
+
+!.env.example
+
+# Gradle
+.gradle/
+build/
+**/build/
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+
+# Kotlin
+.kotlin/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Generated
+out/
+
+# Android
+android/.gradle/
+android/local.properties
+android/captures/
+android/.idea/
+android/build/
+android/app/build/
+
+# Backend
+backend/.gradle/
+backend/build/
+backend/src/main/resources/application-local.properties
+
+# Test
+**/reports/
