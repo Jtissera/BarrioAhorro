@@ -7,8 +7,11 @@ import com.barrioahorro.api.core.security.JwtService
 import com.barrioahorro.api.modules.auth.dto.AuthResponse
 import com.barrioahorro.api.modules.auth.dto.LoginRequest
 import com.barrioahorro.api.modules.auth.dto.RegisterRequest
+import com.barrioahorro.api.modules.business.BusinessEntity
+import com.barrioahorro.api.modules.business.BusinessRepository
 import com.barrioahorro.api.modules.user.UserEntity
 import com.barrioahorro.api.modules.user.UserRepository
+import com.barrioahorro.api.modules.user.enum.TipoUsuario
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class AuthService(
     private val userRepository: UserRepository,
+    private val businessRepository: BusinessRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtService: JwtService,
 ) {
@@ -38,6 +42,10 @@ class AuthService(
                 tipoUsuario = request.tipoUsuario,
             ),
         )
+
+        if (user.tipoUsuario == TipoUsuario.COMERCIO) {
+            businessRepository.save(BusinessEntity(usuarioId = user.id))
+        }
 
         return buildAuthResponse(user)
     }

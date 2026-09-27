@@ -36,6 +36,7 @@ class JwtService(
         try {
             parseClaims(token).expiration.after(Date())
         } catch (ex: Exception) {
+            println("JWT inválido: ${ex.javaClass.simpleName} - ${ex.message}")
             false
         }
 

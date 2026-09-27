@@ -9,3 +9,11 @@ object AuthRoutes {
 
     fun success(userType: String): String = "$SUCCESS_BASE/$userType"
 }
+
+object OnboardingRoutes {
+    const val GRAPH = "onboarding_graph"
+    const val BUSINESS_NAME = "onboarding/business-name"
+    const val BUSINESS_CATEGORY = "onboarding/business-category"
+    const val BUSINESS_LOCATION = "onboarding/business-location"
+    const val BUSINESS_SCHEDULE = "onboarding/business-schedule"
+}

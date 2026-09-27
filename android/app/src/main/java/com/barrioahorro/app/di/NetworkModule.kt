@@ -1,6 +1,9 @@
 package com.barrioahorro.app.di
 
 import com.barrioahorro.app.data.remote.api.AuthApiService
+import com.barrioahorro.app.data.remote.api.BusinessApiService
+import com.barrioahorro.app.data.remote.api.CategoryApiService
+import com.barrioahorro.app.data.remote.interceptor.AuthInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -12,18 +15,20 @@ import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
 // TODO: mover a un archivo de config por variante (debug/release) o a BuildConfig
-private const val BASE_URL = "http://127.0.0.1:8080/"
+private const val BASE_URL = "http://10.0.2.2:8080/"
+
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
         return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
             .addInterceptor(logging)
             .build()
     }
@@ -41,4 +46,14 @@ object NetworkModule {
     @Singleton
     fun provideAuthApiService(retrofit: Retrofit): AuthApiService =
         retrofit.create(AuthApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideBusinessApiService(retrofit: Retrofit): BusinessApiService =
+        retrofit.create(BusinessApiService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideCategoryApiService(retrofit: Retrofit): CategoryApiService =
+        retrofit.create(CategoryApiService::class.java)
 }

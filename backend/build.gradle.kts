@@ -45,6 +45,10 @@ dependencies {
 	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+	implementation("org.hibernate.orm:hibernate-spatial:7.4.5.Final") // misma versión que tu hibernate-core
+	implementation("org.locationtech.jts:jts-core:1.19.0")
+
 }
 
 kotlin {
