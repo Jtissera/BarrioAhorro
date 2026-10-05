@@ -2,7 +2,9 @@ package com.barrioahorro.api.modules.offer
 
 import com.barrioahorro.api.modules.business.BusinessRepository
 import com.barrioahorro.api.modules.offer.dto.CreateOffer2x1Request
+import com.barrioahorro.api.modules.offer.dto.CreateOfferPorMayorRequest
 import com.barrioahorro.api.modules.offer.dto.Offer2x1DetailResponse
+import com.barrioahorro.api.modules.offer.dto.OfferPorMayorDetailResponse
 import com.barrioahorro.api.modules.offer.dto.OfferResponse
 import com.barrioahorro.api.modules.offer.enum.TipoBeneficio
 import com.barrioahorro.api.modules.offer.enum.TipoVigencia
@@ -17,6 +19,7 @@ import java.time.OffsetDateTime
 class OfferService(
     private val offerRepository: OfferRepository,
     private val offer2x1Repository: Offer2x1Repository,
+    private val offerPorMayorRepository: OfferPorMayorRepository,
     private val businessRepository: BusinessRepository,
 ) {
 
@@ -56,20 +59,72 @@ class OfferService(
             ),
         )
 
-        return offer.toResponse(detail)
+        return offer.toResponse(detail2x1 = detail)
+    }
+
+    @Transactional
+    fun createOfferPorMayor(userId: Long, request: CreateOfferPorMayorRequest): OfferResponse {
+        if (!businessRepository.existsById(userId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Solo los comercios pueden publicar ofertas")
+        }
+
+        if (request.cantidadMinima < 2) {
+            throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "La cantidad mínima para venta por mayor debe ser al menos 2 unidades",
+            )
+        }
+
+        if (request.precioUnitarioRegular != null && request.precioUnitarioMayorista >= request.precioUnitarioRegular) {
+            throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "El precio mayorista ($${request.precioUnitarioMayorista}) debe ser menor que el precio regular ($${request.precioUnitarioRegular})",
+            )
+        }
+
+        val vigenteHasta = calcularVigencia(request.vigenciaTipo, request.vigenteHasta)
+
+        val offer = offerRepository.save(
+            OfferEntity(
+                comercioId = userId,
+                tipoOferta = TipoBeneficio.POR_MAYOR,
+                nombreProducto = request.nombreProducto.trim(),
+                fotoUrl = request.fotoUrl?.trim(),
+                vigenciaTipo = request.vigenciaTipo,
+                vigenteHasta = vigenteHasta,
+                activa = true,
+            ),
+        )
+
+        val detail = offerPorMayorRepository.save(
+            OfferPorMayorEntity(
+                ofertaId = offer.id,
+                cantidadMinima = request.cantidadMinima,
+                precioUnitarioMayorista = request.precioUnitarioMayorista,
+                precioUnitarioRegular = request.precioUnitarioRegular,
+            ),
+        )
+
+        return offer.toResponse(detailPorMayor = detail)
     }
 
     @Transactional(readOnly = true)
     fun getMyOffers(userId: Long): List<OfferResponse> {
         val offers = offerRepository.findByComercioIdOrderByCreatedAtDesc(userId)
-        return offers.map { offer ->
-            val detail2x1 = if (offer.tipoOferta == TipoBeneficio.DOS_POR_UNO) {
-                offer2x1Repository.findById(offer.id).orElse(null)
-            } else {
-                null
-            }
-            offer.toResponse(detail2x1)
+        return offers.map { mapOfferToResponse(it) }
+    }
+
+    @Transactional(readOnly = true)
+    fun getMyOfferById(userId: Long, offerId: Long): OfferResponse {
+        val offer = offerRepository.findById(offerId).orElseThrow {
+            ResponseStatusException(HttpStatus.NOT_FOUND, "Oferta no encontrada")
         }
+
+        if (offer.comercioId != userId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para ver esta oferta")
+        }
+
+        return mapOfferToResponse(offer)
     }
 
     @Transactional(readOnly = true)
@@ -82,14 +137,7 @@ class OfferService(
         val offers = offerRepository.findByComercioIdAndActivaTrueOrderByCreatedAtDesc(businessId)
             .filter { it.vigenteHasta == null || it.vigenteHasta!!.isAfter(now) }
 
-        return offers.map { offer ->
-            val detail2x1 = if (offer.tipoOferta == TipoBeneficio.DOS_POR_UNO) {
-                offer2x1Repository.findById(offer.id).orElse(null)
-            } else {
-                null
-            }
-            offer.toResponse(detail2x1)
-        }
+        return offers.map { mapOfferToResponse(it) }
     }
 
     @Transactional
@@ -104,8 +152,23 @@ class OfferService(
 
         offer.activa = !offer.activa
         val saved = offerRepository.save(offer)
-        val detail2x1 = offer2x1Repository.findById(saved.id).orElse(null)
-        return saved.toResponse(detail2x1)
+        return mapOfferToResponse(saved)
+    }
+
+    private fun mapOfferToResponse(offer: OfferEntity): OfferResponse {
+        val detail2x1 = if (offer.tipoOferta == TipoBeneficio.DOS_POR_UNO) {
+            offer2x1Repository.findById(offer.id).orElse(null)
+        } else {
+            null
+        }
+
+        val detailPorMayor = if (offer.tipoOferta == TipoBeneficio.POR_MAYOR) {
+            offerPorMayorRepository.findById(offer.id).orElse(null)
+        } else {
+            null
+        }
+
+        return offer.toResponse(detail2x1 = detail2x1, detailPorMayor = detailPorMayor)
     }
 
     private fun calcularVigencia(vigenciaTipo: TipoVigencia, fechaIndicada: OffsetDateTime?): OffsetDateTime? {
@@ -126,8 +189,14 @@ class OfferService(
         }
     }
 
-    private fun OfferEntity.toResponse(detail: Offer2x1Entity?): OfferResponse =
-        OfferResponse(
+    private fun OfferEntity.toResponse(
+        detail2x1: Offer2x1Entity? = null,
+        detailPorMayor: OfferPorMayorEntity? = null,
+    ): OfferResponse {
+        val now = OffsetDateTime.now()
+        val esVigente = activa && (vigenteHasta == null || vigenteHasta!!.isAfter(now))
+
+        return OfferResponse(
             id = id,
             comercioId = comercioId,
             nombreProducto = nombreProducto,
@@ -136,13 +205,22 @@ class OfferService(
             vigenciaTipo = vigenciaTipo,
             vigenteHasta = vigenteHasta,
             activa = activa,
+            vigente = esVigente,
             createdAt = createdAt,
-            detalle2x1 = detail?.let {
+            detalle2x1 = detail2x1?.let {
                 Offer2x1DetailResponse(
                     unidadesAPagar = it.unidadesAPagar,
                     unidadesALlevar = it.unidadesALlevar,
                     precioUnitario = it.precioUnitario,
                 )
             },
+            detallePorMayor = detailPorMayor?.let {
+                OfferPorMayorDetailResponse(
+                    cantidadMinima = it.cantidadMinima,
+                    precioUnitarioMayorista = it.precioUnitarioMayorista,
+                    precioUnitarioRegular = it.precioUnitarioRegular,
+                )
+            },
         )
+    }
 }

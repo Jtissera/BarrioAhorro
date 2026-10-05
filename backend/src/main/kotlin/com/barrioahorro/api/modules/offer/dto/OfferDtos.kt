@@ -32,10 +32,39 @@ data class CreateOffer2x1Request(
     val precioUnitario: BigDecimal? = null,
 )
 
+data class CreateOfferPorMayorRequest(
+    @field:NotBlank(message = "El nombre del producto no puede estar vacío")
+    val nombreProducto: String,
+
+    val fotoUrl: String? = null,
+
+    @field:NotNull(message = "El tipo de vigencia es obligatorio")
+    val vigenciaTipo: TipoVigencia,
+
+    val vigenteHasta: OffsetDateTime? = null,
+
+    @field:NotNull(message = "La cantidad mínima requerida es obligatoria")
+    @field:Min(value = 2, message = "La cantidad mínima debe ser al menos 2 unidades")
+    val cantidadMinima: Short,
+
+    @field:NotNull(message = "El precio unitario mayorista es obligatorio")
+    @field:DecimalMin(value = "0.01", message = "El precio mayorista debe ser mayor a cero")
+    val precioUnitarioMayorista: BigDecimal,
+
+    @field:DecimalMin(value = "0.01", message = "El precio regular debe ser mayor a cero")
+    val precioUnitarioRegular: BigDecimal? = null,
+)
+
 data class Offer2x1DetailResponse(
     val unidadesAPagar: Short,
     val unidadesALlevar: Short,
     val precioUnitario: BigDecimal?,
+)
+
+data class OfferPorMayorDetailResponse(
+    val cantidadMinima: Short,
+    val precioUnitarioMayorista: BigDecimal,
+    val precioUnitarioRegular: BigDecimal?,
 )
 
 data class OfferResponse(
@@ -47,6 +76,8 @@ data class OfferResponse(
     val vigenciaTipo: TipoVigencia,
     val vigenteHasta: OffsetDateTime?,
     val activa: Boolean,
+    val vigente: Boolean,
     val createdAt: OffsetDateTime,
     val detalle2x1: Offer2x1DetailResponse? = null,
+    val detallePorMayor: OfferPorMayorDetailResponse? = null,
 )
