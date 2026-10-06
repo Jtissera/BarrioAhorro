@@ -2,6 +2,7 @@ package com.barrioahorro.app.ui.screens.business
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -69,6 +70,10 @@ fun EditBusinessProfileScreen(
     onUpdateSlotStart: (Int, String, String) -> Unit,
     onUpdateSlotEnd: (Int, String, String) -> Unit,
     onCopyMondayToAll: () -> Unit,
+    onAddPhoto: (Uri) -> Unit,
+    onReplacePhoto: (Long, Uri) -> Unit,
+    onDeletePhoto: (Long) -> Unit,
+    onMovePhoto: (Long, Int) -> Unit,
     onRetryLoad: () -> Unit,
     onBack: () -> Unit,
     onSave: () -> Unit,
@@ -137,6 +142,17 @@ fun EditBusinessProfileScreen(
                         Text(
                             text = "Estos datos son los que ven tus vecinos en tu perfil.",
                             style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        BusinessPhotosSection(
+                            photos = state.photos,
+                            isUpdating = state.isUpdatingPhotos,
+                            errorMessage = state.photoError,
+                            onAddPhoto = onAddPhoto,
+                            onReplacePhoto = onReplacePhoto,
+                            onDeletePhoto = onDeletePhoto,
+                            onMovePhoto = onMovePhoto,
                         )
                         Spacer(modifier = Modifier.height(16.dp))
 
