@@ -64,7 +64,7 @@ private fun TimeButton(label: String, time: String, onTimeSelected: (String) -> 
 }
 
 @Composable
-private fun DayScheduleRow(
+internal fun DayScheduleRow(
     day: DayScheduleUi,
     onToggle: () -> Unit,
     onAddSlot: () -> Unit,
