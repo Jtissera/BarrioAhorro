@@ -67,5 +67,6 @@ data class BusinessResponse(
     val longitud: Double?,
     val descripcion: String?,
     val horarios: List<ScheduleSlotResponse>,
+    val fotos: List<PhotoResponse>,
     val onboardingCompleted: Boolean,
 )

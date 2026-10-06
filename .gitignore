@@ -38,6 +38,7 @@ android/app/build/
 backend/.gradle/
 backend/build/
 backend/src/main/resources/application-local.properties
+backend/uploads/
 
 # Test
 **/reports/

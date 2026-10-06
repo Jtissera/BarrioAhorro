@@ -30,6 +30,7 @@ class BusinessController(
     private val businessRepository: BusinessRepository,
     private val categoryRepository: CategoryRepository,
     private val scheduleRepository: BusinessScheduleRepository,
+    private val photoRepository: BusinessPhotoRepository,
 ) {
 
     @Transactional
@@ -139,6 +140,7 @@ class BusinessController(
             longitud = ubicacion?.x,
             descripcion = descripcion,
             horarios = horarios,
+            fotos = photoRepository.findByComercioIdOrderByOrdenAscIdAsc(usuarioId).map { it.toResponse() },
             onboardingCompleted = onboardingCompletado,
         )
     }
