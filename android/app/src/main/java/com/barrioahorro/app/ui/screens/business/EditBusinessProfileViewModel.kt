@@ -2,11 +2,15 @@ package com.barrioahorro.app.ui.screens.business
 
 import android.annotation.SuppressLint
 import android.location.Location
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barrioahorro.app.data.remote.api.BusinessApiService
+import com.barrioahorro.app.data.local.image.PhotoCompressor
 import com.barrioahorro.app.data.remote.api.CategoryApiService
+import com.barrioahorro.app.data.remote.dto.ReorderPhotosRequestDto
 import com.barrioahorro.app.data.remote.dto.UpdateBusinessRequestDto
+import com.barrioahorro.app.di.BASE_URL
 import com.barrioahorro.app.ui.screens.onboarding.CategoryUi
 import com.barrioahorro.app.ui.screens.onboarding.DayScheduleUi
 import com.google.android.gms.location.CurrentLocationRequest
@@ -21,6 +25,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import retrofit2.Response
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -37,6 +45,9 @@ data class EditBusinessProfileUiState(
     val isFetchingLocation: Boolean = false,
     val descripcion: String = "",
     val schedule: List<DayScheduleUi> = emptyList(),
+    val photos: List<PhotoUi> = emptyList(),
+    val isUpdatingPhotos: Boolean = false,
+    val photoError: String? = null,
     val isSaving: Boolean = false,
     val error: String? = null,
 )
@@ -46,6 +57,7 @@ class EditBusinessProfileViewModel @Inject constructor(
     private val businessApiService: BusinessApiService,
     private val categoryApiService: CategoryApiService,
     private val fusedLocationClient: FusedLocationProviderClient,
+    private val photoCompressor: PhotoCompressor,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(EditBusinessProfileUiState())
@@ -83,6 +95,7 @@ class EditBusinessProfileViewModel @Inject constructor(
                         longitud = business.longitud,
                         descripcion = business.descripcion.orEmpty(),
                         schedule = business.horarios.toScheduleUi(),
+                        photos = business.fotos.toPhotoUi(BASE_URL),
                     )
                 }
             } catch (e: Exception) {
@@ -194,6 +207,92 @@ class EditBusinessProfileViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSaving = false, error = "Sin conexión, probá de nuevo") }
+            }
+        }
+    }
+
+    // Las fotos se guardan apenas se agregan, reemplazan, borran o reordenan: no dependen de "Guardar cambios".
+
+    fun addPhoto(uri: Uri) {
+        if (_uiState.value.photos.size >= MAX_BUSINESS_PHOTOS) return
+        runPhotoOperation {
+            val part = photoPart(uri) ?: return@runPhotoOperation
+            val response = businessApiService.addPhoto(part)
+            val photo = response.body()
+            if (response.isSuccessful && photo != null) {
+                _uiState.update { it.copy(photos = it.photos + PhotoUi(photo.id, resolvePhotoUrl(BASE_URL, photo.url))) }
+            } else {
+                showPhotoError(response, "No pudimos subir la foto")
+            }
+        }
+    }
+
+    fun replacePhoto(photoId: Long, uri: Uri) {
+        runPhotoOperation {
+            val part = photoPart(uri) ?: return@runPhotoOperation
+            val response = businessApiService.replacePhoto(photoId, part)
+            val photo = response.body()
+            if (response.isSuccessful && photo != null) {
+                val newPhoto = PhotoUi(photo.id, resolvePhotoUrl(BASE_URL, photo.url))
+                _uiState.update { state -> state.copy(photos = state.photos.map { if (it.id == photoId) newPhoto else it }) }
+            } else {
+                showPhotoError(response, "No pudimos reemplazar la foto")
+            }
+        }
+    }
+
+    fun deletePhoto(photoId: Long) {
+        runPhotoOperation {
+            val response = businessApiService.deletePhoto(photoId)
+            if (response.isSuccessful) {
+                _uiState.update { state -> state.copy(photos = state.photos.filterNot { it.id == photoId }) }
+            } else {
+                showPhotoError(response, "No pudimos borrar la foto")
+            }
+        }
+    }
+
+    fun movePhoto(photoId: Long, offset: Int) {
+        val reordered = _uiState.value.photos.moved(photoId, offset) ?: return
+        runPhotoOperation {
+            val response = businessApiService.reorderPhotos(ReorderPhotosRequestDto(reordered.map { it.id }))
+            val photos = response.body()
+            if (response.isSuccessful && photos != null) {
+                _uiState.update { it.copy(photos = photos.toPhotoUi(BASE_URL)) }
+            } else {
+                showPhotoError(response, "No pudimos cambiar el orden")
+            }
+        }
+    }
+
+    private suspend fun photoPart(uri: Uri): MultipartBody.Part? {
+        val bytes = photoCompressor.compress(uri)
+        if (bytes == null) {
+            _uiState.update { it.copy(photoError = "No pudimos leer la imagen elegida") }
+            return null
+        }
+        return MultipartBody.Part.createFormData("file", "foto.jpg", bytes.toRequestBody("image/jpeg".toMediaType()))
+    }
+
+    private fun showPhotoError(response: Response<*>, fallback: String) {
+        val message = when (response.code()) {
+            409 -> "Podés tener hasta $MAX_BUSINESS_PHOTOS fotos"
+            413 -> "La foto es demasiado grande"
+            else -> fallback
+        }
+        _uiState.update { it.copy(photoError = message) }
+    }
+
+    private fun runPhotoOperation(block: suspend () -> Unit) {
+        if (_uiState.value.isUpdatingPhotos) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUpdatingPhotos = true, photoError = null) }
+            try {
+                block()
+            } catch (e: Exception) {
+                _uiState.update { it.copy(photoError = "Sin conexión, probá de nuevo") }
+            } finally {
+                _uiState.update { it.copy(isUpdatingPhotos = false) }
             }
         }
     }

@@ -34,5 +34,16 @@ data class BusinessResponseDto(
     val longitud: Double?,
     val descripcion: String?,
     val horarios: List<ScheduleSlotResponseDto>,
+    val fotos: List<PhotoResponseDto>,
     val onboardingCompleted: Boolean,
+)
+
+data class PhotoResponseDto(
+    val id: Long,
+    val url: String,
+    val orden: Int,
+)
+
+data class ReorderPhotosRequestDto(
+    val photoIds: List<Long>,
 )
