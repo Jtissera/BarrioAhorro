@@ -1,8 +1,10 @@
 package com.barrioahorro.api.modules.business
 
 import com.barrioahorro.api.modules.business.dto.BusinessResponse
+import com.barrioahorro.api.modules.business.dto.ScheduleSlotRequest
 import com.barrioahorro.api.modules.business.dto.ScheduleSlotResponse
 import com.barrioahorro.api.modules.business.dto.UpdateBusinessRequest
+import jakarta.validation.Valid
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Point
@@ -28,6 +30,7 @@ class BusinessController(
     private val businessRepository: BusinessRepository,
     private val categoryRepository: CategoryRepository,
     private val scheduleRepository: BusinessScheduleRepository,
+    private val photoRepository: BusinessPhotoRepository,
 ) {
 
     @Transactional
@@ -44,9 +47,15 @@ class BusinessController(
     @PatchMapping("/me")
     fun updateMyBusiness(
         authentication: Authentication,
-        @RequestBody request: UpdateBusinessRequest,
+        @Valid @RequestBody request: UpdateBusinessRequest,
     ): ResponseEntity<BusinessResponse> {
         val userId = authentication.principal as Long
+        // Validamos todo antes de tocar la entidad para no dejar cambios a medias.
+        if ((request.latitud == null) != (request.longitud == null)) {
+            throw badRequest("La latitud y la longitud deben enviarse juntas")
+        }
+        request.horarios?.let(::validateSchedule)
+
         val business = businessRepository.findById(userId)
             .orElseThrow { notFound() }
 
@@ -89,6 +98,24 @@ class BusinessController(
         return ResponseEntity.ok(saved.toResponse())
     }
 
+    private fun validateSchedule(slots: List<ScheduleSlotRequest>) {
+        val parsed = slots.map {
+            Triple(it.diaSemana, LocalTime.parse(it.horaInicio, timeFormatter), LocalTime.parse(it.horaFin, timeFormatter))
+        }
+        if (parsed.any { (_, inicio, fin) -> !fin.isAfter(inicio) }) {
+            throw badRequest("La hora de cierre debe ser posterior a la de apertura")
+        }
+        val overlaps = parsed.groupBy { it.first }.values.any { daySlots ->
+            daySlots.sortedBy { it.second }.zipWithNext().any { (previous, next) -> next.second.isBefore(previous.third) }
+        }
+        if (overlaps) {
+            throw badRequest("Los turnos de un mismo día no pueden superponerse")
+        }
+    }
+
+    private fun badRequest(message: String) =
+        org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, message)
+
     private fun notFound() =
         org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND, "Business profile not found")
 
@@ -106,13 +133,14 @@ class BusinessController(
         return BusinessResponse(
             userId = usuarioId,
             businessName = nombreNegocio,
-            categoryId = rubro?.id as Int?,
+            categoryId = rubro?.id?.toInt(),
             categoryName = rubro?.nombre,
             direccion = direccion,
             latitud = ubicacion?.y,
             longitud = ubicacion?.x,
             descripcion = descripcion,
             horarios = horarios,
+            fotos = photoRepository.findByComercioIdOrderByOrdenAscIdAsc(usuarioId).map { it.toResponse() },
             onboardingCompleted = onboardingCompletado,
         )
     }
