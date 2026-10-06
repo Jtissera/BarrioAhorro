@@ -2,6 +2,7 @@ package com.barrioahorro.api.modules.offer
 
 import com.barrioahorro.api.modules.offer.dto.CreateOffer2x1Request
 import com.barrioahorro.api.modules.offer.dto.CreateOfferPorMayorRequest
+import com.barrioahorro.api.modules.offer.dto.CreateOfferCantidadRequest
 import com.barrioahorro.api.modules.offer.dto.OfferResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -42,6 +43,16 @@ class OfferController(
     ): ResponseEntity<OfferResponse> {
         val userId = authentication.principal as Long
         val response = offerService.createOfferPorMayor(userId, request)
+        return ResponseEntity.status(HttpStatus.CREATED).body(response)
+    }
+
+    @PostMapping("/me/offers/cantidad")
+    fun createOfferCantidad(
+        authentication: Authentication,
+        @Valid @RequestBody request: CreateOfferCantidadRequest,
+    ): ResponseEntity<OfferResponse> {
+        val userId = authentication.principal as Long
+        val response = offerService.createOfferCantidad(userId, request)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
