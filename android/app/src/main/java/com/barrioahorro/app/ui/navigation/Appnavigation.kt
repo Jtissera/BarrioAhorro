@@ -111,9 +111,12 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 latitud = state.latitud,
                 longitud = state.longitud,
                 isFetchingLocation = state.isFetchingLocation,
+                isValidatingAddress = state.isValidatingAddress,
+                isLocationConfirmed = state.isLocationConfirmed,
                 errorMessage = state.error,
                 onDireccionChange = viewModel::setDireccion,
                 onRequestCurrentLocation = viewModel::fetchCurrentLocation,
+                onValidateAddress = viewModel::validateAddress,
                 onBack = { navController.popBackStack() },
                 onContinue = { navController.navigate(OnboardingRoutes.BUSINESS_SCHEDULE) },
             )

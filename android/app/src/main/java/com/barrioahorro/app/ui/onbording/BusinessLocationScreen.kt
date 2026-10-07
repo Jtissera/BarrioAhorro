@@ -5,13 +5,18 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 
@@ -21,13 +26,17 @@ fun BusinessLocationScreen(
     latitud: Double?,
     longitud: Double?,
     isFetchingLocation: Boolean,
+    isValidatingAddress: Boolean,
+    isLocationConfirmed: Boolean,
     errorMessage: String?,
     onDireccionChange: (String) -> Unit,
+    onValidateAddress: () -> Unit,
     onRequestCurrentLocation: () -> Unit,
     onBack: () -> Unit,
     onContinue: () -> Unit,
 ) {
     val context = LocalContext.current
+    val isBusy = isFetchingLocation || isValidatingAddress
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -72,20 +81,47 @@ fun BusinessLocationScreen(
         OutlinedTextField(
             value = direccion,
             onValueChange = onDireccionChange,
-            placeholder = { Text("Av. Rivadavia 4520, Caballito") },
+            placeholder = { Text("Ingresá tu dirección") },
+            supportingText = { Text("Calle y número, por ejemplo: Av. Rivadavia 4520") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            enabled = !isBusy,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { onValidateAddress() }),
+            trailingIcon = {
+                if (isLocationConfirmed) {
+                    Icon(
+                        Icons.Filled.CheckCircle,
+                        contentDescription = "Ubicación confirmada",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            },
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = onValidateAddress,
+            enabled = direccion.isNotBlank() && !isLocationConfirmed && !isBusy,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (isValidatingAddress) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                Text("Validar dirección")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedButton(
             onClick = { requestLocation() },
-            enabled = !isFetchingLocation,
+            enabled = !isBusy,
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (isFetchingLocation) {
-                CircularProgressIndicator(modifier = Modifier.height(20.dp).width(20.dp))
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
             } else {
                 Icon(Icons.Filled.LocationOn, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -107,17 +143,17 @@ fun BusinessLocationScreen(
                 .padding(vertical = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
-            if (latitud != null && longitud != null) {
+            if (isLocationConfirmed && latitud != null && longitud != null) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         Icons.Filled.LocationOn,
                         contentDescription = null,
-                        modifier = Modifier.height(40.dp).width(40.dp),
+                        modifier = Modifier.size(40.dp),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Ubicación capturada",
+                        text = "Ubicación confirmada",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
@@ -127,9 +163,10 @@ fun BusinessLocationScreen(
                 }
             } else {
                 Text(
-                    text = "Todavía no capturaste tu ubicación",
+                    text = "Validá tu dirección o usá tu ubicación actual",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
                 )
             }
         }
@@ -141,7 +178,7 @@ fun BusinessLocationScreen(
             Spacer(modifier = Modifier.width(12.dp))
             Button(
                 onClick = onContinue,
-                enabled = direccion.isNotBlank(),
+                enabled = isLocationConfirmed && !isBusy,
                 modifier = Modifier.weight(1f),
             ) {
                 Text("Continuar")
