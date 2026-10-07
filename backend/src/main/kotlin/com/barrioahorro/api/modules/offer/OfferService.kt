@@ -4,9 +4,11 @@ import com.barrioahorro.api.modules.business.BusinessRepository
 import com.barrioahorro.api.modules.offer.dto.CreateOffer2x1Request
 import com.barrioahorro.api.modules.offer.dto.CreateOfferPorMayorRequest
 import com.barrioahorro.api.modules.offer.dto.CreateOfferCantidadRequest
+import com.barrioahorro.api.modules.offer.dto.CreateOfferPorcentajeRequest
 import com.barrioahorro.api.modules.offer.dto.Offer2x1DetailResponse
 import com.barrioahorro.api.modules.offer.dto.OfferPorMayorDetailResponse
 import com.barrioahorro.api.modules.offer.dto.OfferCantidadDetailResponse
+import com.barrioahorro.api.modules.offer.dto.OfferPorcentajeDetailResponse
 import com.barrioahorro.api.modules.offer.dto.OfferResponse
 import com.barrioahorro.api.modules.offer.enum.TipoBeneficio
 import com.barrioahorro.api.modules.offer.enum.TipoVigencia
@@ -23,6 +25,7 @@ class OfferService(
     private val offer2x1Repository: Offer2x1Repository,
     private val offerPorMayorRepository: OfferPorMayorRepository,
     private val offerCantidadRepository: OfferCantidadRepository,
+    private val offerPorcentajeRepository: OfferPorcentajeRepository,
     private val businessRepository: BusinessRepository,
 ) {
 
@@ -143,6 +146,37 @@ class OfferService(
         return offer.toResponse(detailCantidad = detail)
     }
 
+    @Transactional
+    fun createOfferPorcentaje(userId: Long, request: CreateOfferPorcentajeRequest): OfferResponse {
+        if (!businessRepository.existsById(userId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Solo los comercios pueden publicar ofertas")
+        }
+
+        val vigenteHasta = calcularVigencia(request.vigenciaTipo, request.vigenteHasta)
+
+        val offer = offerRepository.save(
+            OfferEntity(
+                comercioId = userId,
+                tipoOferta = TipoBeneficio.PORCENTAJE,
+                nombreProducto = request.nombreProducto.trim(),
+                fotoUrl = request.fotoUrl?.trim(),
+                vigenciaTipo = request.vigenciaTipo,
+                vigenteHasta = vigenteHasta,
+                activa = true,
+            ),
+        )
+
+        val detail = offerPorcentajeRepository.saveAndFlush(
+            OfferPorcentajeEntity(
+                ofertaId = offer.id,
+                precioOriginal = request.precioOriginal,
+                porcentajeDescuento = request.porcentajeDescuento,
+            ),
+        )
+
+        return offer.toResponse(detailPorcentaje = detail)
+    }
+
     @Transactional(readOnly = true)
     fun getMyOffers(userId: Long): List<OfferResponse> {
         val offers = offerRepository.findByComercioIdOrderByCreatedAtDesc(userId)
@@ -209,10 +243,17 @@ class OfferService(
             null
         }
 
+        val detailPorcentaje = if (offer.tipoOferta == TipoBeneficio.PORCENTAJE) {
+            offerPorcentajeRepository.findById(offer.id).orElse(null)
+        } else {
+            null
+        }
+
         return offer.toResponse(
             detail2x1 = detail2x1,
             detailPorMayor = detailPorMayor,
-            detailCantidad = detailCantidad)
+            detailCantidad = detailCantidad,
+            detailPorcentaje = detailPorcentaje)
     }
 
     private fun calcularVigencia(vigenciaTipo: TipoVigencia, fechaIndicada: OffsetDateTime?): OffsetDateTime? {
@@ -237,6 +278,7 @@ class OfferService(
         detail2x1: Offer2x1Entity? = null,
         detailPorMayor: OfferPorMayorEntity? = null,
         detailCantidad: OfferCantidadEntity? = null,
+        detailPorcentaje: OfferPorcentajeEntity? = null,
     ): OfferResponse {
         val now = OffsetDateTime.now()
         val esVigente = activa && (vigenteHasta == null || vigenteHasta!!.isAfter(now))
@@ -271,6 +313,13 @@ class OfferService(
                     cantidadRequerida = it.cantidadRequerida,
                     precioUnitario = it.precioUnitario,
                     porcentajeDescuentoUltimaUnidad = it.porcentajeDescuentoUltimaUnidad,
+                )
+            },
+            detallePorcentaje = detailPorcentaje?.let {
+                OfferPorcentajeDetailResponse(
+                    precioOriginal = it.precioOriginal,
+                    porcentajeDescuento = it.porcentajeDescuento,
+                    precioFinal = requireNotNull(it.precioFinal) { "El precio final no debe ser nulo" },
                 )
             },
         )

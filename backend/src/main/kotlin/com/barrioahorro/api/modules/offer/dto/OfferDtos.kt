@@ -81,6 +81,27 @@ data class CreateOfferCantidadRequest(
     val porcentajeDescuentoUltimaUnidad: Short,
 )
 
+data class CreateOfferPorcentajeRequest(
+    @field:NotBlank(message = "El nombre del producto no puede estar vacío")
+    val nombreProducto: String,
+
+    val fotoUrl: String? = null,
+
+    @field:NotNull(message = "El tipo de vigencia es obligatorio")
+    val vigenciaTipo: TipoVigencia,
+
+    val vigenteHasta: OffsetDateTime? = null,
+
+    @field:NotNull(message = "El precio original es obligatorio")
+    @field:DecimalMin(value = "0.01", message = "El precio original debe ser mayor a cero")
+    val precioOriginal: BigDecimal,
+
+    @field:NotNull(message = "El porcentaje de descuento es obligatorio")
+    @field:Min(value = 1, message = "El descuento debe ser de al menos 1%")
+    @field:Max(value = 99, message = "El descuento debe ser menor al 100%")
+    val porcentajeDescuento: Short,
+)
+
 data class Offer2x1DetailResponse(
     val unidadesAPagar: Short,
     val unidadesALlevar: Short,
@@ -99,6 +120,12 @@ data class OfferCantidadDetailResponse(
     val porcentajeDescuentoUltimaUnidad: Short,
 )
 
+data class OfferPorcentajeDetailResponse(
+    val precioOriginal: BigDecimal,
+    val porcentajeDescuento: Short,
+    val precioFinal: BigDecimal,
+)
+
 data class OfferResponse(
     val id: Long,
     val comercioId: Long,
@@ -113,4 +140,5 @@ data class OfferResponse(
     val detalle2x1: Offer2x1DetailResponse? = null,
     val detallePorMayor: OfferPorMayorDetailResponse? = null,
     val detalleCantidad: OfferCantidadDetailResponse? = null,
+    val detallePorcentaje: OfferPorcentajeDetailResponse? = null,
 )
