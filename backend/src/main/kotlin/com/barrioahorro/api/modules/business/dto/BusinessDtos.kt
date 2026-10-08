@@ -1,5 +1,6 @@
 package com.barrioahorro.api.modules.business.dto
 
+import com.barrioahorro.api.modules.review.dto.ReviewResponse
 import jakarta.validation.Valid
 import jakarta.validation.constraints.DecimalMax
 import jakarta.validation.constraints.DecimalMin
@@ -69,4 +70,8 @@ data class BusinessResponse(
     val horarios: List<ScheduleSlotResponse>,
     val fotos: List<PhotoResponse>,
     val onboardingCompleted: Boolean,
-)
+    val promedioCalificacion: Double,
+    val totalResenas: Int,
+    val resenas: List<ReviewResponse>,
+
+    )

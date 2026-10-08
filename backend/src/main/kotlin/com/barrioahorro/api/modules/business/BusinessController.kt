@@ -4,10 +4,11 @@ import com.barrioahorro.api.modules.business.dto.BusinessResponse
 import com.barrioahorro.api.modules.business.dto.ScheduleSlotRequest
 import com.barrioahorro.api.modules.business.dto.ScheduleSlotResponse
 import com.barrioahorro.api.modules.business.dto.UpdateBusinessRequest
+import com.barrioahorro.api.modules.review.ReviewRepository
+import com.barrioahorro.api.modules.review.dto.ReviewResponse
 import jakarta.validation.Valid
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.geom.Point
 import org.locationtech.jts.geom.PrecisionModel
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -31,6 +32,7 @@ class BusinessController(
     private val categoryRepository: CategoryRepository,
     private val scheduleRepository: BusinessScheduleRepository,
     private val photoRepository: BusinessPhotoRepository,
+    private val reviewRepository: ReviewRepository,
 ) {
 
     @Transactional
@@ -130,6 +132,26 @@ class BusinessController(
                 )
             }
 
+        val resenasList = reviewRepository.findReviewsWithAuthorByComercioId(usuarioId)
+
+        val resenasResponse = resenasList.map {
+            val alias = it.getEmailCliente().substringBefore("@")
+            ReviewResponse(
+                id = it.getId(),
+                clienteId = it.getClienteId(),
+                correoCliente = alias,
+                texto = it.getTexto(),
+                estrellas = it.getEstrellas(),
+                createdAt = it.getCreatedAt(),
+            )
+        }
+
+        val promedio = if (resenasResponse.isNotEmpty()) {
+            resenasResponse.map { it.estrellas.toDouble() }.average()
+        } else {
+            0.0
+        }
+
         return BusinessResponse(
             userId = usuarioId,
             businessName = nombreNegocio,
@@ -142,6 +164,9 @@ class BusinessController(
             horarios = horarios,
             fotos = photoRepository.findByComercioIdOrderByOrdenAscIdAsc(usuarioId).map { it.toResponse() },
             onboardingCompleted = onboardingCompletado,
+            promedioCalificacion = promedio,
+            totalResenas = resenasResponse.size,
+            resenas = resenasResponse,
         )
     }
 }
