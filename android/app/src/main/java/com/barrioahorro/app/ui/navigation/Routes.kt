@@ -17,3 +17,7 @@ object OnboardingRoutes {
     const val BUSINESS_LOCATION = "onboarding/business-location"
     const val BUSINESS_SCHEDULE = "onboarding/business-schedule"
 }
+
+object BusinessRoutes {
+    const val EDIT_PROFILE = "business/edit-profile"
+}

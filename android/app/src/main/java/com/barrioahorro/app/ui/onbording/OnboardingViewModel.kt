@@ -22,6 +22,9 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import com.barrioahorro.app.domain.model.AddressError
+import com.barrioahorro.app.domain.repository.Result
+import com.barrioahorro.app.domain.usecase.location.ValidateAddressUseCase
 
 data class CategoryUi(val id: Int, val name: String)
 
@@ -57,6 +60,8 @@ data class OnboardingUiState(
     val latitud: Double? = null,
     val longitud: Double? = null,
     val isFetchingLocation: Boolean = false,
+    val isValidatingAddress: Boolean = false,
+    val isLocationConfirmed: Boolean = false,
     val descripcion: String = "",
     val schedule: List<DayScheduleUi> = defaultSchedule(),
     val isSubmitting: Boolean = false,
@@ -68,6 +73,7 @@ class OnboardingViewModel @Inject constructor(
     private val businessApiService: BusinessApiService,
     private val categoryApiService: CategoryApiService,
     private val fusedLocationClient: FusedLocationProviderClient,
+    private val validateAddressUseCase: ValidateAddressUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
@@ -100,7 +106,15 @@ class OnboardingViewModel @Inject constructor(
     }
 
     fun setDireccion(value: String) {
-        _uiState.update { it.copy(direccion = value) }
+        _uiState.update {
+            it.copy(
+                direccion = value,
+                latitud = null,
+                longitud = null,
+                isLocationConfirmed = false,
+                error = null,
+                )
+        }
     }
 
     @SuppressLint("MissingPermission") // el permiso ya se verifica antes de llamar esto, desde la screen
@@ -118,6 +132,7 @@ class OnboardingViewModel @Inject constructor(
                             latitud = location.latitude,
                             longitud = location.longitude,
                             isFetchingLocation = false,
+                            isLocationConfirmed = true,
                         )
                     }
                 } else {
@@ -259,4 +274,39 @@ class OnboardingViewModel @Inject constructor(
             }
         }
     }
+
+    fun validateAddress() {
+        val direccion = _uiState.value.direccion
+        viewModelScope.launch {
+            _uiState.update { it.copy(isValidatingAddress = true, error = null) }
+            when (val result = validateAddressUseCase(direccion)) {
+                is Result.Success -> _uiState.update {
+                    it.copy(
+                        direccion = result.value.formattedAddress,
+                        latitud = result.value.latitude,
+                        longitud = result.value.longitude,
+                        isLocationConfirmed = true,
+                        isValidatingAddress = false,
+                    )
+                }
+                is Result.Failure -> _uiState.update {
+                    it.copy(
+                        isValidatingAddress = false,
+                        isLocationConfirmed = false,
+                        error = result.error.toMessage(),
+                    )
+                }
+            }
+        }
+    }
+
+    private fun AddressError.toMessage(): String = when (this) {
+        AddressError.Empty -> "Ingresá una dirección"
+        AddressError.NotFound -> "No encontramos esa dirección. Revisá la calle y la altura"
+        AddressError.MissingNumber -> "Agregá la altura de la calle a la dirección"
+        AddressError.ServiceUnavailable -> "No pudimos validar la dirección ahora. Intentá más tarde"
+        AddressError.NoConnection -> "Sin conexión, revisá tu internet"
+        is AddressError.Unknown -> "Ocurrió un error inesperado"
+    }
+
 }

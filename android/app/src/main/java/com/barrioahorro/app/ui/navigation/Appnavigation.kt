@@ -19,6 +19,8 @@ import com.barrioahorro.app.domain.model.UserType
 import com.barrioahorro.app.ui.screens.auth.AuthSuccessScreen
 import com.barrioahorro.app.ui.screens.auth.LoginScreen
 import com.barrioahorro.app.ui.screens.auth.RegisterScreen
+import com.barrioahorro.app.ui.screens.business.EditBusinessProfileScreen
+import com.barrioahorro.app.ui.screens.business.EditBusinessProfileViewModel
 import com.barrioahorro.app.ui.screens.onboarding.BusinessCategoryScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessLocationScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessNameScreen
@@ -37,6 +39,7 @@ fun AppNavigation(
     ) {
         authGraph(navController = navController)
         onboardingGraph(navController = navController)
+        businessGraph(navController = navController)
     }
 }
 
@@ -108,9 +111,12 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 latitud = state.latitud,
                 longitud = state.longitud,
                 isFetchingLocation = state.isFetchingLocation,
+                isValidatingAddress = state.isValidatingAddress,
+                isLocationConfirmed = state.isLocationConfirmed,
                 errorMessage = state.error,
                 onDireccionChange = viewModel::setDireccion,
                 onRequestCurrentLocation = viewModel::fetchCurrentLocation,
+                onValidateAddress = viewModel::validateAddress,
                 onBack = { navController.popBackStack() },
                 onContinue = { navController.navigate(OnboardingRoutes.BUSINESS_SCHEDULE) },
             )
@@ -146,6 +152,35 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 },
             )
         }
+    }
+}
+
+fun NavGraphBuilder.businessGraph(navController: NavHostController) {
+    composable(BusinessRoutes.EDIT_PROFILE) {
+        val viewModel: EditBusinessProfileViewModel = hiltViewModel()
+        val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+        EditBusinessProfileScreen(
+            state = state,
+            onBusinessNameChange = viewModel::setBusinessName,
+            onSelectCategory = viewModel::selectCategory,
+            onDireccionChange = viewModel::setDireccion,
+            onRequestCurrentLocation = viewModel::fetchCurrentLocation,
+            onDescripcionChange = viewModel::setDescripcion,
+            onToggleDay = viewModel::toggleDay,
+            onAddSlot = viewModel::addSlot,
+            onRemoveSlot = viewModel::removeSlot,
+            onUpdateSlotStart = { dia, slotId, time -> viewModel.updateSlotTime(dia, slotId, horaInicio = time) },
+            onUpdateSlotEnd = { dia, slotId, time -> viewModel.updateSlotTime(dia, slotId, horaFin = time) },
+            onCopyMondayToAll = viewModel::copyMondayToAll,
+            onAddPhoto = viewModel::addPhoto,
+            onReplacePhoto = viewModel::replacePhoto,
+            onDeletePhoto = viewModel::deletePhoto,
+            onMovePhoto = viewModel::movePhoto,
+            onRetryLoad = viewModel::loadProfile,
+            onBack = { navController.popBackStack() },
+            onSave = { viewModel.save(onSuccess = { navController.popBackStack() }) },
+        )
     }
 }
 
