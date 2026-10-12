@@ -27,6 +27,7 @@ import com.barrioahorro.app.ui.screens.onboarding.BusinessNameScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessScheduleScreen
 import com.barrioahorro.app.ui.screens.onboarding.OnboardingViewModel
 import com.barrioahorro.app.ui.screens.splash.SplashScreen
+import com.barrioahorro.app.ui.screens.auth.RoleSelectionScreen
 
 @Composable
 fun AppNavigation(
@@ -46,27 +47,41 @@ fun AppNavigation(
 
 fun NavGraphBuilder.authGraph(navController: NavHostController) {
     composable(SplashRoutes.SPLASH) {
-        SplashScreen(
-            onFinished = {
-                navController.navigate(AuthRoutes.LOGIN) {
-                    popUpTo(SplashRoutes.SPLASH) { inclusive = true }
-                }
-            },
+        SplashScreen(onFinished = {
+            navController.navigate(AuthRoutes.ROLE_SELECTION) {
+                popUpTo(SplashRoutes.SPLASH) { inclusive = true }
+            }
+        })
+    }
+
+    composable(AuthRoutes.ROLE_SELECTION) {
+        RoleSelectionScreen(
+            onContinue = { userType -> navController.navigate(AuthRoutes.register(userType)) },
+            onNavigateToLogin = { navController.navigate(AuthRoutes.LOGIN) },
         )
     }
 
     composable(AuthRoutes.LOGIN) {
         LoginScreen(
-            onNavigateToRegister = { navController.navigate(AuthRoutes.REGISTER) },
+            onNavigateToRegister = { navController.navigate(AuthRoutes.ROLE_SELECTION) { launchSingleTop = true } },
             onLoginSuccess = { userType -> navController.navigateAfterAuth(userType) },
         )
     }
-    composable(AuthRoutes.REGISTER) {
+
+    composable(
+        route = AuthRoutes.REGISTER_PATTERN,
+        arguments = listOf(navArgument("userType") { type = NavType.StringType }),
+    ) { backStackEntry ->
+        val userType = backStackEntry.arguments?.getString("userType")
+            ?.let { UserType.valueOf(it) } ?: UserType.CLIENTE
         RegisterScreen(
-            onNavigateToLogin = { navController.popBackStack() },
-            onRegisterSuccess = { userType -> navController.navigateAfterAuth(userType) },
+            userType = userType,
+            onBack = { navController.popBackStack() },
+            onNavigateToLogin = { navController.navigate(AuthRoutes.LOGIN) { launchSingleTop = true } },
+            onRegisterSuccess = { navController.navigateAfterAuth(it) },
         )
     }
+
     composable(
         route = AuthRoutes.SUCCESS_PATTERN,
         arguments = listOf(navArgument("userType") { type = NavType.StringType }),

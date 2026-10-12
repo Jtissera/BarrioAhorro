@@ -109,7 +109,6 @@ class AuthViewModel @Inject constructor(
             val result = registerUseCase(
                 email = state.email,
                 password = state.password,
-                confirmPassword = state.confirmPassword,
                 userType = state.userType,
             )
 

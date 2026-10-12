@@ -7,7 +7,6 @@ import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 
-
 data class RegisterRequest(
     @field:NotBlank(message = "El email es obligatorio")
     @field:Email(message = "El email no es válido")
@@ -18,15 +17,12 @@ data class RegisterRequest(
     val email: String,
 
     @field:NotBlank(message = "La contraseña es obligatoria")
-    @field:Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
+    @field:Size(
+        min = 8,
+        message = "La contraseña debe tener al menos 8 caracteres",
+    )
     val password: String,
-
-    @field:NotBlank(message = "Repetí la contraseña")
-    val confirmPassword: String,
 
     @field:NotNull(message = "Indicá si sos cliente o comerciante")
     val tipoUsuario: TipoUsuario,
-) {
-    val passwordsMatch: Boolean
-        get() = password == confirmPassword
-}
+)

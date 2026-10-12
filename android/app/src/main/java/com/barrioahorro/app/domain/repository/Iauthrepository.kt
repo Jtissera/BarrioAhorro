@@ -9,7 +9,6 @@ interface IAuthRepository {
     suspend fun register(
         email: String,
         password: String,
-        confirmPassword: String,
         userType: UserType,
     ): Result<AuthSession, AuthError>
 

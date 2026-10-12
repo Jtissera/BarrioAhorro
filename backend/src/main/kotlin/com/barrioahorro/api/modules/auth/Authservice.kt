@@ -26,9 +26,7 @@ class AuthService(
 
     @Transactional
     fun register(request: RegisterRequest): AuthResponse {
-        if (!request.passwordsMatch) {
-            throw PasswordMismatchException()
-        }
+
         if (userRepository.existsByEmail(request.email)) {
             throw EmailAlreadyExistsException(request.email)
         }

@@ -6,7 +6,6 @@ import kotlinx.serialization.Serializable
 data class RegisterRequestDto(
     val email: String,
     val password: String,
-    val confirmPassword: String,
     val tipoUsuario: String,
 )
 

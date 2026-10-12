@@ -19,33 +19,30 @@ data class RegisterUiState(
     val email: String = "",
     val password: String = "",
     val confirmPassword: String = "",
-    val isPasswordVisible: Boolean = false,
     val isConfirmPasswordVisible: Boolean = false,
+    val isPasswordVisible: Boolean = false,
     val passwordStrength: PasswordStrength = PasswordStrength.NONE,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
 ) {
-    private val passwordsMatch: Boolean
-        get() = confirmPassword.isNotEmpty() && password == confirmPassword
+    val isEmailValid: Boolean
+        get() = GMAIL_REGEX.matches(email.trim())
 
     val passwordTooWeakMessage: String?
         get() = "La contraseña es muy débil".takeIf {
             password.isNotEmpty() && passwordStrength == PasswordStrength.WEAK
         }
 
-    val passwordsDoNotMatchMessage: String?
-        get() = "Las contraseñas no coinciden".takeIf {
-            confirmPassword.isNotEmpty() && !passwordsMatch
-        }
-
     val isSubmitEnabled: Boolean
-        get() = email.isNotBlank() &&
+        get() = isEmailValid &&
                 password.length >= MIN_PASSWORD_LENGTH &&
-                passwordsMatch &&
+                passwordStrength != PasswordStrength.WEAK &&
                 !isLoading
 
     companion object {
         const val MIN_PASSWORD_LENGTH = 8
+        private val GMAIL_REGEX =
+            Regex("^[A-Za-z0-9._%+-]+@gmail\\.com$", RegexOption.IGNORE_CASE)
     }
 }
 

@@ -25,10 +25,9 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun register(
         email: String,
         password: String,
-        confirmPassword: String,
         userType: UserType,
     ): Result<AuthSession, AuthError> {
-        val request = RegisterRequestDto(email, password, confirmPassword, userType.name)
+        val request = RegisterRequestDto(email, password, userType.name)
         return runCatching { authApiService.register(request) }
             .fold(
                 onSuccess = { response -> response.toSessionResult() },
@@ -51,7 +50,7 @@ class AuthRepositoryImpl @Inject constructor(
     private suspend fun Response<AuthResponseDto>.toSessionResult(): Result<AuthSession, AuthError> {
         val body = body()
         if (!isSuccessful || body == null) {
-            return Result.Failure(mapHttpError(code()))
+            return Result.Failure(mapHttpError(code(), errorBody()?.string()))
         }
 
         authTokenDataStore.saveSession(body.accessToken, body.tipoUsuario)
@@ -66,12 +65,11 @@ class AuthRepositoryImpl @Inject constructor(
         )
     }
 
-    private fun mapHttpError(httpCode: Int): AuthError = when (httpCode) {
+    private fun mapHttpError(httpCode: Int, errorBody: String?): AuthError = when (httpCode) {
         HTTP_UNAUTHORIZED -> AuthError.InvalidCredentials
         HTTP_CONFLICT -> AuthError.EmailAlreadyExists
-        else -> AuthError.Unknown(message = "Error del servidor ($httpCode)")
+        else -> AuthError.Unknown(message = "Error del servidor ($httpCode): ${errorBody.orEmpty().take(200)}")
     }
-
     private fun Throwable.toAuthResult(): Result<AuthSession, AuthError> =
         Result.Failure(
             when (this) {

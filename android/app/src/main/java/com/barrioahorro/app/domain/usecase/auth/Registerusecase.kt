@@ -13,13 +13,9 @@ class RegisterUseCase @Inject constructor(
     suspend operator fun invoke(
         email: String,
         password: String,
-        confirmPassword: String,
         userType: UserType,
     ): Result<AuthSession, AuthError> {
-        if (password != confirmPassword) {
-            return Result.Failure(AuthError.PasswordMismatch)
-        }
 
-        return authRepository.register(email.trim(), password, confirmPassword, userType)
+        return authRepository.register(email.trim(), password, userType)
     }
 }
