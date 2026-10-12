@@ -74,7 +74,9 @@ class AuthViewModel @Inject constructor(
     }
 
     fun onRegisterEmailChanged(email: String) {
-        _registerState.update { it.copy(email = email, errorMessage = null) }
+        _registerState.update {
+            it.copy(email = email, emailAlreadyRegistered = false, errorMessage = null)
+        }
     }
 
     fun onRegisterPasswordChanged(password: String) {
@@ -118,7 +120,11 @@ class AuthViewModel @Inject constructor(
                     _navigationEvents.send(AuthNavigationEvent.NavigateToHome(result.value.userType))
                 }
                 is Result.Failure -> _registerState.update {
-                    it.copy(isLoading = false, errorMessage = result.error.toMessage())
+                    if (result.error == AuthError.EmailAlreadyExists) {
+                        it.copy(isLoading = false, emailAlreadyRegistered = true, errorMessage = null)
+                    } else {
+                        it.copy(isLoading = false, errorMessage = result.error.toMessage())
+                    }
                 }
             }
         }

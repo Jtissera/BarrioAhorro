@@ -1,5 +1,6 @@
 package com.barrioahorro.app.ui.screens.auth
 
+import android.R.attr.shape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,9 +39,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.barrioahorro.app.R
 import com.barrioahorro.app.domain.model.UserType
 import com.barrioahorro.app.ui.components.feedback.AnimatedErrorMessage
+import com.barrioahorro.app.ui.components.feedback.ErrorCard
 import com.barrioahorro.app.ui.components.inputs.EditorialTextField
 import com.barrioahorro.app.ui.components.inputs.PasswordStrengthIndicator
-
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 @Composable
 fun RegisterScreen(
     userType: UserType,
@@ -155,6 +160,13 @@ private fun RegisterContent(
                     isEmailValid = isValidGmail(state.email),
                     showEmailValidation = state.email.isNotBlank(),
                     modifier = Modifier.padding(top = 24.dp),
+                )
+
+                ErrorCard(
+                    title = "Este Gmail ya está registrado.".takeIf { state.emailAlreadyRegistered },
+                    actionText = "¿Querés iniciar sesión ahora?",
+                    onActionClick = onNavigateToLogin,
+                    modifier = Modifier.padding(top = 8.dp),
                 )
 
                 Text(
@@ -274,9 +286,16 @@ private fun PasswordRequirements(
                 password.any { !it.isLetterOrDigit() },
     )
 
+    val card = colorResource(R.color.surface_card)
+    val shape = RoundedCornerShape(12.dp)
+
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = modifier
+            .clip(shape)
+            .background(card)
+            .border(1.dp, inactive.copy(alpha = 0.3f), shape)
+            .padding(14.dp),
     ) {
         requirements.forEach { (label, met) ->
             Row(
@@ -303,6 +322,8 @@ private fun PasswordRequirements(
         }
     }
 }
+
+private fun Modifier.clip(shape: Int) {}
 
 @Preview(showBackground = true)
 @Composable

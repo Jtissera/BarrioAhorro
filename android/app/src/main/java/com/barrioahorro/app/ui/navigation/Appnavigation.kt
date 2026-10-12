@@ -63,7 +63,10 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
 
     composable(AuthRoutes.LOGIN) {
         LoginScreen(
-            onNavigateToRegister = { navController.navigate(AuthRoutes.ROLE_SELECTION) { launchSingleTop = true } },
+            onBack = { navController.popBackStack() },
+            onNavigateToRegister = {
+                navController.popBackStack(AuthRoutes.ROLE_SELECTION, inclusive = false)
+            },
             onLoginSuccess = { userType -> navController.navigateAfterAuth(userType) },
         )
     }

@@ -24,6 +24,7 @@ data class RegisterUiState(
     val passwordStrength: PasswordStrength = PasswordStrength.NONE,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    val emailAlreadyRegistered: Boolean = false,
 ) {
     val isEmailValid: Boolean
         get() = GMAIL_REGEX.matches(email.trim())
