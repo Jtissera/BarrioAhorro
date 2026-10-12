@@ -6,7 +6,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import java.time.OffsetDateTime
-import com.barrioahorro.api.modules.location.GeorefUnavailableException
+import com.barrioahorro.api.modules.location.NominatimUnavailableException
 
 data class ApiErrorResponse(
     val status: Int,
@@ -36,13 +36,12 @@ class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, message)
     }
 
-    @ExceptionHandler(GeorefUnavailableException::class)
-    fun handleGeorefUnavailable(ex: GeorefUnavailableException): ResponseEntity<ApiErrorResponse> =
+    @ExceptionHandler(NominatimUnavailableException::class)
+    fun handleGeocoderUnavailable(ex: NominatimUnavailableException): ResponseEntity<ApiErrorResponse> =
         buildResponse(
             HttpStatus.SERVICE_UNAVAILABLE,
             "No pudimos validar la dirección en este momento. Intentá de nuevo más tarde.",
         )
-
     private fun buildResponse(status: HttpStatus, message: String): ResponseEntity<ApiErrorResponse> =
         ResponseEntity.status(status).body(ApiErrorResponse(status.value(), message))
 }

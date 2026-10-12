@@ -30,6 +30,11 @@ app:
       secret: ${JWT_SECRET}
       expiration-minutes: ${JWT_EXPIRATION_MINUTES:1440}
 
+nominatim:
+  base-url: https://nominatim.openstreetmap.org
+  user-agent: "BarrioAhorro/1.0 (cmirandav@fi.uba.ar)"
+  timeout-seconds: 5
+
 logging:
   level:
     com.barrioahorro: DEBUG
