@@ -21,3 +21,7 @@ object OnboardingRoutes {
 object BusinessRoutes {
     const val EDIT_PROFILE = "business/edit-profile"
 }
+
+object SplashRoutes {
+    const val SPLASH = "splash"
+}

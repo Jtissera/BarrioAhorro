@@ -26,6 +26,7 @@ import com.barrioahorro.app.ui.screens.onboarding.BusinessLocationScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessNameScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessScheduleScreen
 import com.barrioahorro.app.ui.screens.onboarding.OnboardingViewModel
+import com.barrioahorro.app.ui.screens.splash.SplashScreen
 
 @Composable
 fun AppNavigation(
@@ -34,7 +35,7 @@ fun AppNavigation(
 ) {
     NavHost(
         navController = navController,
-        startDestination = AuthRoutes.LOGIN,
+        startDestination = SplashRoutes.SPLASH,
         modifier = modifier,
     ) {
         authGraph(navController = navController)
@@ -44,6 +45,16 @@ fun AppNavigation(
 }
 
 fun NavGraphBuilder.authGraph(navController: NavHostController) {
+    composable(SplashRoutes.SPLASH) {
+        SplashScreen(
+            onFinished = {
+                navController.navigate(AuthRoutes.LOGIN) {
+                    popUpTo(SplashRoutes.SPLASH) { inclusive = true }
+                }
+            },
+        )
+    }
+
     composable(AuthRoutes.LOGIN) {
         LoginScreen(
             onNavigateToRegister = { navController.navigate(AuthRoutes.REGISTER) },

@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">android</string>
+    <string name="splash_tagline">Ahorrá con tu barrio</string>
+    <string name="splash_logo_description">Barrio Ahorro</string>
 </resources>
