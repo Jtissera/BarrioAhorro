@@ -4,15 +4,21 @@ import android.annotation.SuppressLint
 import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.barrioahorro.app.data.location.ReverseGeocoder
 import com.barrioahorro.app.data.remote.api.BusinessApiService
 import com.barrioahorro.app.data.remote.api.CategoryApiService
 import com.barrioahorro.app.data.remote.dto.ScheduleSlotRequestDto
 import com.barrioahorro.app.data.remote.dto.UpdateBusinessRequestDto
+import com.barrioahorro.app.domain.model.AddressError
+import com.barrioahorro.app.domain.repository.Result
+import com.barrioahorro.app.domain.usecase.location.ValidateAddressUseCase
 import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.Task
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -22,9 +28,6 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import com.barrioahorro.app.domain.model.AddressError
-import com.barrioahorro.app.domain.repository.Result
-import com.barrioahorro.app.domain.usecase.location.ValidateAddressUseCase
 
 data class CategoryUi(val id: Int, val name: String)
 
@@ -57,16 +60,24 @@ data class OnboardingUiState(
     val selectedCategoryId: Int? = null,
     val isLoadingCategories: Boolean = false,
     val direccion: String = "",
-    val latitud: Double? = null,
-    val longitud: Double? = null,
+    val localidad: String = "",
+    // Posición sugerida (Georef, GPS o pin movido por el vendedor). Todavía no es definitiva.
+    val pinLatitud: Double? = null,
+    val pinLongitud: Double? = null,
+    // Posición que el vendedor confirmó con "Siguiente". Es la que se guarda en el backend.
+    val confirmedLatitud: Double? = null,
+    val confirmedLongitud: Double? = null,
     val isFetchingLocation: Boolean = false,
     val isValidatingAddress: Boolean = false,
-    val isLocationConfirmed: Boolean = false,
+    val isResolvingPinAddress: Boolean = false,
     val descripcion: String = "",
     val schedule: List<DayScheduleUi> = defaultSchedule(),
     val isSubmitting: Boolean = false,
     val error: String? = null,
-)
+) {
+    val isLocationConfirmed: Boolean
+        get() = confirmedLatitud != null && confirmedLongitud != null
+}
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
@@ -74,10 +85,18 @@ class OnboardingViewModel @Inject constructor(
     private val categoryApiService: CategoryApiService,
     private val fusedLocationClient: FusedLocationProviderClient,
     private val validateAddressUseCase: ValidateAddressUseCase,
+    private val reverseGeocoder: ReverseGeocoder,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState
+
+    private var reverseGeocodeJob: Job? = null
+
+    private companion object {
+        // Si el pin se movió menos que esto y el reverse geocoding falla, conservamos el texto que ya había.
+        const val PIN_NUDGE_METERS = 100f
+    }
 
     fun setBusinessName(name: String) {
         _uiState.update { it.copy(businessName = name) }
@@ -95,6 +114,8 @@ class OnboardingViewModel @Inject constructor(
                 } else {
                     _uiState.update { it.copy(isLoadingCategories = false, error = "No pudimos cargar los rubros") }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoadingCategories = false, error = "Sin conexión, probá de nuevo") }
             }
@@ -105,20 +126,21 @@ class OnboardingViewModel @Inject constructor(
         _uiState.update { it.copy(selectedCategoryId = categoryId) }
     }
 
+    // region Ubicación
+
     fun setDireccion(value: String) {
-        _uiState.update {
-            it.copy(
-                direccion = value,
-                latitud = null,
-                longitud = null,
-                isLocationConfirmed = false,
-                error = null,
-                )
-        }
+        // Escribir no invalida el pin: la dirección es un dato del comercio y el pin lo decide el vendedor.
+        // Para volver a ubicar el pin a partir del texto se usa validateAddress() (tecla buscar).
+        _uiState.update { it.copy(direccion = value, error = null) }
+    }
+
+    fun setLocalidad(value: String) {
+        _uiState.update { it.copy(localidad = value, error = null) }
     }
 
     @SuppressLint("MissingPermission") // el permiso ya se verifica antes de llamar esto, desde la screen
     fun fetchCurrentLocation() {
+        cancelPinResolution()
         viewModelScope.launch {
             _uiState.update { it.copy(isFetchingLocation = true, error = null) }
             try {
@@ -127,21 +149,39 @@ class OnboardingViewModel @Inject constructor(
                     .build()
                 val location = fusedLocationClient.getCurrentLocation(request, null).awaitLocation()
                 if (location != null) {
+                    // El GPS solo sugiere: el vendedor todavía tiene que revisar el mapa y confirmar.
                     _uiState.update {
                         it.copy(
-                            latitud = location.latitude,
-                            longitud = location.longitude,
+                            pinLatitud = location.latitude,
+                            pinLongitud = location.longitude,
                             isFetchingLocation = false,
-                            isLocationConfirmed = true,
                         )
                     }
+                    resolvePinAddress(location.latitude, location.longitude, keepTextOnFailure = false)
                 } else {
                     _uiState.update {
-                        it.copy(isFetchingLocation = false, error = "No pudimos obtener tu ubicación, intentá de nuevo")
+                        it.copy(
+                            isFetchingLocation = false,
+                            error = "No pudimos obtener tu ubicación. Activá el GPS o ingresá tu dirección",
+                        )
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: SecurityException) {
+                _uiState.update {
+                    it.copy(
+                        isFetchingLocation = false,
+                        error = "Sin permiso de ubicación. Ingresá tu dirección o ubicá el pin en el mapa",
+                    )
+                }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isFetchingLocation = false, error = "Error al obtener ubicación") }
+                _uiState.update {
+                    it.copy(
+                        isFetchingLocation = false,
+                        error = "No pudimos obtener tu ubicación. Ingresá tu dirección o ubicá el pin en el mapa",
+                    )
+                }
             }
         }
     }
@@ -153,9 +193,121 @@ class OnboardingViewModel @Inject constructor(
             addOnCanceledListener { if (cont.isActive) cont.cancel() }
         }
 
+    fun onLocationPermissionDenied() {
+        _uiState.update {
+            it.copy(error = "Sin permiso de ubicación. Ingresá tu dirección o ubicá el pin en el mapa")
+        }
+    }
+
+    fun onPinMoved(latitud: Double, longitud: Double) {
+        val previous = _uiState.value
+        val prevLat = previous.pinLatitud
+        val prevLng = previous.pinLongitud
+        val movedLittle = prevLat != null && prevLng != null &&
+                distanceMeters(prevLat, prevLng, latitud, longitud) < PIN_NUDGE_METERS
+
+        _uiState.update { it.copy(pinLatitud = latitud, pinLongitud = longitud, error = null) }
+        resolvePinAddress(latitud, longitud, keepTextOnFailure = movedLittle)
+    }
+
+    fun validateAddress() {
+        val state = _uiState.value
+        if (state.localidad.isBlank()) {
+            _uiState.update { it.copy(error = "Ingresá la localidad para ubicar tu dirección con más precisión") }
+            return
+        }
+
+        cancelPinResolution()
+        viewModelScope.launch {
+            _uiState.update { it.copy(isValidatingAddress = true, error = null) }
+            val result = validateAddressUseCase(
+                address = state.direccion,
+                locality = state.localidad,
+            )
+            when (result) {
+                is Result.Success -> _uiState.update {
+                    it.copy(
+                        direccion = result.value.formattedAddress,
+                        pinLatitud = result.value.latitude,
+                        pinLongitud = result.value.longitude,
+                        isValidatingAddress = false,
+                    )
+                }
+                is Result.Failure -> _uiState.update {
+                    // El pin que ya hubiera se conserva: el vendedor todavía puede ubicarlo a mano.
+                    it.copy(
+                        isValidatingAddress = false,
+                        error = result.error.toMessage(),
+                    )
+                }
+            }
+        }
+    }
+
+    /** Acción explícita del vendedor: recién acá la ubicación sugerida pasa a confirmada. */
+    fun confirmLocation(): Boolean {
+        val state = _uiState.value
+        val lat = state.pinLatitud
+        val lng = state.pinLongitud
+        if (lat == null || lng == null) {
+            _uiState.update { it.copy(error = "Ubicá tu comercio en el mapa para continuar") }
+            return false
+        }
+        if (state.direccion.isBlank() || state.localidad.isBlank()) {
+            _uiState.update { it.copy(error = "Completá la dirección y la localidad de tu comercio para continuar") }
+            return false
+        }
+        _uiState.update { it.copy(confirmedLatitud = lat, confirmedLongitud = lng, error = null) }
+        return true
+    }
+
+    private fun resolvePinAddress(latitud: Double, longitud: Double, keepTextOnFailure: Boolean) {
+        cancelPinResolution()
+        reverseGeocodeJob = viewModelScope.launch {
+            _uiState.update { it.copy(isResolvingPinAddress = true) }
+            val resolved = reverseGeocoder.addressFor(latitud, longitud)
+            _uiState.update {
+                val nuevaDireccion = resolved?.street
+                    ?: if (keepTextOnFailure) it.direccion else ""
+                it.copy(
+                    isResolvingPinAddress = false,
+                    // Si el punto cambió pero no se pudo resolver la calle, no dejamos una dirección vieja.
+                    direccion = nuevaDireccion,
+                    // La localidad solo se pisa si el servicio devolvió una; si no, queda la que escribió el vendedor.
+                    localidad = resolved?.locality ?: it.localidad,
+                )
+            }
+        }
+    }
+
+    private fun cancelPinResolution() {
+        reverseGeocodeJob?.cancel()
+        reverseGeocodeJob = null
+        _uiState.update { it.copy(isResolvingPinAddress = false) }
+    }
+
+    private fun distanceMeters(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Float {
+        val results = FloatArray(1)
+        Location.distanceBetween(lat1, lng1, lat2, lng2, results)
+        return results[0]
+    }
+
+    private fun AddressError.toMessage(): String = when (this) {
+        AddressError.Empty -> "Ingresá una dirección"
+        AddressError.NotFound -> "No encontramos esa dirección. Revisá la calle y la altura, o ubicá el pin en el mapa"
+        AddressError.MissingNumber -> "Agregá la altura de la calle a la dirección"
+        AddressError.ServiceUnavailable -> "No pudimos validar la dirección ahora. Ubicá el pin en el mapa o intentá más tarde"
+        AddressError.NoConnection -> "Sin conexión, revisá tu internet"
+        is AddressError.Unknown -> "Ocurrió un error inesperado"
+    }
+
+    // endregion
+
     fun setDescripcion(value: String) {
         _uiState.update { it.copy(descripcion = value) }
     }
+
+    // region Horarios
 
     fun toggleDay(diaSemana: Int) {
         _uiState.update { state ->
@@ -232,6 +384,8 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
+    // endregion
+
     fun submitFull(onSuccess: () -> Unit) {
         val state = _uiState.value
         val categoryId = state.selectedCategoryId
@@ -257,8 +411,8 @@ class OnboardingViewModel @Inject constructor(
                         businessName = state.businessName,
                         categoryId = categoryId,
                         direccion = state.direccion,
-                        latitud = state.latitud,
-                        longitud = state.longitud,
+                        latitud = state.confirmedLatitud,
+                        longitud = state.confirmedLongitud,
                         descripcion = state.descripcion,
                         horarios = horarios,
                     ),
@@ -269,44 +423,11 @@ class OnboardingViewModel @Inject constructor(
                 } else {
                     _uiState.update { it.copy(isSubmitting = false, error = "No pudimos guardar tu negocio") }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSubmitting = false, error = "Sin conexión, probá de nuevo") }
             }
         }
     }
-
-    fun validateAddress() {
-        val direccion = _uiState.value.direccion
-        viewModelScope.launch {
-            _uiState.update { it.copy(isValidatingAddress = true, error = null) }
-            when (val result = validateAddressUseCase(direccion)) {
-                is Result.Success -> _uiState.update {
-                    it.copy(
-                        direccion = result.value.formattedAddress,
-                        latitud = result.value.latitude,
-                        longitud = result.value.longitude,
-                        isLocationConfirmed = true,
-                        isValidatingAddress = false,
-                    )
-                }
-                is Result.Failure -> _uiState.update {
-                    it.copy(
-                        isValidatingAddress = false,
-                        isLocationConfirmed = false,
-                        error = result.error.toMessage(),
-                    )
-                }
-            }
-        }
-    }
-
-    private fun AddressError.toMessage(): String = when (this) {
-        AddressError.Empty -> "Ingresá una dirección"
-        AddressError.NotFound -> "No encontramos esa dirección. Revisá la calle y la altura"
-        AddressError.MissingNumber -> "Agregá la altura de la calle a la dirección"
-        AddressError.ServiceUnavailable -> "No pudimos validar la dirección ahora. Intentá más tarde"
-        AddressError.NoConnection -> "Sin conexión, revisá tu internet"
-        is AddressError.Unknown -> "Ocurrió un error inesperado"
-    }
-
 }

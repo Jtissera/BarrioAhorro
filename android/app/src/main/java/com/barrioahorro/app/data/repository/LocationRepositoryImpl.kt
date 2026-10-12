@@ -26,8 +26,13 @@ class LocationRepositoryImpl @Inject constructor(
     override suspend fun validateAddress(
         address: String,
         province: String?,
+        locality: String?,
     ): Result<ValidatedAddress, AddressError> {
-        val request = ValidateAddressRequestDto(direccion = address, provincia = province)
+        val request = ValidateAddressRequestDto(
+            direccion = address,
+            localidad = locality,
+            provincia = province,
+        )
         return runCatching { locationApiService.validateAddress(request) }
             .fold(
                 onSuccess = { response -> response.toResult() },

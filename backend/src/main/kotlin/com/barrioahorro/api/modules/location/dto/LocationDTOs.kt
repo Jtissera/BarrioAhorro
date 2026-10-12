@@ -8,6 +8,9 @@ data class ValidateAddressRequest(
     @field:Size(max = 200, message = "La dirección es demasiado larga")
     val direccion: String,
 
+    @field:Size(max = 100, message = "La localidad es demasiado larga")
+    val localidad: String? = null,
+
     val provincia: String? = null,
 )
 
@@ -24,4 +27,5 @@ data class AddressErrorResponse(
 enum class AddressErrorCode {
     ADDRESS_NOT_FOUND,
     MISSING_NUMBER,
+    GEOREF_UNAVAILABLE,
 }

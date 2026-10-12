@@ -13,6 +13,7 @@ class ValidateAddressUseCase @Inject constructor(
     suspend operator fun invoke(
         address: String,
         province: String? = null,
+        locality: String? = null,
     ): Result<ValidatedAddress, AddressError> {
         val trimmed = address.trim()
 
@@ -20,7 +21,11 @@ class ValidateAddressUseCase @Inject constructor(
             return Result.Failure(AddressError.Empty)
         }
 
-        return locationRepository.validateAddress(trimmed, province)
+        return locationRepository.validateAddress(
+            address = trimmed,
+            province = province,
+            locality = locality?.trim()?.takeIf { it.isNotEmpty() },
+        )
     }
 }
 

@@ -1,8 +1,10 @@
 package com.barrioahorro.api.modules.location
 
+import com.barrioahorro.api.modules.location.dto.AddressErrorCode
 import com.barrioahorro.api.modules.location.dto.AddressErrorResponse
 import com.barrioahorro.api.modules.location.dto.ValidateAddressRequest
 import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -21,7 +23,12 @@ class LocationController(
             is AddressValidationResult.Valid ->
                 ResponseEntity.ok(result.address)
 
-            is AddressValidationResult.Invalid ->
-                ResponseEntity.unprocessableEntity().body(AddressErrorResponse(result.code))
+            is AddressValidationResult.Invalid -> {
+                val status = when (result.code) {
+                    AddressErrorCode.GEOREF_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE
+                    else -> HttpStatus.UNPROCESSABLE_ENTITY
+                }
+                ResponseEntity.status(status).body(AddressErrorResponse(result.code))
+            }
         }
 }

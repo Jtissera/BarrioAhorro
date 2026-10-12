@@ -25,12 +25,13 @@ class GeorefClient(
         )
         .build()
 
-    fun buscarDireccion(direccion: String, provincia: String?): GeorefResponse {
+    fun buscarDireccion(direccion: String, localidad: String?, provincia: String?): GeorefResponse {
         try {
             return restClient.get()
                 .uri { uriBuilder ->
                     uriBuilder.path("/direcciones")
                         .queryParam("direccion", direccion)
+                        .queryParamIfPresent("localidad", Optional.ofNullable(localidad))
                         .queryParamIfPresent("provincia", Optional.ofNullable(provincia))
                         .queryParam("max", 1)
                         .build()

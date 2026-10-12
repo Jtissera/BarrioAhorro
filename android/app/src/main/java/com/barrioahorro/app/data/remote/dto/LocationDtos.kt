@@ -3,6 +3,7 @@ package com.barrioahorro.app.data.remote.dto
 data class ValidateAddressRequestDto(
     val direccion: String,
     val provincia: String?,
+    val localidad: String? = null
 )
 
 data class ValidateAddressResponseDto(

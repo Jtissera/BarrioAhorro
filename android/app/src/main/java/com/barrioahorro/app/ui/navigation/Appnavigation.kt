@@ -108,17 +108,25 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
 
             BusinessLocationScreen(
                 direccion = state.direccion,
-                latitud = state.latitud,
-                longitud = state.longitud,
+                localidad = state.localidad,
+                pinLatitud = state.pinLatitud,
+                pinLongitud = state.pinLongitud,
                 isFetchingLocation = state.isFetchingLocation,
                 isValidatingAddress = state.isValidatingAddress,
-                isLocationConfirmed = state.isLocationConfirmed,
+                isResolvingPinAddress = state.isResolvingPinAddress,
                 errorMessage = state.error,
                 onDireccionChange = viewModel::setDireccion,
-                onRequestCurrentLocation = viewModel::fetchCurrentLocation,
+                onLocalidadChange = viewModel::setLocalidad,
                 onValidateAddress = viewModel::validateAddress,
+                onRequestCurrentLocation = viewModel::fetchCurrentLocation,
+                onLocationPermissionDenied = viewModel::onLocationPermissionDenied,
+                onPinMoved = viewModel::onPinMoved,
                 onBack = { navController.popBackStack() },
-                onContinue = { navController.navigate(OnboardingRoutes.BUSINESS_SCHEDULE) },
+                onContinue = {
+                    if (viewModel.confirmLocation()) {
+                        navController.navigate(OnboardingRoutes.BUSINESS_SCHEDULE)
+                    }
+                },
             )
         }
 

@@ -7,6 +7,7 @@ interface ILocationRepository {
 
     suspend fun validateAddress(
         address: String,
-        province: String? = null,
+        province: String?,
+        locality: String?,
     ): Result<ValidatedAddress, AddressError>
 }
