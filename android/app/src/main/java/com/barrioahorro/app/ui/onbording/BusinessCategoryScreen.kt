@@ -1,14 +1,55 @@
 package com.barrioahorro.app.ui.screens.onboarding
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material3.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.BakeryDining
+import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.CleaningServices
+import androidx.compose.material.icons.outlined.Cookie
+import androidx.compose.material.icons.outlined.Eco
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.LocalPharmacy
+import androidx.compose.material.icons.outlined.SetMeal
+import androidx.compose.material.icons.outlined.Store
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.barrioahorro.app.R
+import com.barrioahorro.app.ui.components.feedback.ErrorCard
+import com.barrioahorro.app.ui.components.onboarding.ONBOARDING_TOTAL_STEPS
+import com.barrioahorro.app.ui.components.onboarding.OnboardingPrimaryButton
+import com.barrioahorro.app.ui.components.onboarding.OnboardingTopBar
+import java.text.Normalizer
+
+private const val CURRENT_STEP = 2
 
 @Composable
 fun BusinessCategoryScreen(
@@ -21,66 +62,170 @@ fun BusinessCategoryScreen(
     onBack: () -> Unit,
     onFinish: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-        Text(text = "Paso 2 de 4", style = MaterialTheme.typography.labelMedium)
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(text = "¿A qué se dedica?", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Elegí el rubro que mejor lo describe. Así aparece en las búsquedas correctas.",
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        Spacer(modifier = Modifier.height(24.dp))
+    val background = colorResource(R.color.splash_background)
+    val textSecondary = colorResource(R.color.text_secondary)
 
-        errorMessage?.let {
-            Text(text = it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            Spacer(modifier = Modifier.height(12.dp))
-        }
+    Scaffold(containerColor = background) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+        ) {
+            OnboardingTopBar(currentStep = CURRENT_STEP, onBack = onBack)
 
-        if (isLoadingCategories) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f),
-            ) {
-                items(categories) { category ->
-                    val isSelected = category.id == selectedCategoryId
-                    if (isSelected) {
-                        Button(onClick = { onSelectCategory(category.id) }, modifier = Modifier.fillMaxWidth()) {
-                            Text(category.name)
-                        }
-                    } else {
-                        OutlinedButton(onClick = { onSelectCategory(category.id) }, modifier = Modifier.fillMaxWidth()) {
-                            Text(category.name)
-                        }
+            Text(
+                text = "PASO $CURRENT_STEP DE $ONBOARDING_TOTAL_STEPS",
+                style = MaterialTheme.typography.labelSmall,
+                color = textSecondary,
+                modifier = Modifier.padding(top = 24.dp),
+            )
+            Text(
+                text = "¿Cuál es tu rubro?",
+                style = MaterialTheme.typography.headlineMedium,
+                color = colorResource(R.color.text_primary),
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            Text(
+                text = "Elegí uno. Lo usamos para que te encuentren al filtrar.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = textSecondary,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+
+            ErrorCard(title = errorMessage)
+
+            if (isLoadingCategories) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(color = colorResource(R.color.primary))
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(top = 20.dp),
+                ) {
+                    items(categories, key = { it.id }) { category ->
+                        CategoryCard(
+                            name = category.name,
+                            icon = categoryIcon(category.name),
+                            isSelected = category.id == selectedCategoryId,
+                            onClick = { onSelectCategory(category.id) },
+                        )
                     }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(onClick = onBack, enabled = !isSubmitting, modifier = Modifier.width(56.dp)) {
-                Text("<")
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(vertical = 16.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Info,
+                    contentDescription = null,
+                    tint = colorResource(R.color.secondary),
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Los vecinos podrán encontrar tus ofertas buscando directamente esta categoría.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = textSecondary,
+                )
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Button(
+
+            OnboardingPrimaryButton(
+                text = "Siguiente →",
                 onClick = onFinish,
                 enabled = selectedCategoryId != null && !isSubmitting,
-                modifier = Modifier.weight(1f),
+                isLoading = isSubmitting,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CategoryCard(
+    name: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    val primary = colorResource(R.color.primary)
+    val contentColor = if (isSelected) primary else colorResource(R.color.text_primary)
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = if (isSelected) colorResource(R.color.primary_container) else colorResource(R.color.surface_card),
+        border = if (isSelected) BorderStroke(1.5.dp, primary) else null,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(104.dp),
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxSize(),
             ) {
-                if (isSubmitting) {
-                    CircularProgressIndicator(modifier = Modifier.height(20.dp).width(20.dp))
-                } else {
-                    Text("Continuar")
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(28.dp),
+                )
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = contentColor,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+
+            if (isSelected) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .size(20.dp)
+                        .background(primary, CircleShape),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = "Seleccionado",
+                        tint = colorResource(R.color.on_primary),
+                        modifier = Modifier.size(12.dp),
+                    )
                 }
             }
         }
+    }
+}
+
+/** Los rubros vienen del backend (id + nombre): el ícono se elige por nombre. */
+private fun categoryIcon(name: String): ImageVector {
+    val normalized = Normalizer.normalize(name.lowercase(), Normalizer.Form.NFD)
+        .replace(Regex("\\p{M}+"), "")
+
+    return when {
+        "almacen" in normalized -> Icons.Outlined.Store
+        "carnicer" in normalized -> Icons.Outlined.SetMeal
+        "verduler" in normalized -> Icons.Outlined.Eco
+        "panader" in normalized -> Icons.Outlined.BakeryDining
+        "farmacia" in normalized -> Icons.Outlined.LocalPharmacy
+        "limpieza" in normalized -> Icons.Outlined.CleaningServices
+        "kiosco" in normalized -> Icons.Outlined.Cookie
+        else -> Icons.Outlined.Category
     }
 }

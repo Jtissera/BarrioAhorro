@@ -7,6 +7,7 @@ import com.barrioahorro.app.data.remote.dto.LoginRequestDto
 import com.barrioahorro.app.data.remote.dto.RegisterRequestDto
 import com.barrioahorro.app.domain.model.AuthError
 import com.barrioahorro.app.domain.model.AuthSession
+import com.barrioahorro.app.domain.model.SessionRefreshResult
 import com.barrioahorro.app.domain.model.UserType
 import com.barrioahorro.app.domain.repository.IAuthRepository
 import com.barrioahorro.app.domain.repository.Result
@@ -77,4 +78,21 @@ class AuthRepositoryImpl @Inject constructor(
                 else -> AuthError.Unknown(message = message)
             },
         )
+
+    override suspend fun refreshSession(): SessionRefreshResult =
+        runCatching { authApiService.refresh() }.fold(
+            onSuccess = { response ->
+                val body = response.body()
+                when {
+                    response.isSuccessful && body != null -> {
+                        authTokenDataStore.saveSession(body.accessToken, body.tipoUsuario)
+                        SessionRefreshResult.REFRESHED
+                    }
+                    response.code() == 401 || response.code() == 403 -> SessionRefreshResult.REJECTED
+                    else -> SessionRefreshResult.UNREACHABLE
+                }
+            },
+            onFailure = { SessionRefreshResult.UNREACHABLE },
+        )
 }
+

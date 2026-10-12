@@ -39,30 +39,15 @@ import androidx.compose.ui.unit.dp
 import com.barrioahorro.app.R
 import kotlinx.coroutines.flow.first
 
-// Colores muestreados del mockup A1 (captura, así que pueden diferir 1-2 niveles del original).
-// Reemplazar por los del tema cuando estén definidos.
-// El crema NO está acá: vive en res/values/splash.xml (splash_background) para que el splash
-// del sistema y este tengan exactamente el mismo fondo y la transición no se note.
+
 private val SplashRed = Color(0xFFD42E12)
 private val SplashBrown = Color(0xFF2F1A11)
 
 private val EaseOutBack = CubicBezierEasing(0.34f, 1.56f, 0.64f, 1f)
-private const val STRIPE_COUNT = 14      // 7 rojas + 7 de fondo, como en el mockup
+private const val STRIPE_COUNT = 14
 private const val STRIPE_STAGGER = 4f
-private const val FADE_HALF_WIDTH = 3f   // en rayas; el mockup aclara las del centro
 
-/**
- * Splash en Compose (mockup A1). Toda la secuencia corre sobre una única línea de tiempo 0..1
- * de [minDisplayMillis]; cada elemento anima en un tramo de esa línea:
- *
- *   0.00–0.40  rayas del toldo "caen" de izquierda a derecha
- *   0.15–0.55  logo: fade + sube + escala con rebote leve
- *   0.50–0.75  eslogan: fade + sube
- *   0.00–1.00  barra de progreso inferior
- *
- * Llama a [onFinished] cuando terminó la animación Y [isReady] es true. Así, más adelante,
- * el ViewModel puede pasar isReady = false mientras resuelve la sesión sin tocar esta pantalla.
- */
+
 @Composable
 fun SplashScreen(
     onFinished: () -> Unit,
@@ -175,7 +160,6 @@ private fun ProgressBar(progress: () -> Float, modifier: Modifier = Modifier) {
     }
 }
 
-/** Mapea [t] (0..1 global) al tramo [start]..[end], normalizado a 0..1 y con easing. */
 private fun segment(
     t: Float,
     start: Float,

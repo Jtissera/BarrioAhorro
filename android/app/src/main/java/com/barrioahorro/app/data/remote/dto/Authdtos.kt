@@ -22,3 +22,9 @@ data class AuthResponseDto(
     val email: String,
     val tipoUsuario: String,
 )
+
+@Serializable
+data class RefreshResponseDto(
+    val accessToken: String,
+    val tipoUsuario: String,
+)

@@ -16,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Info
@@ -35,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -43,6 +43,11 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import com.barrioahorro.app.R
+import com.barrioahorro.app.ui.components.feedback.ErrorCard
+import com.barrioahorro.app.ui.components.onboarding.OnboardingPrimaryButton
+import com.barrioahorro.app.ui.components.onboarding.OnboardingTopBar
+import com.barrioahorro.app.ui.components.onboarding.onboardingFieldColors
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.DelayedMapListener
 import org.osmdroid.events.MapListener
@@ -61,6 +66,7 @@ private const val DEFAULT_ZOOM = 11.0
 private const val PIN_ZOOM = 17.0
 private const val COORD_EPSILON = 1e-5
 private const val RECENT_TOUCH_MS = 3000L
+private const val CURRENT_STEP = 3
 
 @Composable
 fun BusinessLocationScreen(
@@ -84,13 +90,18 @@ fun BusinessLocationScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
+    val primary = colorResource(R.color.primary)
+    val textPrimary = colorResource(R.color.text_primary)
+    val textSecondary = colorResource(R.color.text_secondary)
+    val inactive = colorResource(R.color.neutral_inactive)
+
     val isBusy = isFetchingLocation || isValidatingAddress
     val hasPin = pinLatitud != null && pinLongitud != null
     val canContinue = hasPin && direccion.isNotBlank() && localidad.isNotBlank() && !isBusy
 
-    val helperMessage: String? = when {
-        errorMessage != null -> errorMessage
-        hasPin && !isBusy && !isResolvingPinAddress && (direccion.isBlank() || localidad.isBlank()) ->
+    val hintMessage: String? = when {
+        errorMessage == null && hasPin && !isBusy && !isResolvingPinAddress &&
+                (direccion.isBlank() || localidad.isBlank()) ->
             "Completá la dirección y la localidad de este punto para continuar."
         else -> null
     }
@@ -125,151 +136,161 @@ fun BusinessLocationScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-    ) {
-        StepHeader(currentStep = 3, totalSteps = 5, onBack = onBack)
-
-        Spacer(modifier = Modifier.height(20.dp))
-        PointOfSaleChip()
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = "¿Dónde queda tu comercio?",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Esta dirección va a ser la que vean los vecinos en el mapa para encontrarte y retirar pedidos.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedButton(
-            onClick = { requestLocation() },
-            enabled = !isBusy,
-            shape = RoundedCornerShape(50),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+    Scaffold(containerColor = colorResource(R.color.splash_background)) { paddingValues ->
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 24.dp, vertical = 16.dp),
         ) {
-            if (isFetchingLocation) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-            } else {
-                Icon(Icons.Filled.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Usar mi ubicación actual")
-            }
-        }
+            OnboardingTopBar(currentStep = CURRENT_STEP, onBack = onBack)
 
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+            PointOfSaleChip()
+            Spacer(modifier = Modifier.height(12.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            OutlinedTextField(
-                value = direccion,
-                onValueChange = onDireccionChange,
-                label = { Text("Calle y altura") },
-                trailingIcon = {
-                    if (isValidatingAddress || isResolvingPinAddress) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                    } else if (direccion.isNotBlank()) {
-                        IconButton(onClick = { onDireccionChange("") }) {
-                            Icon(Icons.Filled.Close, contentDescription = "Borrar dirección")
-                        }
-                    }
-                },
-                singleLine = true,
-                enabled = !isBusy,
-                shape = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Next) },
-                ),
-                modifier = Modifier.weight(3f),
-            )
-
-            OutlinedTextField(
-                value = localidad,
-                onValueChange = onLocalidadChange,
-                label = { Text("Localidad") },
-                singleLine = true,
-                enabled = !isBusy,
-                shape = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(
-                    onSearch = {
-                        focusManager.clearFocus()
-                        onValidateAddress()
-                    },
-                ),
-                modifier = Modifier.weight(2f),
-            )
-        }
-
-        helperMessage?.let { message ->
-            Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = message,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (errorMessage != null) {
-                    MaterialTheme.colorScheme.error
+                text = "¿Dónde queda tu comercio?",
+                style = MaterialTheme.typography.headlineMedium,
+                color = textPrimary,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Esta dirección va a ser la que vean los vecinos en el mapa para encontrarte y retirar pedidos.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = textSecondary,
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedButton(
+                onClick = { requestLocation() },
+                enabled = !isBusy,
+                shape = CircleShape,
+                border = BorderStroke(1.5.dp, if (isBusy) inactive else primary),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = primary,
+                    disabledContentColor = inactive,
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+            ) {
+                if (isFetchingLocation) {
+                    CircularProgressIndicator(
+                        color = primary,
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                    )
                 } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
+                    Icon(Icons.Filled.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = "Usar mi ubicación actual", style = MaterialTheme.typography.labelLarge)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedTextField(
+                    value = direccion,
+                    onValueChange = onDireccionChange,
+                    label = { Text("Calle y altura") },
+                    trailingIcon = {
+                        if (isValidatingAddress || isResolvingPinAddress) {
+                            CircularProgressIndicator(
+                                color = primary,
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                            )
+                        } else if (direccion.isNotBlank()) {
+                            IconButton(onClick = { onDireccionChange("") }) {
+                                Icon(Icons.Filled.Close, contentDescription = "Borrar dirección")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    enabled = !isBusy,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = onboardingFieldColors(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) },
+                    ),
+                    modifier = Modifier.weight(3f),
+                )
+
+                OutlinedTextField(
+                    value = localidad,
+                    onValueChange = onLocalidadChange,
+                    label = { Text("Localidad") },
+                    singleLine = true,
+                    enabled = !isBusy,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = onboardingFieldColors(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            focusManager.clearFocus()
+                            onValidateAddress()
+                        },
+                    ),
+                    modifier = Modifier.weight(2f),
+                )
+            }
+
+            ErrorCard(title = errorMessage)
+
+            hintMessage?.let { message ->
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = textSecondary,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            LocationPickerMap(
+                pinLatitud = pinLatitud,
+                pinLongitud = pinLongitud,
+                onPinMoved = onPinMoved,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .heightIn(min = 180.dp),
             )
-        }
 
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        LocationPickerMap(
-            pinLatitud = pinLatitud,
-            pinLongitud = pinLongitud,
-            onPinMoved = onPinMoved,
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .heightIn(min = 180.dp),
-        )
+            Row(verticalAlignment = Alignment.Top) {
+                Icon(
+                    Icons.Filled.Info,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = colorResource(R.color.tertiary),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Podés editarla después desde tu perfil sin costo ni demoras.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = textSecondary,
+                )
+            }
 
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+            NeighborhoodVisibilityCard()
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Row(verticalAlignment = Alignment.Top) {
-            Icon(
-                Icons.Filled.Info,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.primary,
+            OnboardingPrimaryButton(
+                text = "Siguiente",
+                onClick = onContinue,
+                enabled = canContinue,
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Podés editarla después desde tu perfil sin costo ni demoras.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-        NeighborhoodVisibilityCard()
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = onContinue,
-            enabled = canContinue,
-            shape = RoundedCornerShape(50),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-        ) {
-            Text("Siguiente")
         }
     }
 }
@@ -284,6 +305,10 @@ private fun LocationPickerMap(
 ) {
     val context = LocalContext.current
     val hasPin = pinLatitud != null && pinLongitud != null
+
+    val primary = colorResource(R.color.primary)
+    val onPrimary = colorResource(R.color.on_primary)
+    val surfaceCard = colorResource(R.color.surface_card)
 
     val currentOnPinMoved by rememberUpdatedState(onPinMoved)
     val currentPinLat by rememberUpdatedState(pinLatitud)
@@ -394,13 +419,13 @@ private fun LocationPickerMap(
                     .offset(y = (-22).dp)
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
+                    .background(primary),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.Filled.Storefront,
                     contentDescription = "Ubicación de tu comercio",
-                    tint = MaterialTheme.colorScheme.onPrimary,
+                    tint = onPrimary,
                     modifier = Modifier.size(22.dp),
                 )
             }
@@ -409,7 +434,7 @@ private fun LocationPickerMap(
                     .align(Alignment.Center)
                     .size(6.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
+                    .background(primary),
             )
         }
 
@@ -417,13 +442,14 @@ private fun LocationPickerMap(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = 12.dp),
-            shape = RoundedCornerShape(50),
-            color = MaterialTheme.colorScheme.surface,
+            shape = CircleShape,
+            color = surfaceCard,
             shadowElevation = 2.dp,
         ) {
             Text(
                 text = if (hasPin) "Ajustá el pin si hace falta" else "Buscá tu dirección o mové el mapa",
                 style = MaterialTheme.typography.labelMedium,
+                color = colorResource(R.color.text_primary),
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             )
         }
@@ -432,9 +458,10 @@ private fun LocationPickerMap(
         Text(
             text = "© OpenStreetMap contributors",
             style = MaterialTheme.typography.labelSmall,
+            color = colorResource(R.color.text_secondary),
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
+                .background(surfaceCard.copy(alpha = 0.7f))
                 .padding(horizontal = 4.dp, vertical = 2.dp),
         )
     }
@@ -447,37 +474,12 @@ private tailrec fun Context.findLifecycleOwner(): LifecycleOwner? = when (this) 
 }
 
 @Composable
-private fun StepHeader(currentStep: Int, totalSteps: Int, onBack: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
-        }
-        Row(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            repeat(totalSteps) { index ->
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(4.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (index < currentStep) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outlineVariant,
-                        ),
-                )
-            }
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-    }
-}
-
-@Composable
 private fun PointOfSaleChip() {
+    val green = colorResource(R.color.secondary)
+
     Surface(
-        shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.tertiaryContainer,
+        shape = CircleShape,
+        color = green.copy(alpha = 0.12f),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -487,14 +489,13 @@ private fun PointOfSaleChip() {
                 Icons.Filled.Storefront,
                 contentDescription = null,
                 modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                tint = green,
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = "TU PUNTO DE VENTA",
                 style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                color = green,
             )
         }
     }
@@ -502,10 +503,12 @@ private fun PointOfSaleChip() {
 
 @Composable
 private fun NeighborhoodVisibilityCard() {
-    Card(
+    val green = colorResource(R.color.secondary)
+
+    Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        color = green.copy(alpha = 0.10f),
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -515,25 +518,26 @@ private fun NeighborhoodVisibilityCard() {
                 modifier = Modifier
                     .size(40.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.surface),
+                    .background(colorResource(R.color.surface_card)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.Filled.Groups,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = green,
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
                     text = "Visibilidad en tu radio barrial",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = colorResource(R.color.text_primary),
                 )
                 Text(
                     text = "Los vecinos que viven cerca recibirán tus ofertas al instante.",
                     style = MaterialTheme.typography.bodySmall,
+                    color = colorResource(R.color.text_secondary),
                 )
             }
         }

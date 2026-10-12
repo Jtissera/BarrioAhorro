@@ -12,14 +12,17 @@ import javax.inject.Inject
 private val KEY_ACCESS_TOKEN = stringPreferencesKey("access_token")
 private val KEY_USER_TYPE = stringPreferencesKey("user_type")
 
-
 class AuthTokenDataStore @Inject constructor(
     private val dataStore: DataStore<Preferences>,
 ) {
 
     val accessToken: Flow<String?> = dataStore.data.map { it[KEY_ACCESS_TOKEN] }
 
+    val userType: Flow<String?> = dataStore.data.map { it[KEY_USER_TYPE] }
+
     suspend fun currentToken(): String? = accessToken.first()
+
+    suspend fun currentUserType(): String? = userType.first()
 
     suspend fun saveSession(accessToken: String, userType: String) {
         dataStore.edit { prefs ->

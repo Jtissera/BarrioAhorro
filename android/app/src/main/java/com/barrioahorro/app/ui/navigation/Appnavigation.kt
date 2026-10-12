@@ -28,6 +28,8 @@ import com.barrioahorro.app.ui.screens.onboarding.BusinessScheduleScreen
 import com.barrioahorro.app.ui.screens.onboarding.OnboardingViewModel
 import com.barrioahorro.app.ui.screens.splash.SplashScreen
 import com.barrioahorro.app.ui.screens.auth.RoleSelectionScreen
+import com.barrioahorro.app.ui.screens.splash.SplashDestination
+import com.barrioahorro.app.ui.screens.splash.SplashViewModel
 
 @Composable
 fun AppNavigation(
@@ -47,13 +49,22 @@ fun AppNavigation(
 
 fun NavGraphBuilder.authGraph(navController: NavHostController) {
     composable(SplashRoutes.SPLASH) {
-        SplashScreen(onFinished = {
-            navController.navigate(AuthRoutes.ROLE_SELECTION) {
-                popUpTo(SplashRoutes.SPLASH) { inclusive = true }
-            }
-        })
-    }
+        val splashViewModel: SplashViewModel = hiltViewModel()
+        val destination by splashViewModel.destination.collectAsStateWithLifecycle()
 
+        SplashScreen(
+            isReady = destination != null,
+            onFinished = {
+                val target = when (val d = destination) {
+                    is SplashDestination.Home -> AuthRoutes.success(d.userType.name)
+                    else -> AuthRoutes.ROLE_SELECTION
+                }
+                navController.navigate(target) {
+                    popUpTo(SplashRoutes.SPLASH) { inclusive = true }
+                }
+            },
+        )
+    }
     composable(AuthRoutes.ROLE_SELECTION) {
         RoleSelectionScreen(
             onContinue = { userType -> navController.navigate(AuthRoutes.register(userType)) },
@@ -102,9 +113,14 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
             val viewModel: OnboardingViewModel = hiltViewModel(
                 remember(backStackEntry) { navController.getBackStackEntry(OnboardingRoutes.GRAPH) },
             )
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+
             BusinessNameScreen(
-                onContinue = { businessName ->
-                    viewModel.setBusinessName(businessName)
+                initialName = state.businessName,
+                initialDescription = state.descripcion,
+                onContinue = { name, descripcion ->
+                    viewModel.setBusinessName(name)
+                    viewModel.setDescripcion(descripcion)
                     navController.navigate(OnboardingRoutes.BUSINESS_CATEGORY)
                 },
             )
