@@ -16,9 +16,11 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.barrioahorro.app.domain.model.UserType
+import com.barrioahorro.app.ui.onbording.BusinessCommitmentScreen
 import com.barrioahorro.app.ui.screens.auth.AuthSuccessScreen
 import com.barrioahorro.app.ui.screens.auth.LoginScreen
 import com.barrioahorro.app.ui.screens.auth.RegisterScreen
+import com.barrioahorro.app.ui.screens.auth.RoleSelectionScreen
 import com.barrioahorro.app.ui.screens.business.EditBusinessProfileScreen
 import com.barrioahorro.app.ui.screens.business.EditBusinessProfileViewModel
 import com.barrioahorro.app.ui.screens.onboarding.BusinessCategoryScreen
@@ -26,9 +28,8 @@ import com.barrioahorro.app.ui.screens.onboarding.BusinessLocationScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessNameScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessScheduleScreen
 import com.barrioahorro.app.ui.screens.onboarding.OnboardingViewModel
-import com.barrioahorro.app.ui.screens.splash.SplashScreen
-import com.barrioahorro.app.ui.screens.auth.RoleSelectionScreen
 import com.barrioahorro.app.ui.screens.splash.SplashDestination
+import com.barrioahorro.app.ui.screens.splash.SplashScreen
 import com.barrioahorro.app.ui.screens.splash.SplashViewModel
 
 @Composable
@@ -65,6 +66,7 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
             },
         )
     }
+
     composable(AuthRoutes.ROLE_SELECTION) {
         RoleSelectionScreen(
             onContinue = { userType -> navController.navigate(AuthRoutes.register(userType)) },
@@ -182,11 +184,7 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
             val state by viewModel.uiState.collectAsStateWithLifecycle()
 
             BusinessScheduleScreen(
-                descripcion = state.descripcion,
                 schedule = state.schedule,
-                isSubmitting = state.isSubmitting,
-                errorMessage = state.error,
-                onDescripcionChange = viewModel::setDescripcion,
                 onToggleDay = viewModel::toggleDay,
                 onAddSlot = viewModel::addSlot,
                 onRemoveSlot = viewModel::removeSlot,
@@ -194,7 +192,21 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 onUpdateSlotEnd = { dia, slotId, time -> viewModel.updateSlotTime(dia, slotId, horaFin = time) },
                 onCopyMondayToAll = viewModel::copyMondayToAll,
                 onBack = { navController.popBackStack() },
-                onFinish = {
+                onNext = { navController.navigate(OnboardingRoutes.BUSINESS_COMMITMENT) },
+            )
+        }
+
+        composable(OnboardingRoutes.BUSINESS_COMMITMENT) { backStackEntry ->
+            val viewModel: OnboardingViewModel = hiltViewModel(
+                remember(backStackEntry) { navController.getBackStackEntry(OnboardingRoutes.GRAPH) },
+            )
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+            BusinessCommitmentScreen(
+                isSubmitting = state.isSubmitting,
+                errorMessage = state.error,
+                onBack = { navController.popBackStack() },
+                onAccept = {
                     viewModel.submitFull(
                         onSuccess = {
                             navController.navigate(AuthRoutes.success(UserType.COMERCIO.name)) {
@@ -205,8 +217,8 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 },
             )
         }
-    }
-}
+    } // cierra navigation(...)
+} // cierra onboardingGraph
 
 fun NavGraphBuilder.businessGraph(navController: NavHostController) {
     composable(BusinessRoutes.EDIT_PROFILE) {
@@ -237,7 +249,7 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
     }
 }
 
-private fun NavHostController.navigateAfterAuth(userType: UserType) {
+fun NavHostController.navigateAfterAuth(userType: UserType) {
     if (userType == UserType.COMERCIO) {
         navigate(OnboardingRoutes.BUSINESS_NAME) {
             popUpTo(AuthRoutes.LOGIN) { inclusive = true }

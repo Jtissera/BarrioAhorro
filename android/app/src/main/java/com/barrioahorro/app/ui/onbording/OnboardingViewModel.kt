@@ -331,7 +331,10 @@ class OnboardingViewModel @Inject constructor(
         _uiState.update { state ->
             state.copy(
                 schedule = state.schedule.map { day ->
-                    if (day.diaSemana == diaSemana) day.copy(slots = day.slots + TimeSlotUi()) else day
+                    if (day.diaSemana != diaSemana) return@map day
+                    val start = day.slots.maxOfOrNull { it.horaFin } ?: "09:00"
+                    val end = if (start < "20:00") "20:00" else "23:59"
+                    day.copy(slots = day.slots + TimeSlotUi(horaInicio = start, horaFin = end))
                 },
             )
         }
