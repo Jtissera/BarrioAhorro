@@ -2,6 +2,7 @@ package com.barrioahorro.app.data.remote.api
 
 import com.barrioahorro.app.data.remote.dto.AuthResponseDto
 import com.barrioahorro.app.data.remote.dto.LoginRequestDto
+import com.barrioahorro.app.data.remote.dto.RefreshResponseDto
 import com.barrioahorro.app.data.remote.dto.RegisterRequestDto
 import retrofit2.Response
 import retrofit2.http.Body
@@ -14,4 +15,7 @@ interface AuthApiService {
 
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequestDto): Response<AuthResponseDto>
+
+    @POST("api/session/refresh")
+    suspend fun refresh(): Response<RefreshResponseDto>
 }

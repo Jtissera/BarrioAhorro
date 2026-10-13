@@ -7,6 +7,7 @@ import com.barrioahorro.app.data.remote.dto.LoginRequestDto
 import com.barrioahorro.app.data.remote.dto.RegisterRequestDto
 import com.barrioahorro.app.domain.model.AuthError
 import com.barrioahorro.app.domain.model.AuthSession
+import com.barrioahorro.app.domain.model.SessionRefreshResult
 import com.barrioahorro.app.domain.model.UserType
 import com.barrioahorro.app.domain.repository.IAuthRepository
 import com.barrioahorro.app.domain.repository.Result
@@ -25,10 +26,9 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun register(
         email: String,
         password: String,
-        confirmPassword: String,
         userType: UserType,
     ): Result<AuthSession, AuthError> {
-        val request = RegisterRequestDto(email, password, confirmPassword, userType.name)
+        val request = RegisterRequestDto(email, password, userType.name)
         return runCatching { authApiService.register(request) }
             .fold(
                 onSuccess = { response -> response.toSessionResult() },
@@ -51,7 +51,7 @@ class AuthRepositoryImpl @Inject constructor(
     private suspend fun Response<AuthResponseDto>.toSessionResult(): Result<AuthSession, AuthError> {
         val body = body()
         if (!isSuccessful || body == null) {
-            return Result.Failure(mapHttpError(code()))
+            return Result.Failure(mapHttpError(code(), errorBody()?.string()))
         }
 
         authTokenDataStore.saveSession(body.accessToken, body.tipoUsuario)
@@ -66,12 +66,11 @@ class AuthRepositoryImpl @Inject constructor(
         )
     }
 
-    private fun mapHttpError(httpCode: Int): AuthError = when (httpCode) {
+    private fun mapHttpError(httpCode: Int, errorBody: String?): AuthError = when (httpCode) {
         HTTP_UNAUTHORIZED -> AuthError.InvalidCredentials
         HTTP_CONFLICT -> AuthError.EmailAlreadyExists
-        else -> AuthError.Unknown(message = "Error del servidor ($httpCode)")
+        else -> AuthError.Unknown(message = "Error del servidor ($httpCode): ${errorBody.orEmpty().take(200)}")
     }
-
     private fun Throwable.toAuthResult(): Result<AuthSession, AuthError> =
         Result.Failure(
             when (this) {
@@ -79,4 +78,21 @@ class AuthRepositoryImpl @Inject constructor(
                 else -> AuthError.Unknown(message = message)
             },
         )
+
+    override suspend fun refreshSession(): SessionRefreshResult =
+        runCatching { authApiService.refresh() }.fold(
+            onSuccess = { response ->
+                val body = response.body()
+                when {
+                    response.isSuccessful && body != null -> {
+                        authTokenDataStore.saveSession(body.accessToken, body.tipoUsuario)
+                        SessionRefreshResult.REFRESHED
+                    }
+                    response.code() == 401 || response.code() == 403 -> SessionRefreshResult.REJECTED
+                    else -> SessionRefreshResult.UNREACHABLE
+                }
+            },
+            onFailure = { SessionRefreshResult.UNREACHABLE },
+        )
 }
+

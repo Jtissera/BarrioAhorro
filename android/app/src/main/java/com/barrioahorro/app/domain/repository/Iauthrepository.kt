@@ -2,6 +2,7 @@ package com.barrioahorro.app.domain.repository
 
 import com.barrioahorro.app.domain.model.AuthError
 import com.barrioahorro.app.domain.model.AuthSession
+import com.barrioahorro.app.domain.model.SessionRefreshResult
 import com.barrioahorro.app.domain.model.UserType
 
 interface IAuthRepository {
@@ -9,13 +10,14 @@ interface IAuthRepository {
     suspend fun register(
         email: String,
         password: String,
-        confirmPassword: String,
         userType: UserType,
     ): Result<AuthSession, AuthError>
 
     suspend fun login(email: String, password: String): Result<AuthSession, AuthError>
 
     suspend fun hasActiveSession(): Boolean
+
+    suspend fun refreshSession(): SessionRefreshResult
 }
 
 sealed class Result<out T, out E> {

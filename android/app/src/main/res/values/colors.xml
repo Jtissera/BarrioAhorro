@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Colores existentes de Android -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -7,4 +8,27 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Fondos -->
+    <color name="splash_background">#FBF6E6</color>
+    <color name="surface_card">#FFFFFF</color>
+    <color name="surface_secondary">#FFF9EC</color>
+
+    <!-- Marca: acciones principales -->
+    <color name="primary">#D42E12</color>
+    <color name="primary_pressed">#A8240D</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="primary_container">#FDE8E3</color>
+
+    <!-- Marca: colores secundarios -->
+    <color name="secondary">#2F6B55</color>
+    <color name="tertiary">#F2B134</color>
+
+    <!-- Textos -->
+    <color name="text_primary">#2E1F17</color>
+    <color name="text_secondary">#6B5A50</color>
+
+    <!-- Bordes y estados -->
+    <color name="neutral_inactive">#B9AFA6</color>
+    <color name="error">#B3261E</color>
 </resources>

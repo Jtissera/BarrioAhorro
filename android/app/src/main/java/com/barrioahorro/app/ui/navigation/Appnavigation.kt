@@ -16,9 +16,11 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.barrioahorro.app.domain.model.UserType
+import com.barrioahorro.app.ui.onbording.BusinessCommitmentScreen
 import com.barrioahorro.app.ui.screens.auth.AuthSuccessScreen
 import com.barrioahorro.app.ui.screens.auth.LoginScreen
 import com.barrioahorro.app.ui.screens.auth.RegisterScreen
+import com.barrioahorro.app.ui.screens.auth.RoleSelectionScreen
 import com.barrioahorro.app.ui.screens.business.EditBusinessProfileScreen
 import com.barrioahorro.app.ui.screens.business.EditBusinessProfileViewModel
 import com.barrioahorro.app.ui.screens.onboarding.BusinessCategoryScreen
@@ -26,6 +28,9 @@ import com.barrioahorro.app.ui.screens.onboarding.BusinessLocationScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessNameScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessScheduleScreen
 import com.barrioahorro.app.ui.screens.onboarding.OnboardingViewModel
+import com.barrioahorro.app.ui.screens.splash.SplashDestination
+import com.barrioahorro.app.ui.screens.splash.SplashScreen
+import com.barrioahorro.app.ui.screens.splash.SplashViewModel
 
 @Composable
 fun AppNavigation(
@@ -34,7 +39,7 @@ fun AppNavigation(
 ) {
     NavHost(
         navController = navController,
-        startDestination = AuthRoutes.LOGIN,
+        startDestination = SplashRoutes.SPLASH,
         modifier = modifier,
     ) {
         authGraph(navController = navController)
@@ -44,18 +49,55 @@ fun AppNavigation(
 }
 
 fun NavGraphBuilder.authGraph(navController: NavHostController) {
+    composable(SplashRoutes.SPLASH) {
+        val splashViewModel: SplashViewModel = hiltViewModel()
+        val destination by splashViewModel.destination.collectAsStateWithLifecycle()
+
+        SplashScreen(
+            isReady = destination != null,
+            onFinished = {
+                val target = when (val d = destination) {
+                    is SplashDestination.Home -> AuthRoutes.success(d.userType.name)
+                    else -> AuthRoutes.ROLE_SELECTION
+                }
+                navController.navigate(target) {
+                    popUpTo(SplashRoutes.SPLASH) { inclusive = true }
+                }
+            },
+        )
+    }
+
+    composable(AuthRoutes.ROLE_SELECTION) {
+        RoleSelectionScreen(
+            onContinue = { userType -> navController.navigate(AuthRoutes.register(userType)) },
+            onNavigateToLogin = { navController.navigate(AuthRoutes.LOGIN) },
+        )
+    }
+
     composable(AuthRoutes.LOGIN) {
         LoginScreen(
-            onNavigateToRegister = { navController.navigate(AuthRoutes.REGISTER) },
+            onBack = { navController.popBackStack() },
+            onNavigateToRegister = {
+                navController.popBackStack(AuthRoutes.ROLE_SELECTION, inclusive = false)
+            },
             onLoginSuccess = { userType -> navController.navigateAfterAuth(userType) },
         )
     }
-    composable(AuthRoutes.REGISTER) {
+
+    composable(
+        route = AuthRoutes.REGISTER_PATTERN,
+        arguments = listOf(navArgument("userType") { type = NavType.StringType }),
+    ) { backStackEntry ->
+        val userType = backStackEntry.arguments?.getString("userType")
+            ?.let { UserType.valueOf(it) } ?: UserType.CLIENTE
         RegisterScreen(
-            onNavigateToLogin = { navController.popBackStack() },
-            onRegisterSuccess = { userType -> navController.navigateAfterAuth(userType) },
+            userType = userType,
+            onBack = { navController.popBackStack() },
+            onNavigateToLogin = { navController.navigate(AuthRoutes.LOGIN) { launchSingleTop = true } },
+            onRegisterSuccess = { navController.navigateAfterAuth(it) },
         )
     }
+
     composable(
         route = AuthRoutes.SUCCESS_PATTERN,
         arguments = listOf(navArgument("userType") { type = NavType.StringType }),
@@ -73,9 +115,14 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
             val viewModel: OnboardingViewModel = hiltViewModel(
                 remember(backStackEntry) { navController.getBackStackEntry(OnboardingRoutes.GRAPH) },
             )
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+
             BusinessNameScreen(
-                onContinue = { businessName ->
-                    viewModel.setBusinessName(businessName)
+                initialName = state.businessName,
+                initialDescription = state.descripcion,
+                onContinue = { name, descripcion ->
+                    viewModel.setBusinessName(name)
+                    viewModel.setDescripcion(descripcion)
                     navController.navigate(OnboardingRoutes.BUSINESS_CATEGORY)
                 },
             )
@@ -108,14 +155,25 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
 
             BusinessLocationScreen(
                 direccion = state.direccion,
-                latitud = state.latitud,
-                longitud = state.longitud,
+                localidad = state.localidad,
+                pinLatitud = state.pinLatitud,
+                pinLongitud = state.pinLongitud,
                 isFetchingLocation = state.isFetchingLocation,
+                isValidatingAddress = state.isValidatingAddress,
+                isResolvingPinAddress = state.isResolvingPinAddress,
                 errorMessage = state.error,
                 onDireccionChange = viewModel::setDireccion,
+                onLocalidadChange = viewModel::setLocalidad,
+                onValidateAddress = viewModel::validateAddress,
                 onRequestCurrentLocation = viewModel::fetchCurrentLocation,
+                onLocationPermissionDenied = viewModel::onLocationPermissionDenied,
+                onPinMoved = viewModel::onPinMoved,
                 onBack = { navController.popBackStack() },
-                onContinue = { navController.navigate(OnboardingRoutes.BUSINESS_SCHEDULE) },
+                onContinue = {
+                    if (viewModel.confirmLocation()) {
+                        navController.navigate(OnboardingRoutes.BUSINESS_SCHEDULE)
+                    }
+                },
             )
         }
 
@@ -126,11 +184,7 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
             val state by viewModel.uiState.collectAsStateWithLifecycle()
 
             BusinessScheduleScreen(
-                descripcion = state.descripcion,
                 schedule = state.schedule,
-                isSubmitting = state.isSubmitting,
-                errorMessage = state.error,
-                onDescripcionChange = viewModel::setDescripcion,
                 onToggleDay = viewModel::toggleDay,
                 onAddSlot = viewModel::addSlot,
                 onRemoveSlot = viewModel::removeSlot,
@@ -138,7 +192,21 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 onUpdateSlotEnd = { dia, slotId, time -> viewModel.updateSlotTime(dia, slotId, horaFin = time) },
                 onCopyMondayToAll = viewModel::copyMondayToAll,
                 onBack = { navController.popBackStack() },
-                onFinish = {
+                onNext = { navController.navigate(OnboardingRoutes.BUSINESS_COMMITMENT) },
+            )
+        }
+
+        composable(OnboardingRoutes.BUSINESS_COMMITMENT) { backStackEntry ->
+            val viewModel: OnboardingViewModel = hiltViewModel(
+                remember(backStackEntry) { navController.getBackStackEntry(OnboardingRoutes.GRAPH) },
+            )
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+            BusinessCommitmentScreen(
+                isSubmitting = state.isSubmitting,
+                errorMessage = state.error,
+                onBack = { navController.popBackStack() },
+                onAccept = {
                     viewModel.submitFull(
                         onSuccess = {
                             navController.navigate(AuthRoutes.success(UserType.COMERCIO.name)) {
@@ -149,8 +217,8 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 },
             )
         }
-    }
-}
+    } // cierra navigation(...)
+} // cierra onboardingGraph
 
 fun NavGraphBuilder.businessGraph(navController: NavHostController) {
     composable(BusinessRoutes.EDIT_PROFILE) {
@@ -181,7 +249,7 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
     }
 }
 
-private fun NavHostController.navigateAfterAuth(userType: UserType) {
+fun NavHostController.navigateAfterAuth(userType: UserType) {
     if (userType == UserType.COMERCIO) {
         navigate(OnboardingRoutes.BUSINESS_NAME) {
             popUpTo(AuthRoutes.LOGIN) { inclusive = true }

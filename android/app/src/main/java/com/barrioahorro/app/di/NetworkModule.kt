@@ -15,7 +15,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
 // TODO: mover a un archivo de config por variante (debug/release) o a BuildConfig
-const val BASE_URL = "http://10.0.2.2:8080/"
+const val BASE_URL = "http://localhost:8080/"
 
 @Module
 @InstallIn(SingletonComponent::class)

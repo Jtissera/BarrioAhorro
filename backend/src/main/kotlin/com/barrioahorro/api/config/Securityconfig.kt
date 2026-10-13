@@ -16,6 +16,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 private val PUBLIC_ENDPOINTS = arrayOf(
     "/api/auth/register",
     "/api/auth/login",
+    "/api/location/validate",
     "/swagger-ui/**",
     "/v3/api-docs/**",
     "/uploads/**", // fotos públicas de los comercios

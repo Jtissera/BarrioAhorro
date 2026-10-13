@@ -7,7 +7,6 @@ import com.barrioahorro.api.modules.business.dto.UpdateBusinessRequest
 import jakarta.validation.Valid
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.geom.Point
 import org.locationtech.jts.geom.PrecisionModel
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -50,7 +49,7 @@ class BusinessController(
         @Valid @RequestBody request: UpdateBusinessRequest,
     ): ResponseEntity<BusinessResponse> {
         val userId = authentication.principal as Long
-        // Validamos todo antes de tocar la entidad para no dejar cambios a medias.
+
         if ((request.latitud == null) != (request.longitud == null)) {
             throw badRequest("La latitud y la longitud deben enviarse juntas")
         }
