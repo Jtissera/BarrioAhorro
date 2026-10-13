@@ -2,8 +2,11 @@ spring:
   application:
     name: barrioahorro-api
 
+  config:
+    import: optional:file:../.env[.properties]
+
   datasource:
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${POSTGRES_DB}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${POSTGRES_DB}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -21,6 +24,11 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+
 server:
   port: ${SERVER_PORT:8080}
 
@@ -28,14 +36,25 @@ app:
   security:
     jwt:
       secret: ${JWT_SECRET}
-      expiration-minutes: ${JWT_EXPIRATION_MINUTES:3}
+      expiration-minutes: ${JWT_EXPIRATION_MINUTES:5}
+  uploads:
+    dir: ${UPLOADS_DIR:uploads}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,flyway
+  endpoint:
+    health:
+      show-details: always
 
 nominatim:
   base-url: https://nominatim.openstreetmap.org
   user-agent: "BarrioAhorro/1.0 (cmirandav@fi.uba.ar)"
-  timeout-seconds: 5
 
 logging:
   level:
     com.barrioahorro: DEBUG
     org.hibernate.SQL: DEBUG
+    org.springframework.security: DEBUG
