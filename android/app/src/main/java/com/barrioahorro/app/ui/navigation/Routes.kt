@@ -40,3 +40,7 @@ object SplashRoutes {
 object CuponeraRoutes {
     const val CONTRIBUTION = "cuponera/contribution"
 }
+
+object GateRoutes {
+    const val GATE = "gate"
+}

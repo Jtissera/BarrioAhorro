@@ -32,6 +32,8 @@ import com.barrioahorro.app.ui.screens.onboarding.OnboardingViewModel
 import com.barrioahorro.app.ui.screens.splash.SplashDestination
 import com.barrioahorro.app.ui.screens.splash.SplashScreen
 import com.barrioahorro.app.ui.screens.splash.SplashViewModel
+import com.barrioahorro.app.ui.screens.gate.GateDestination
+import com.barrioahorro.app.ui.screens.gate.GateScreen
 
 @Composable
 fun AppNavigation(
@@ -58,11 +60,30 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
             isReady = destination != null,
             onFinished = {
                 val target = when (val d = destination) {
-                    is SplashDestination.Home -> AuthRoutes.success(d.userType.name)
+                    // Un comercio nunca va directo al inicio: primero pasa por la compuerta.
+                    is SplashDestination.Home ->
+                        if (d.userType == UserType.COMERCIO) GateRoutes.GATE
+                        else AuthRoutes.success(d.userType.name)
                     else -> AuthRoutes.ROLE_SELECTION
                 }
                 navController.navigate(target) {
                     popUpTo(SplashRoutes.SPLASH) { inclusive = true }
+                }
+            },
+        )
+    }
+
+    composable(GateRoutes.GATE) {
+        GateScreen(
+            onResolved = { destination ->
+                val target = when (destination) {
+                    GateDestination.ONBOARDING -> OnboardingRoutes.BUSINESS_NAME
+                    GateDestination.CUPONERA -> CuponeraRoutes.CONTRIBUTION
+                    GateDestination.HOME -> AuthRoutes.success(UserType.COMERCIO.name)
+                    GateDestination.SESSION_EXPIRED -> AuthRoutes.ROLE_SELECTION
+                }
+                navController.navigate(target) {
+                    popUpTo(GateRoutes.GATE) { inclusive = true }
                 }
             },
         )
@@ -225,8 +246,8 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 },
             )
         }
-    } // cierra navigation(...)
-} // cierra onboardingGraph
+    }
+}
 
 fun NavGraphBuilder.businessGraph(navController: NavHostController) {
     composable(CuponeraRoutes.CONTRIBUTION) {
@@ -271,13 +292,12 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
 }
 
 fun NavHostController.navigateAfterAuth(userType: UserType) {
-    if (userType == UserType.COMERCIO) {
-        navigate(OnboardingRoutes.BUSINESS_NAME) {
-            popUpTo(AuthRoutes.LOGIN) { inclusive = true }
-        }
+    val target = if (userType == UserType.COMERCIO) {
+        GateRoutes.GATE
     } else {
-        navigate(AuthRoutes.success(userType.name)) {
-            popUpTo(AuthRoutes.LOGIN) { inclusive = true }
-        }
+        AuthRoutes.success(userType.name)
+    }
+    navigate(target) {
+        popUpTo(AuthRoutes.ROLE_SELECTION) { inclusive = true }
     }
 }
