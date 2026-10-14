@@ -1,7 +1,11 @@
 package com.barrioahorro.app.data.cuponera
 
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import org.json.JSONObject
 import retrofit2.HttpException
+import java.io.File
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,6 +23,12 @@ class CuponeraRepository @Inject constructor(
 
     suspend fun ratify(body: RatifyCuponeraRequestDto): Result<CuponeraCommitmentDto> =
         call { api.ratify(body) }
+
+    suspend fun uploadPhoto(file: File): Result<CuponeraPhotoUploadResponse> = call {
+        val requestBody = file.asRequestBody("image/jpeg".toMediaType())
+        val part = MultipartBody.Part.createFormData("file", file.name, requestBody)
+        api.uploadPhoto(part)
+    }
 
     private suspend fun <T> call(block: suspend () -> T): Result<T> =
         try {
@@ -42,10 +52,12 @@ class CuponeraRepository @Inject constructor(
         }.getOrNull()
 
         return when (e.code()) {
-            400 -> "Revisá los datos de los productos."
+            400 -> "Revisá los datos e intentá de nuevo."
             401 -> "Tu sesión venció. Volvé a iniciar sesión."
             403 -> serverMessage ?: "No tenés permiso para hacer esta acción."
             409 -> serverMessage ?: "No se pudo ratificar: el aporte ya fue ratificado o el plazo venció."
+            413 -> "La foto es demasiado pesada."
+            415 -> "La foto debe ser JPEG, PNG o WebP."
             else -> "Error del servidor (${e.code()}). Intentá de nuevo."
         }
     }

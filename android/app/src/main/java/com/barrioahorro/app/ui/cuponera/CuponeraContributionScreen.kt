@@ -71,7 +71,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.barrioahorro.app.R
 import com.barrioahorro.app.data.cuponera.CuponeraProductDto
-
+import java.io.File
 private val CardShape = RoundedCornerShape(20.dp)
 
 private val MONTHS = listOf(
@@ -104,6 +104,7 @@ fun CuponeraContributionScreen(
         onAdd = viewModel::onAdd,
         onSuggestion = viewModel::onSuggestion,
         onRatify = viewModel::onRatify,
+        onPhotoCaptured = viewModel::onPhotoCaptured,
     )
 
     CuponeraContributionContent(state = state, actions = actions)
@@ -119,6 +120,7 @@ private class CuponeraActions(
     val onAdd: () -> Unit,
     val onSuggestion: (String) -> Unit,
     val onRatify: () -> Unit,
+    val onPhotoCaptured: (Long, File) -> Unit,
 )
 
 @Composable
@@ -271,6 +273,9 @@ private fun ProductList(
                     onValor = { actions.onValor(draft.localId, it) },
                     onDelta = { actions.onDelta(draft.localId, it) },
                     onRemove = { actions.onRemove(draft.localId) },
+                    onPhotoCaptured = { file ->
+                        actions.onPhotoCaptured(draft.localId, file)
+                    },
                 )
             }
 
@@ -423,6 +428,7 @@ private fun DraftProductCard(
     onValor: (String) -> Unit,
     onDelta: (Int) -> Unit,
     onRemove: () -> Unit,
+    onPhotoCaptured: (File) -> Unit,
 ) {
     Card(
         shape = CardShape,
@@ -435,7 +441,13 @@ private fun DraftProductCard(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                PhotoPlaceholder(draft.nombre)
+                CuponeraProductPhoto(
+                    nombre = draft.nombre,
+                    fotoUrl = draft.fotoUrl,
+                    fotoSubiendo = draft.fotoSubiendo,
+                    editable = true,
+                    onPhotoCaptured = onPhotoCaptured,
+                )
 
                 Spacer(Modifier.width(12.dp))
 
@@ -565,7 +577,13 @@ private fun ReadOnlyProductCard(product: CuponeraProductDto) {
             Modifier.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            PhotoPlaceholder(product.nombreProducto)
+            CuponeraProductPhoto(
+                nombre = product.nombreProducto,
+                fotoUrl = product.fotoUrl,
+                fotoSubiendo = false,
+                editable = false,
+                onPhotoCaptured = {},
+            )
 
             Spacer(Modifier.width(12.dp))
 
