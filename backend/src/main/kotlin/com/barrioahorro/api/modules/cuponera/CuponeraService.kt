@@ -12,11 +12,14 @@ import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneId
-
+import com.barrioahorro.api.modules.business.PhotoStorage
+import com.barrioahorro.api.modules.cuponera.dto.CuponeraPhotoUploadResponse
+import org.springframework.web.multipart.MultipartFile
 @Service
 class CuponeraService(
     private val commitments: CuponeraCommitmentRepository,
     private val rewards: CuponeraRewardRepository,
+    private val photoStorage: PhotoStorage,
 ) {
 
     companion object {
@@ -49,7 +52,7 @@ class CuponeraService(
 
     /**
      * Devuelve el compromiso vigente del comercio. Si todavía no existe uno
-     * para el período actual, lo crea en estado PENDIENTE (por eso no es readOnly).
+     * para el período actual, lo crea en estado PENDIENTE.
      */
     @Transactional
     fun getCurrent(userId: Long): CuponeraCommitmentResponse {
@@ -59,8 +62,7 @@ class CuponeraService(
 
     /**
      * Reemplaza los productos del compromiso pendiente y lo ratifica, todo en
-     * una sola transacción: la base exige 2 a 4 premios al commit, así que no
-     * hay borradores parciales.
+     * una sola transacción.
      */
     @Transactional
     fun ratify(userId: Long, request: RatifyCuponeraRequest): CuponeraCommitmentResponse {
@@ -110,6 +112,22 @@ class CuponeraService(
         return toResponse(updated, info.rubroNombre)
     }
 
+    @Transactional(readOnly = true)
+    fun uploadPhoto(userId: Long, file: MultipartFile): CuponeraPhotoUploadResponse {
+        requireBusiness(userId)
+
+        if (file.isEmpty) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "No se recibió ninguna imagen")
+        }
+
+        val url = photoStorage.store(file.bytes)
+            ?: throw ResponseStatusException(
+                HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                "La foto debe ser JPEG, PNG o WebP",
+            )
+
+        return CuponeraPhotoUploadResponse(url)
+    }
     private fun requireBusiness(userId: Long): BusinessCommitmentInfo =
         commitments.findBusinessInfo(userId)
             ?: throw ResponseStatusException(HttpStatus.FORBIDDEN, "Solo los comercios pueden aportar a la cuponera")

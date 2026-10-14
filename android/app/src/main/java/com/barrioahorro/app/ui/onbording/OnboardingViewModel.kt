@@ -61,7 +61,6 @@ data class OnboardingUiState(
     val isLoadingCategories: Boolean = false,
     val direccion: String = "",
     val localidad: String = "",
-    // Posición sugerida (Georef, GPS o pin movido por el vendedor). Todavía no es definitiva.
     val pinLatitud: Double? = null,
     val pinLongitud: Double? = null,
     // Posición que el vendedor confirmó con "Siguiente". Es la que se guarda en el backend.
@@ -73,6 +72,8 @@ data class OnboardingUiState(
     val descripcion: String = "",
     val schedule: List<DayScheduleUi> = defaultSchedule(),
     val isSubmitting: Boolean = false,
+    val alturaEncontrada: Boolean? = null,
+    val mensajeValidacion: String? = null,
     val error: String? = null,
 ) {
     val isLocationConfirmed: Boolean
@@ -212,32 +213,73 @@ class OnboardingViewModel @Inject constructor(
 
     fun validateAddress() {
         val state = _uiState.value
+
         if (state.localidad.isBlank()) {
-            _uiState.update { it.copy(error = "Ingresá la localidad para ubicar tu dirección con más precisión") }
+            _uiState.update {
+                it.copy(
+                    error = "Ingresá la localidad para ubicar tu dirección con más precisión",
+                    alturaEncontrada = null,
+                    mensajeValidacion = null,
+                )
+            }
             return
         }
 
         cancelPinResolution()
+
         viewModelScope.launch {
-            _uiState.update { it.copy(isValidatingAddress = true, error = null) }
-            val result = validateAddressUseCase(
-                address = state.direccion,
-                locality = state.localidad,
-            )
-            when (result) {
-                is Result.Success -> _uiState.update {
-                    it.copy(
-                        direccion = result.value.formattedAddress,
-                        pinLatitud = result.value.latitude,
-                        pinLongitud = result.value.longitude,
-                        isValidatingAddress = false,
-                    )
+            _uiState.update {
+                it.copy(
+                    isValidatingAddress = true,
+                    error = null,
+                    alturaEncontrada = null,
+                    mensajeValidacion = null,
+                )
+            }
+
+            try {
+                val result = validateAddressUseCase(
+                    address = state.direccion,
+                    locality = state.localidad,
+                )
+
+                when (result) {
+                    is Result.Success -> {
+                        val validatedAddress = result.value
+
+                        _uiState.update {
+                            it.copy(
+                                direccion = validatedAddress.formattedAddress,
+                                pinLatitud = validatedAddress.latitude,
+                                pinLongitud = validatedAddress.longitude,
+                                alturaEncontrada = validatedAddress.alturaEncontrada,
+                                mensajeValidacion = validatedAddress.mensaje,
+                                isValidatingAddress = false,
+                                error = null,
+                            )
+                        }
+                    }
+
+                    is Result.Failure -> {
+                        _uiState.update {
+                            it.copy(
+                                isValidatingAddress = false,
+                                alturaEncontrada = null,
+                                mensajeValidacion = null,
+                                error = result.error.toMessage(),
+                            )
+                        }
+                    }
                 }
-                is Result.Failure -> _uiState.update {
-                    // El pin que ya hubiera se conserva: el vendedor todavía puede ubicarlo a mano.
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update {
                     it.copy(
                         isValidatingAddress = false,
-                        error = result.error.toMessage(),
+                        alturaEncontrada = null,
+                        mensajeValidacion = null,
+                        error = "No pudimos validar la dirección. Intentá de nuevo",
                     )
                 }
             }
@@ -424,7 +466,14 @@ class OnboardingViewModel @Inject constructor(
                     _uiState.update { it.copy(isSubmitting = false) }
                     onSuccess()
                 } else {
-                    _uiState.update { it.copy(isSubmitting = false, error = "No pudimos guardar tu negocio") }
+                    val code = response.code()
+                    android.util.Log.e("Onboarding", "updateMyBusiness falló: HTTP $code - ${response.errorBody()?.string()}")
+                    val message = when (code) {
+                        401, 403 -> "Tu sesión venció. Iniciá sesión de nuevo para guardar tu negocio"
+                        400, 422 -> "Revisá los datos de tu negocio e intentá de nuevo"
+                        else -> "No pudimos guardar tu negocio"
+                    }
+                    _uiState.update { it.copy(isSubmitting = false, error = message) }
                 }
             } catch (e: CancellationException) {
                 throw e

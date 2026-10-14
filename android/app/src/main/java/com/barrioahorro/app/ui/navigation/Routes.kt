@@ -37,3 +37,11 @@ object BusinessRoutes {
 object SplashRoutes {
     const val SPLASH = "splash"
 }
+
+object CuponeraRoutes {
+    const val CONTRIBUTION = "cuponera/contribution"
+}
+
+object GateRoutes {
+    const val GATE = "gate"
+}

@@ -49,7 +49,6 @@ interface CuponeraCommitmentRepository : JpaRepository<CuponeraCommitmentEntity,
         @Param("limite") limite: OffsetDateTime,
     ): Int
 
-    /** Solo toca la columna estado: los triggers de la base validan y sellan la fecha. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(
         nativeQuery = true,

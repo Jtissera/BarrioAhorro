@@ -1,12 +1,17 @@
 package com.barrioahorro.app.data.cuponera
 
+import kotlinx.serialization.Serializable
+import okhttp3.MultipartBody
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.Part
 
 // Los nombres de los campos coinciden 1 a 1 con el JSON del backend.
 // Si usás kotlinx.serialization, agregá @Serializable a cada data class.
 
+@Serializable
 data class CuponeraProductRequestDto(
     val nombreProducto: String,
     val descripcion: String? = null,
@@ -15,10 +20,12 @@ data class CuponeraProductRequestDto(
     val unidadesDisponibles: Int,
 )
 
+@Serializable
 data class RatifyCuponeraRequestDto(
     val productos: List<CuponeraProductRequestDto>,
 )
 
+@Serializable
 data class CuponeraProductDto(
     val id: Long,
     val nombreProducto: String,
@@ -30,6 +37,7 @@ data class CuponeraProductDto(
     val unidadesCanjeadas: Int,
 )
 
+@Serializable
 data class CuponeraCommitmentDto(
     val id: Long,
     val periodoInicio: String,
@@ -46,6 +54,10 @@ data class CuponeraCommitmentDto(
     val sugerencias: List<String>,
 )
 
+data class CuponeraPhotoUploadResponse(
+    val url: String,
+)
+
 interface CuponeraApi {
 
     @GET("cuponera/aporte")
@@ -53,4 +65,11 @@ interface CuponeraApi {
 
     @POST("cuponera/aporte/ratificar")
     suspend fun ratify(@Body body: RatifyCuponeraRequestDto): CuponeraCommitmentDto
+
+    @Multipart
+    @POST("cuponera/aporte/fotos")
+    suspend fun uploadPhoto(
+        @Part file: MultipartBody.Part,
+    ): CuponeraPhotoUploadResponse
+
 }

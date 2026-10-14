@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<paths>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Temporary photos taken with the camera for the business gallery. -->
     <cache-path
         name="camera"
         path="camera/" />
+    <cache-path
+        name="cuponera_photos"
+        path="cuponera_photos/" />
 </paths>

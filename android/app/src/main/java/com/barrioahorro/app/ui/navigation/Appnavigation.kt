@@ -16,6 +16,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.barrioahorro.app.domain.model.UserType
+import com.barrioahorro.app.ui.cuponera.CuponeraContributionScreen
 import com.barrioahorro.app.ui.onbording.BusinessCommitmentScreen
 import com.barrioahorro.app.ui.screens.auth.AuthSuccessScreen
 import com.barrioahorro.app.ui.screens.auth.LoginScreen
@@ -33,6 +34,8 @@ import com.barrioahorro.app.ui.screens.onboarding.OnboardingViewModel
 import com.barrioahorro.app.ui.screens.splash.SplashDestination
 import com.barrioahorro.app.ui.screens.splash.SplashScreen
 import com.barrioahorro.app.ui.screens.splash.SplashViewModel
+import com.barrioahorro.app.ui.screens.gate.GateDestination
+import com.barrioahorro.app.ui.screens.gate.GateScreen
 
 @Composable
 fun AppNavigation(
@@ -59,11 +62,30 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
             isReady = destination != null,
             onFinished = {
                 val target = when (val d = destination) {
-                    is SplashDestination.Home -> AuthRoutes.success(d.userType.name)
+                    // Un comercio nunca va directo al inicio: primero pasa por la compuerta.
+                    is SplashDestination.Home ->
+                        if (d.userType == UserType.COMERCIO) GateRoutes.GATE
+                        else AuthRoutes.success(d.userType.name)
                     else -> AuthRoutes.ROLE_SELECTION
                 }
                 navController.navigate(target) {
                     popUpTo(SplashRoutes.SPLASH) { inclusive = true }
+                }
+            },
+        )
+    }
+
+    composable(GateRoutes.GATE) {
+        GateScreen(
+            onResolved = { destination ->
+                val target = when (destination) {
+                    GateDestination.ONBOARDING -> OnboardingRoutes.BUSINESS_NAME
+                    GateDestination.CUPONERA -> CuponeraRoutes.CONTRIBUTION
+                    GateDestination.HOME -> AuthRoutes.success(UserType.COMERCIO.name)
+                    GateDestination.SESSION_EXPIRED -> AuthRoutes.ROLE_SELECTION
+                }
+                navController.navigate(target) {
+                    popUpTo(GateRoutes.GATE) { inclusive = true }
                 }
             },
         )
@@ -151,7 +173,9 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
 
         composable(OnboardingRoutes.BUSINESS_LOCATION) { backStackEntry ->
             val viewModel: OnboardingViewModel = hiltViewModel(
-                remember(backStackEntry) { navController.getBackStackEntry(OnboardingRoutes.GRAPH) },
+                remember(backStackEntry) {
+                    navController.getBackStackEntry(OnboardingRoutes.GRAPH)
+                },
             )
             val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -164,6 +188,8 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 isValidatingAddress = state.isValidatingAddress,
                 isResolvingPinAddress = state.isResolvingPinAddress,
                 errorMessage = state.error,
+                alturaEncontrada = state.alturaEncontrada,
+                mensajeValidacion = state.mensajeValidacion,
                 onDireccionChange = viewModel::setDireccion,
                 onLocalidadChange = viewModel::setLocalidad,
                 onValidateAddress = viewModel::validateAddress,
@@ -173,7 +199,9 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 onBack = { navController.popBackStack() },
                 onContinue = {
                     if (viewModel.confirmLocation()) {
-                        navController.navigate(OnboardingRoutes.BUSINESS_SCHEDULE)
+                        navController.navigate(
+                            OnboardingRoutes.BUSINESS_SCHEDULE,
+                        )
                     }
                 },
             )
@@ -211,7 +239,8 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 onAccept = {
                     viewModel.submitFull(
                         onSuccess = {
-                            navController.navigate(AuthRoutes.success(UserType.COMERCIO.name)) {
+                            // Onboarding ya guardado (onboarding_completado = true): ahora el aporte a la cuponera.
+                            navController.navigate(CuponeraRoutes.CONTRIBUTION) {
                                 popUpTo(OnboardingRoutes.GRAPH) { inclusive = true }
                             }
                         },
@@ -219,10 +248,23 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 },
             )
         }
-    } // cierra navigation(...)
-} // cierra onboardingGraph
+    }
+}
 
 fun NavGraphBuilder.businessGraph(navController: NavHostController) {
+    composable(CuponeraRoutes.CONTRIBUTION) {
+        // Salir sin ratificar ("hacerlo más tarde") lleva al inicio del comercio:
+        // el onboarding ya se quitó de la pila, así que un popBackStack caería en una pantalla vieja.
+        CuponeraContributionScreen(
+            onBack = {
+                navController.navigate(AuthRoutes.success(UserType.COMERCIO.name)) {
+                    popUpTo(CuponeraRoutes.CONTRIBUTION) { inclusive = true }
+                }
+            },
+            // Al ratificar la pantalla queda en modo solo lectura mostrando el resultado.
+        )
+    }
+
     composable(BusinessRoutes.EDIT_PROFILE) {
         val viewModel: EditBusinessProfileViewModel = hiltViewModel()
         val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -265,13 +307,12 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
 }
 
 fun NavHostController.navigateAfterAuth(userType: UserType) {
-    if (userType == UserType.COMERCIO) {
-        navigate(OnboardingRoutes.BUSINESS_NAME) {
-            popUpTo(AuthRoutes.LOGIN) { inclusive = true }
-        }
+    val target = if (userType == UserType.COMERCIO) {
+        GateRoutes.GATE
     } else {
-        navigate(AuthRoutes.success(userType.name)) {
-            popUpTo(AuthRoutes.LOGIN) { inclusive = true }
-        }
+        AuthRoutes.success(userType.name)
+    }
+    navigate(target) {
+        popUpTo(AuthRoutes.ROLE_SELECTION) { inclusive = true }
     }
 }

@@ -1,5 +1,6 @@
 package com.barrioahorro.app.ui.cuponera
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barrioahorro.app.data.cuponera.CuponeraCommitmentDto
@@ -15,8 +16,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import java.io.File
 
-/** 1 punto cada [pesosPorPunto] pesos, redondeando hacia arriba, mínimo 1 (igual que el backend). */
 fun pointsFor(valor: Long, pesosPorPunto: Int): Int =
     maxOf(1L, (valor + pesosPorPunto - 1) / pesosPorPunto).toInt()
 
@@ -24,9 +25,11 @@ fun pointsFor(valor: Long, pesosPorPunto: Int): Int =
 data class DraftProduct(
     val localId: Long,
     val nombre: String = "",
-    /** Solo dígitos, en pesos. */
     val valorDigits: String = "",
     val unidades: Int = 5,
+    val fotoUrl: String? = null,
+    val fotoSubiendo: Boolean = false,
+    val fotoError: String? = null,
 ) {
     val valor: Long? get() = valorDigits.toLongOrNull()
     val isValid: Boolean
@@ -57,9 +60,10 @@ data class CuponeraUiState(
     val canAdd: Boolean get() = !readOnly && drafts.size < maxProductos
     val canAddOrFill: Boolean get() = canAdd || (!readOnly && drafts.any { it.nombre.isBlank() })
     val canSubmit: Boolean
-        get() = !readOnly && !submitting &&
+        get() = !readOnly &&
+                !submitting &&
                 drafts.size in minProductos..maxProductos &&
-                drafts.all { it.isValid }
+                drafts.all { it.isValid && !it.fotoSubiendo }
 }
 
 sealed interface CuponeraEvent {
@@ -150,6 +154,7 @@ class CuponeraViewModel @Inject constructor(
             val body = RatifyCuponeraRequestDto(
                 productos = s.drafts.map {
                     CuponeraProductRequestDto(
+                        fotoUrl = it.fotoUrl,
                         nombreProducto = it.nombre.trim(),
                         valorComercio = (it.valor ?: 0L).toDouble(),
                         unidadesDisponibles = it.unidades,
@@ -177,4 +182,30 @@ class CuponeraViewModel @Inject constructor(
             )
         }
     }
+
+    fun onPhotoCaptured(id: Long, file: File) {
+        updateDraft(id) { it.copy(fotoSubiendo = true, fotoError = null) }
+
+        viewModelScope.launch {
+            repository.uploadPhoto(file)
+                .onSuccess { response ->
+                    updateDraft(id) {
+                        it.copy(fotoUrl = response.url, fotoSubiendo = false, fotoError = null)
+                    }
+                }
+                .onFailure { error ->
+                    //desp lo saco
+                    Log.e("Cuponera", "uploadPhoto falló", error)
+                    updateDraft(id) {
+                        it.copy(
+                            fotoSubiendo = false,
+                            fotoError = (error.message ?: "No se pudo subir la foto.") +
+                                    " Tocá la foto para reintentar.",
+                        )
+                    }
+                }
+            file.delete()
+        }
+    }
+
 }
