@@ -21,7 +21,9 @@ import com.barrioahorro.app.ui.screens.auth.AuthSuccessScreen
 import com.barrioahorro.app.ui.screens.auth.LoginScreen
 import com.barrioahorro.app.ui.screens.auth.RegisterScreen
 import com.barrioahorro.app.ui.screens.auth.RoleSelectionScreen
-import com.barrioahorro.app.ui.screens.business.EditBusinessProfileScreen
+import com.barrioahorro.app.ui.screens.business.EditBusinessInfoScreen
+import com.barrioahorro.app.ui.screens.business.EditBusinessPhotosScreen
+import com.barrioahorro.app.ui.screens.business.EditBusinessPhotosViewModel
 import com.barrioahorro.app.ui.screens.business.EditBusinessProfileViewModel
 import com.barrioahorro.app.ui.screens.onboarding.BusinessCategoryScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessLocationScreen
@@ -225,7 +227,7 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
         val viewModel: EditBusinessProfileViewModel = hiltViewModel()
         val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-        EditBusinessProfileScreen(
+        EditBusinessInfoScreen(
             state = state,
             onBusinessNameChange = viewModel::setBusinessName,
             onSelectCategory = viewModel::selectCategory,
@@ -238,13 +240,26 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
             onUpdateSlotStart = { dia, slotId, time -> viewModel.updateSlotTime(dia, slotId, horaInicio = time) },
             onUpdateSlotEnd = { dia, slotId, time -> viewModel.updateSlotTime(dia, slotId, horaFin = time) },
             onCopyMondayToAll = viewModel::copyMondayToAll,
-            onAddPhoto = viewModel::addPhoto,
-            onReplacePhoto = viewModel::replacePhoto,
-            onDeletePhoto = viewModel::deletePhoto,
-            onMovePhoto = viewModel::movePhoto,
             onRetryLoad = viewModel::loadProfile,
             onBack = { navController.popBackStack() },
             onSave = { viewModel.save(onSuccess = { navController.popBackStack() }) },
+        )
+    }
+
+    composable(BusinessRoutes.EDIT_PHOTOS) {
+        val viewModel: EditBusinessPhotosViewModel = hiltViewModel()
+        val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+        EditBusinessPhotosScreen(
+            state = state,
+            onAddPhoto = viewModel::addPhoto,
+            onReplacePhoto = viewModel::replacePhoto,
+            onRemovePhoto = viewModel::removePhoto,
+            onSetCover = viewModel::setAsCover,
+            onSave = viewModel::save,
+            onSavedMessageShown = viewModel::onSavedMessageShown,
+            onRetryLoad = viewModel::loadPhotos,
+            onBack = { navController.popBackStack() },
         )
     }
 }

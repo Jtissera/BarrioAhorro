@@ -82,6 +82,9 @@ class BusinessController(
 
         request.horarios?.let { slots ->
             scheduleRepository.deleteByComercioId(userId)
+            // Hibernate flushes inserts before deletes; flush now so the old rows are gone before the new ones
+            // hit the ex_horarios_atencion_sin_solape exclusion constraint.
+            scheduleRepository.flush()
             val entities = slots.map {
                 BusinessScheduleEntity(
                     comercioId = userId,
