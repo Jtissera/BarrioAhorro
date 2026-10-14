@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -20,7 +22,7 @@ import com.barrioahorro.app.ui.theme.Rust
 
 /** Placeholder mínimo hasta que exista el home real de la app. */
 @Composable
-fun AuthSuccessScreen(userType: UserType) {
+fun AuthSuccessScreen(userType: UserType, onCreateOffer: () -> Unit) {
     Scaffold(containerColor = MaterialTheme.colorScheme.surface) { paddingValues ->
         Column(
             modifier = Modifier
@@ -47,6 +49,16 @@ fun AuthSuccessScreen(userType: UserType) {
                 color = AppColors.mutedLabel,
                 modifier = Modifier.padding(top = 8.dp),
             )
+            if (userType == UserType.COMERCIO) {
+                Button(
+                    onClick = onCreateOffer,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 32.dp),
+                ) {
+                    Text("Crear oferta")
+                }
+            }
         }
     }
 }
@@ -59,5 +71,5 @@ private fun userTypeMessage(userType: UserType): String = when (userType) {
 @Preview(showBackground = true)
 @Composable
 private fun AuthSuccessScreenPreview() {
-    AuthSuccessScreen(userType = UserType.CLIENTE)
+    AuthSuccessScreen(userType = UserType.CLIENTE, onCreateOffer = {})
 }
