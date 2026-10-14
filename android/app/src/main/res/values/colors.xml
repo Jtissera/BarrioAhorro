@@ -22,6 +22,7 @@
 
     <!-- Marca: colores secundarios -->
     <color name="secondary">#2F6B55</color>
+    <color name="secondary_container">#BFEFD8</color>
     <color name="tertiary">#F2B134</color>
 
     <!-- Textos -->
