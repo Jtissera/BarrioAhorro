@@ -1,5 +1,6 @@
 package com.barrioahorro.app.ui.navigation
 
+import android.app.Activity
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -253,9 +254,8 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 onAccept = {
                     viewModel.submitFull(
                         onSuccess = {
-                            // Onboarding ya guardado (onboarding_completado = true): ahora el aporte a la cuponera.
                             navController.navigate(CuponeraRoutes.CONTRIBUTION) {
-                                popUpTo(OnboardingRoutes.GRAPH) { inclusive = true }
+                                launchSingleTop = true
                             }
                         },
                     )
@@ -267,16 +267,20 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
 
 fun NavGraphBuilder.businessGraph(navController: NavHostController) {
     composable(CuponeraRoutes.CONTRIBUTION) {
-        // Pantalla bloqueante: no hay forma de volver atrás hasta ratificar.
+        val activity = LocalContext.current as? Activity
+
         CuponeraContributionScreen(
             onBack = {
-                navController.popBackStack()
+                if (navController.previousBackStackEntry != null) {
+                    navController.popBackStack()
+                } else {
+                    activity?.finish()
+                }
             },
             onRatified = {
                 navController.navigate(AuthRoutes.success(UserType.COMERCIO.name)) {
-                    popUpTo(CuponeraRoutes.CONTRIBUTION) {
-                        inclusive = true
-                    }
+                    // Limpia todo el stack
+                    popUpTo(navController.graph.id) { inclusive = true }
                 }
             },
         )

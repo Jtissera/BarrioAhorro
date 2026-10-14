@@ -34,7 +34,6 @@
     <color name="error">#B3261E</color>
 
     <!-- Edición del perfil del comercio -->
-    <color name="secondary_container">#B1F0D4</color>
     <color name="tertiary_container">#FFDEAC</color>
     <color name="error_container">#FFDAD6</color>
     <color name="outline_variant">#E5BEB6</color>
