@@ -49,7 +49,7 @@ class CuponeraService(
 
     /**
      * Devuelve el compromiso vigente del comercio. Si todavía no existe uno
-     * para el período actual, lo crea en estado PENDIENTE (por eso no es readOnly).
+     * para el período actual, lo crea en estado PENDIENTE.
      */
     @Transactional
     fun getCurrent(userId: Long): CuponeraCommitmentResponse {
@@ -59,8 +59,7 @@ class CuponeraService(
 
     /**
      * Reemplaza los productos del compromiso pendiente y lo ratifica, todo en
-     * una sola transacción: la base exige 2 a 4 premios al commit, así que no
-     * hay borradores parciales.
+     * una sola transacción.
      */
     @Transactional
     fun ratify(userId: Long, request: RatifyCuponeraRequest): CuponeraCommitmentResponse {

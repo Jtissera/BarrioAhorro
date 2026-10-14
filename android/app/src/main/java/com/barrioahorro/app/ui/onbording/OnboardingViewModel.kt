@@ -72,6 +72,8 @@ data class OnboardingUiState(
     val descripcion: String = "",
     val schedule: List<DayScheduleUi> = defaultSchedule(),
     val isSubmitting: Boolean = false,
+    val alturaEncontrada: Boolean? = null,
+    val mensajeValidacion: String? = null,
     val error: String? = null,
 ) {
     val isLocationConfirmed: Boolean
@@ -211,32 +213,73 @@ class OnboardingViewModel @Inject constructor(
 
     fun validateAddress() {
         val state = _uiState.value
+
         if (state.localidad.isBlank()) {
-            _uiState.update { it.copy(error = "Ingresá la localidad para ubicar tu dirección con más precisión") }
+            _uiState.update {
+                it.copy(
+                    error = "Ingresá la localidad para ubicar tu dirección con más precisión",
+                    alturaEncontrada = null,
+                    mensajeValidacion = null,
+                )
+            }
             return
         }
 
         cancelPinResolution()
+
         viewModelScope.launch {
-            _uiState.update { it.copy(isValidatingAddress = true, error = null) }
-            val result = validateAddressUseCase(
-                address = state.direccion,
-                locality = state.localidad,
-            )
-            when (result) {
-                is Result.Success -> _uiState.update {
-                    it.copy(
-                        direccion = result.value.formattedAddress,
-                        pinLatitud = result.value.latitude,
-                        pinLongitud = result.value.longitude,
-                        isValidatingAddress = false,
-                    )
+            _uiState.update {
+                it.copy(
+                    isValidatingAddress = true,
+                    error = null,
+                    alturaEncontrada = null,
+                    mensajeValidacion = null,
+                )
+            }
+
+            try {
+                val result = validateAddressUseCase(
+                    address = state.direccion,
+                    locality = state.localidad,
+                )
+
+                when (result) {
+                    is Result.Success -> {
+                        val validatedAddress = result.value
+
+                        _uiState.update {
+                            it.copy(
+                                direccion = validatedAddress.formattedAddress,
+                                pinLatitud = validatedAddress.latitude,
+                                pinLongitud = validatedAddress.longitude,
+                                alturaEncontrada = validatedAddress.alturaEncontrada,
+                                mensajeValidacion = validatedAddress.mensaje,
+                                isValidatingAddress = false,
+                                error = null,
+                            )
+                        }
+                    }
+
+                    is Result.Failure -> {
+                        _uiState.update {
+                            it.copy(
+                                isValidatingAddress = false,
+                                alturaEncontrada = null,
+                                mensajeValidacion = null,
+                                error = result.error.toMessage(),
+                            )
+                        }
+                    }
                 }
-                is Result.Failure -> _uiState.update {
-                    // El pin que ya hubiera se conserva: el vendedor todavía puede ubicarlo a mano.
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update {
                     it.copy(
                         isValidatingAddress = false,
-                        error = result.error.toMessage(),
+                        alturaEncontrada = null,
+                        mensajeValidacion = null,
+                        error = "No pudimos validar la dirección. Intentá de nuevo",
                     )
                 }
             }

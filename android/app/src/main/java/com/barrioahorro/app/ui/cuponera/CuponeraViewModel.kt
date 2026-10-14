@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** 1 punto cada [pesosPorPunto] pesos, redondeando hacia arriba, mínimo 1 (igual que el backend). */
 fun pointsFor(valor: Long, pesosPorPunto: Int): Int =
     maxOf(1L, (valor + pesosPorPunto - 1) / pesosPorPunto).toInt()
 

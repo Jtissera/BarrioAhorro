@@ -150,7 +150,9 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
 
         composable(OnboardingRoutes.BUSINESS_LOCATION) { backStackEntry ->
             val viewModel: OnboardingViewModel = hiltViewModel(
-                remember(backStackEntry) { navController.getBackStackEntry(OnboardingRoutes.GRAPH) },
+                remember(backStackEntry) {
+                    navController.getBackStackEntry(OnboardingRoutes.GRAPH)
+                },
             )
             val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -163,6 +165,8 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 isValidatingAddress = state.isValidatingAddress,
                 isResolvingPinAddress = state.isResolvingPinAddress,
                 errorMessage = state.error,
+                alturaEncontrada = state.alturaEncontrada,
+                mensajeValidacion = state.mensajeValidacion,
                 onDireccionChange = viewModel::setDireccion,
                 onLocalidadChange = viewModel::setLocalidad,
                 onValidateAddress = viewModel::validateAddress,
@@ -172,7 +176,9 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 onBack = { navController.popBackStack() },
                 onContinue = {
                     if (viewModel.confirmLocation()) {
-                        navController.navigate(OnboardingRoutes.BUSINESS_SCHEDULE)
+                        navController.navigate(
+                            OnboardingRoutes.BUSINESS_SCHEDULE,
+                        )
                     }
                 },
             )
