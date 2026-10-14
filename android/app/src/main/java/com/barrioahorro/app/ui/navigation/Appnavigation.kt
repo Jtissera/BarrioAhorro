@@ -1,10 +1,12 @@
 package com.barrioahorro.app.ui.navigation
 
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
@@ -22,10 +24,13 @@ import com.barrioahorro.app.ui.screens.auth.AuthSuccessScreen
 import com.barrioahorro.app.ui.screens.auth.LoginScreen
 import com.barrioahorro.app.ui.screens.auth.RegisterScreen
 import com.barrioahorro.app.ui.screens.auth.RoleSelectionScreen
-import com.barrioahorro.app.ui.screens.business.EditBusinessProfileScreen
+import com.barrioahorro.app.ui.screens.business.EditBusinessInfoScreen
+import com.barrioahorro.app.ui.screens.business.EditBusinessPhotosScreen
+import com.barrioahorro.app.ui.screens.business.EditBusinessPhotosViewModel
 import com.barrioahorro.app.ui.screens.business.EditBusinessProfileViewModel
 import com.barrioahorro.app.ui.screens.gate.GateDestination
 import com.barrioahorro.app.ui.screens.gate.GateScreen
+import com.barrioahorro.app.ui.screens.offers.CreateOfferScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessCategoryScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessLocationScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessNameScreen
@@ -34,7 +39,6 @@ import com.barrioahorro.app.ui.screens.onboarding.OnboardingViewModel
 import com.barrioahorro.app.ui.screens.splash.SplashDestination
 import com.barrioahorro.app.ui.screens.splash.SplashScreen
 import com.barrioahorro.app.ui.screens.splash.SplashViewModel
-
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
@@ -126,7 +130,22 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
     ) { backStackEntry ->
         val userType = backStackEntry.arguments?.getString("userType")
             ?.let { UserType.valueOf(it) } ?: UserType.CLIENTE
-        AuthSuccessScreen(userType = userType)
+        AuthSuccessScreen(
+            userType = userType,
+            onCreateOffer = { navController.navigate(BusinessRoutes.CREATE_OFFER) },
+        )
+    }
+
+    composable(
+        route = BusinessRoutes.CREATE_OFFER) {
+        val context = LocalContext.current
+        CreateOfferScreen(
+            onClose = { navController.popBackStack() },
+            onPublished = {
+                Toast.makeText(context, "¡Oferta publicada!", Toast.LENGTH_SHORT).show()
+                navController.popBackStack()
+            },
+        )
     }
 }
 
@@ -268,7 +287,7 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
         val viewModel: EditBusinessProfileViewModel = hiltViewModel()
         val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-        EditBusinessProfileScreen(
+        EditBusinessInfoScreen(
             state = state,
             onBusinessNameChange = viewModel::setBusinessName,
             onSelectCategory = viewModel::selectCategory,
@@ -281,13 +300,26 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
             onUpdateSlotStart = { dia, slotId, time -> viewModel.updateSlotTime(dia, slotId, horaInicio = time) },
             onUpdateSlotEnd = { dia, slotId, time -> viewModel.updateSlotTime(dia, slotId, horaFin = time) },
             onCopyMondayToAll = viewModel::copyMondayToAll,
-            onAddPhoto = viewModel::addPhoto,
-            onReplacePhoto = viewModel::replacePhoto,
-            onDeletePhoto = viewModel::deletePhoto,
-            onMovePhoto = viewModel::movePhoto,
             onRetryLoad = viewModel::loadProfile,
             onBack = { navController.popBackStack() },
             onSave = { viewModel.save(onSuccess = { navController.popBackStack() }) },
+        )
+    }
+
+    composable(BusinessRoutes.EDIT_PHOTOS) {
+        val viewModel: EditBusinessPhotosViewModel = hiltViewModel()
+        val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+        EditBusinessPhotosScreen(
+            state = state,
+            onAddPhoto = viewModel::addPhoto,
+            onReplacePhoto = viewModel::replacePhoto,
+            onRemovePhoto = viewModel::removePhoto,
+            onSetCover = viewModel::setAsCover,
+            onSave = viewModel::save,
+            onSavedMessageShown = viewModel::onSavedMessageShown,
+            onRetryLoad = viewModel::loadPhotos,
+            onBack = { navController.popBackStack() },
         )
     }
 }

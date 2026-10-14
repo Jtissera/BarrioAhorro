@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.web.server.ResponseStatusException
 import java.time.OffsetDateTime
 import com.barrioahorro.api.modules.location.NominatimUnavailableException
 
@@ -36,12 +38,27 @@ class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, message)
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    fun handleUnreadableBody(ex: HttpMessageNotReadableException): ResponseEntity<ApiErrorResponse> =
+        buildResponse(
+            HttpStatus.BAD_REQUEST,
+            "El pedido es inválido o le faltan campos obligatorios",
+        )
+
+    @ExceptionHandler(ResponseStatusException::class)
+    fun handleResponseStatus(ex: ResponseStatusException): ResponseEntity<ApiErrorResponse> =
+        buildResponse(
+            HttpStatus.valueOf(ex.statusCode.value()),
+            ex.reason ?: "Error al procesar el pedido",
+        )
+
     @ExceptionHandler(NominatimUnavailableException::class)
     fun handleGeocoderUnavailable(ex: NominatimUnavailableException): ResponseEntity<ApiErrorResponse> =
         buildResponse(
             HttpStatus.SERVICE_UNAVAILABLE,
             "No pudimos validar la dirección en este momento. Intentá de nuevo más tarde.",
         )
+
     private fun buildResponse(status: HttpStatus, message: String): ResponseEntity<ApiErrorResponse> =
         ResponseEntity.status(status).body(ApiErrorResponse(status.value(), message))
 }
