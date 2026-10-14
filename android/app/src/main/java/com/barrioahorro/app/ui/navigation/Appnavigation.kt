@@ -1,10 +1,12 @@
 package com.barrioahorro.app.ui.navigation
 
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
@@ -26,6 +28,7 @@ import com.barrioahorro.app.ui.screens.business.EditBusinessInfoScreen
 import com.barrioahorro.app.ui.screens.business.EditBusinessPhotosScreen
 import com.barrioahorro.app.ui.screens.business.EditBusinessPhotosViewModel
 import com.barrioahorro.app.ui.screens.business.EditBusinessProfileViewModel
+import com.barrioahorro.app.ui.screens.offers.CreateOfferScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessCategoryScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessLocationScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessNameScreen
@@ -128,7 +131,22 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
     ) { backStackEntry ->
         val userType = backStackEntry.arguments?.getString("userType")
             ?.let { UserType.valueOf(it) } ?: UserType.CLIENTE
-        AuthSuccessScreen(userType = userType)
+        AuthSuccessScreen(
+            userType = userType,
+            onCreateOffer = { navController.navigate(BusinessRoutes.CREATE_OFFER) },
+        )
+    }
+
+    composable(
+        route = BusinessRoutes.CREATE_OFFER) {
+        val context = LocalContext.current
+        CreateOfferScreen(
+            onClose = { navController.popBackStack() },
+            onPublished = {
+                Toast.makeText(context, "¡Oferta publicada!", Toast.LENGTH_SHORT).show()
+                navController.popBackStack()
+            },
+        )
     }
 }
 
