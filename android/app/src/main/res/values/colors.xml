@@ -31,4 +31,10 @@
     <!-- Bordes y estados -->
     <color name="neutral_inactive">#B9AFA6</color>
     <color name="error">#B3261E</color>
+
+    <color name="title_black">#000000</color>
+    <color name="stepper_cream">#FBF6E6</color>
+    <color name="field_background">#FFFFFF</color>
+    <color name="stepper_border">#D9CDBB</color>
+
 </resources>
