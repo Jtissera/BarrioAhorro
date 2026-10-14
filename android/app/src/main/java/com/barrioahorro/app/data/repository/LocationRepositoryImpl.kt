@@ -42,12 +42,15 @@ class LocationRepositoryImpl @Inject constructor(
 
     private fun Response<ValidateAddressResponseDto>.toResult(): Result<ValidatedAddress, AddressError> {
         val body = body()
+
         if (isSuccessful && body != null) {
             return Result.Success(
                 ValidatedAddress(
                     formattedAddress = body.direccionNormalizada,
                     latitude = body.latitud,
                     longitude = body.longitud,
+                    alturaEncontrada = body.alturaEncontrada,
+                    mensaje = body.mensaje,
                 ),
             )
         }

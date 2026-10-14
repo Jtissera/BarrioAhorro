@@ -59,9 +59,25 @@ class NominatimClient(
         )
         .build()
 
+
     fun buscarDireccion(
         calle: String,
         altura: String,
+        localidad: String?,
+        provincia: String?,
+    ): List<NominatimResult> =
+        buscar(calle, altura, localidad, provincia)
+
+    fun buscarCalle(
+        calle: String,
+        localidad: String?,
+        provincia: String?,
+    ): List<NominatimResult> =
+        buscar(calle, null, localidad, provincia)
+
+    private fun buscar(
+        calle: String,
+        altura: String?,
         localidad: String?,
         provincia: String?,
     ): List<NominatimResult> {
@@ -69,7 +85,10 @@ class NominatimClient(
             restClient.get()
                 .uri { uri ->
                     uri.path("/search")
-                        .queryParam("street", "$altura $calle")
+                        .queryParam(
+                            "street",
+                            listOfNotNull(altura, calle).joinToString(" "),
+                        )
                         .apply {
                             localidad?.let { queryParam("city", it) }
                             provincia?.let { queryParam("state", it) }
@@ -87,7 +106,11 @@ class NominatimClient(
                 ?.toList()
                 ?: emptyList()
         } catch (e: RestClientException) {
-            throw NominatimUnavailableException("Error consultando Nominatim: ${e.message}", e)
+            throw NominatimUnavailableException(
+                "Error consultando Nominatim: ${e.message}",
+                e,
+            )
         }
     }
 }
+

@@ -18,6 +18,7 @@ import androidx.navigation.compose.navigation
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.barrioahorro.app.domain.model.UserType
+import com.barrioahorro.app.ui.cuponera.CuponeraContributionScreen
 import com.barrioahorro.app.ui.onbording.BusinessCommitmentScreen
 import com.barrioahorro.app.ui.screens.auth.AuthSuccessScreen
 import com.barrioahorro.app.ui.screens.auth.LoginScreen
@@ -167,7 +168,9 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
 
         composable(OnboardingRoutes.BUSINESS_LOCATION) { backStackEntry ->
             val viewModel: OnboardingViewModel = hiltViewModel(
-                remember(backStackEntry) { navController.getBackStackEntry(OnboardingRoutes.GRAPH) },
+                remember(backStackEntry) {
+                    navController.getBackStackEntry(OnboardingRoutes.GRAPH)
+                },
             )
             val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -180,6 +183,8 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 isValidatingAddress = state.isValidatingAddress,
                 isResolvingPinAddress = state.isResolvingPinAddress,
                 errorMessage = state.error,
+                alturaEncontrada = state.alturaEncontrada,
+                mensajeValidacion = state.mensajeValidacion,
                 onDireccionChange = viewModel::setDireccion,
                 onLocalidadChange = viewModel::setLocalidad,
                 onValidateAddress = viewModel::validateAddress,
@@ -189,7 +194,9 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 onBack = { navController.popBackStack() },
                 onContinue = {
                     if (viewModel.confirmLocation()) {
-                        navController.navigate(OnboardingRoutes.BUSINESS_SCHEDULE)
+                        navController.navigate(
+                            OnboardingRoutes.BUSINESS_SCHEDULE,
+                        )
                     }
                 },
             )
@@ -227,7 +234,8 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 onAccept = {
                     viewModel.submitFull(
                         onSuccess = {
-                            navController.navigate(AuthRoutes.success(UserType.COMERCIO.name)) {
+                            // Onboarding ya guardado (onboarding_completado = true): ahora el aporte a la cuponera.
+                            navController.navigate(CuponeraRoutes.CONTRIBUTION) {
                                 popUpTo(OnboardingRoutes.GRAPH) { inclusive = true }
                             }
                         },
@@ -239,6 +247,19 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
 } // cierra onboardingGraph
 
 fun NavGraphBuilder.businessGraph(navController: NavHostController) {
+    composable(CuponeraRoutes.CONTRIBUTION) {
+        // Salir sin ratificar ("hacerlo más tarde") lleva al inicio del comercio:
+        // el onboarding ya se quitó de la pila, así que un popBackStack caería en una pantalla vieja.
+        CuponeraContributionScreen(
+            onBack = {
+                navController.navigate(AuthRoutes.success(UserType.COMERCIO.name)) {
+                    popUpTo(CuponeraRoutes.CONTRIBUTION) { inclusive = true }
+                }
+            },
+            // Al ratificar la pantalla queda en modo solo lectura mostrando el resultado.
+        )
+    }
+
     composable(BusinessRoutes.EDIT_PROFILE) {
         val viewModel: EditBusinessProfileViewModel = hiltViewModel()
         val state by viewModel.uiState.collectAsStateWithLifecycle()

@@ -14,11 +14,15 @@ data class ValidateAddressRequest(
     val provincia: String? = null,
 )
 
+
 data class ValidateAddressResponse(
     val direccionNormalizada: String,
     val latitud: Double,
     val longitud: Double,
+    val alturaEncontrada: Boolean = true,
+    val mensaje: String? = null,
 )
+
 
 data class AddressErrorResponse(
     val error: AddressErrorCode,

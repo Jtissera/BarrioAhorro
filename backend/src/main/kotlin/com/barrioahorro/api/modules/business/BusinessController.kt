@@ -82,6 +82,7 @@ class BusinessController(
 
         request.horarios?.let { slots ->
             scheduleRepository.deleteByComercioId(userId)
+            scheduleRepository.flush()
             val entities = slots.map {
                 BusinessScheduleEntity(
                     comercioId = userId,

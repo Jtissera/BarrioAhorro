@@ -1,3 +1,4 @@
+
 package com.barrioahorro.app.ui.screens.onboarding
 
 import android.Manifest
@@ -8,6 +9,8 @@ import android.content.pm.PackageManager
 import android.os.SystemClock
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.ManagedActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -78,6 +81,8 @@ fun BusinessLocationScreen(
     isValidatingAddress: Boolean,
     isResolvingPinAddress: Boolean,
     errorMessage: String?,
+    alturaEncontrada: Boolean?,
+    mensajeValidacion: String?,
     onDireccionChange: (String) -> Unit,
     onLocalidadChange: (String) -> Unit,
     onValidateAddress: () -> Unit,
@@ -97,21 +102,35 @@ fun BusinessLocationScreen(
 
     val isBusy = isFetchingLocation || isValidatingAddress
     val hasPin = pinLatitud != null && pinLongitud != null
-    val canContinue = hasPin && direccion.isNotBlank() && localidad.isNotBlank() && !isBusy
+
+    val canContinue = hasPin &&
+            direccion.isNotBlank() &&
+            localidad.isNotBlank() &&
+            !isBusy
 
     val hintMessage: String? = when {
-        errorMessage == null && hasPin && !isBusy && !isResolvingPinAddress &&
+        errorMessage == null &&
+                hasPin &&
+                !isBusy &&
+                !isResolvingPinAddress &&
                 (direccion.isBlank() || localidad.isBlank()) ->
             "Completá la dirección y la localidad de este punto para continuar."
+
         else -> null
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
     ) { permissions ->
-        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        if (granted) onRequestCurrentLocation() else onLocationPermissionDenied()
+        val granted =
+            permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                    permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+
+        if (granted) {
+            onRequestCurrentLocation()
+        } else {
+            onLocationPermissionDenied()
+        }
     }
 
     fun requestLocation() {
@@ -119,6 +138,7 @@ fun BusinessLocationScreen(
             context,
             Manifest.permission.ACCESS_FINE_LOCATION,
         ) == PackageManager.PERMISSION_GRANTED
+
         val hasCoarse = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -136,17 +156,24 @@ fun BusinessLocationScreen(
         }
     }
 
-    Scaffold(containerColor = colorResource(R.color.splash_background)) { paddingValues ->
+    Scaffold(
+        containerColor = colorResource(R.color.splash_background),
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 24.dp, vertical = 16.dp),
         ) {
-            OnboardingTopBar(currentStep = CURRENT_STEP, onBack = onBack)
+            OnboardingTopBar(
+                currentStep = CURRENT_STEP,
+                onBack = onBack,
+            )
 
             Spacer(modifier = Modifier.height(20.dp))
+
             PointOfSaleChip()
+
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
@@ -154,7 +181,9 @@ fun BusinessLocationScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 color = textPrimary,
             )
+
             Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = "Esta dirección va a ser la que vean los vecinos en el mapa para encontrarte y retirar pedidos.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -167,7 +196,10 @@ fun BusinessLocationScreen(
                 onClick = { requestLocation() },
                 enabled = !isBusy,
                 shape = CircleShape,
-                border = BorderStroke(1.5.dp, if (isBusy) inactive else primary),
+                border = BorderStroke(
+                    1.5.dp,
+                    if (isBusy) inactive else primary,
+                ),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = primary,
                     disabledContentColor = inactive,
@@ -183,9 +215,18 @@ fun BusinessLocationScreen(
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    Icon(Icons.Filled.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(
+                        Icons.Filled.MyLocation,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Usar mi ubicación actual", style = MaterialTheme.typography.labelLarge)
+
+                    Text(
+                        text = "Usar mi ubicación actual",
+                        style = MaterialTheme.typography.labelLarge,
+                    )
                 }
             }
 
@@ -207,8 +248,13 @@ fun BusinessLocationScreen(
                                 strokeWidth = 2.dp,
                             )
                         } else if (direccion.isNotBlank()) {
-                            IconButton(onClick = { onDireccionChange("") }) {
-                                Icon(Icons.Filled.Close, contentDescription = "Borrar dirección")
+                            IconButton(
+                                onClick = { onDireccionChange("") },
+                            ) {
+                                Icon(
+                                    Icons.Filled.Close,
+                                    contentDescription = "Borrar dirección",
+                                )
                             }
                         }
                     },
@@ -216,9 +262,13 @@ fun BusinessLocationScreen(
                     enabled = !isBusy,
                     shape = RoundedCornerShape(12.dp),
                     colors = onboardingFieldColors(),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Next,
+                    ),
                     keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) },
+                        onNext = {
+                            focusManager.moveFocus(FocusDirection.Next)
+                        },
                     ),
                     modifier = Modifier.weight(3f),
                 )
@@ -231,7 +281,9 @@ fun BusinessLocationScreen(
                     enabled = !isBusy,
                     shape = RoundedCornerShape(12.dp),
                     colors = onboardingFieldColors(),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Search,
+                    ),
                     keyboardActions = KeyboardActions(
                         onSearch = {
                             focusManager.clearFocus()
@@ -246,6 +298,7 @@ fun BusinessLocationScreen(
 
             hintMessage?.let { message ->
                 Spacer(modifier = Modifier.height(6.dp))
+
                 Text(
                     text = message,
                     style = MaterialTheme.typography.bodySmall,
@@ -265,25 +318,83 @@ fun BusinessLocationScreen(
                     .heightIn(min = 180.dp),
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Row(verticalAlignment = Alignment.Top) {
-                Icon(
-                    Icons.Filled.Info,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = colorResource(R.color.tertiary),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Podés editarla después desde tu perfil sin costo ni demoras.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = textSecondary,
-                )
+            // Se reutiliza el espacio del aviso informativo existente.
+            // La advertencia queda fuera del mapa y no agrega otro bloque
+            // a la columna que reduzca su espacio disponible.
+            if (
+                alturaEncontrada == false &&
+                !mensajeValidacion.isNullOrBlank()
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 36.dp, max = 52.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.errorContainer,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(
+                            horizontal = 10.dp,
+                            vertical = 6.dp,
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(18.dp),
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Column(
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(
+                                text = "Ubicación aproximada",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+
+                            Text(
+                                text = mensajeValidacion,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                maxLines = 2,
+                            )
+                        }
+                    }
+                }
+            } else {
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.heightIn(min = 36.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = colorResource(R.color.tertiary),
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "Podés editarla después desde tu perfil sin costo ni demoras.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = textSecondary,
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+
             NeighborhoodVisibilityCard()
+
             Spacer(modifier = Modifier.height(16.dp))
 
             OnboardingPrimaryButton(
@@ -309,31 +420,42 @@ private fun LocationPickerMap(
     val primary = colorResource(R.color.primary)
     val onPrimary = colorResource(R.color.on_primary)
     val surfaceCard = colorResource(R.color.surface_card)
+    val textPrimary = colorResource(R.color.text_primary)
+    val textSecondary = colorResource(R.color.text_secondary)
 
     val currentOnPinMoved by rememberUpdatedState(onPinMoved)
     val currentPinLat by rememberUpdatedState(pinLatitud)
     val currentPinLng by rememberUpdatedState(pinLongitud)
 
     val mapView = remember {
-        // OpenStreetMap exige identificar la app; la caché va a cacheDir para no pedir permisos de almacenamiento.
         Configuration.getInstance().apply {
             userAgentValue = context.packageName
             osmdroidBasePath = File(context.cacheDir, "osmdroid")
             osmdroidTileCache = File(context.cacheDir, "osmdroid/tiles")
         }
+
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
-            zoomController.setVisibility(CustomZoomButtonsController.Visibility.ALWAYS)
+
+            zoomController.setVisibility(
+                CustomZoomButtonsController.Visibility.ALWAYS,
+            )
+
             minZoomLevel = 4.0
             maxZoomLevel = 19.0
+
             controller.setZoom(DEFAULT_ZOOM)
-            controller.setCenter(GeoPoint(DEFAULT_LAT, DEFAULT_LNG))
+            controller.setCenter(
+                GeoPoint(DEFAULT_LAT, DEFAULT_LNG),
+            )
         }
     }
 
-    // El MapView necesita enterarse del ciclo de vida de la pantalla.
-    val lifecycleOwner = remember(context) { context.findLifecycleOwner() }
+    val lifecycleOwner = remember(context) {
+        context.findLifecycleOwner()
+    }
+
     DisposableEffect(lifecycleOwner, mapView) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -342,7 +464,9 @@ private fun LocationPickerMap(
                 else -> Unit
             }
         }
+
         lifecycleOwner?.lifecycle?.addObserver(observer)
+
         onDispose {
             lifecycleOwner?.lifecycle?.removeObserver(observer)
             mapView.onPause()
@@ -350,8 +474,6 @@ private fun LocationPickerMap(
         }
     }
 
-    // Cuando el vendedor termina de mover el mapa con el dedo, el centro es la nueva posición del pin.
-    // Se ignoran los movimientos programáticos (animaciones al buscar o usar el GPS) mirando si hubo un toque reciente.
     DisposableEffect(mapView) {
         var lastTouchAt = 0L
 
@@ -361,16 +483,26 @@ private fun LocationPickerMap(
         }
 
         fun notifyIfUserMoved() {
-            val touchedRecently = SystemClock.uptimeMillis() - lastTouchAt < RECENT_TOUCH_MS
+            val touchedRecently =
+                SystemClock.uptimeMillis() - lastTouchAt < RECENT_TOUCH_MS
+
             if (!touchedRecently) return
 
             val center = mapView.mapCenter
             val lat = currentPinLat
             val lng = currentPinLng
-            val sameAsPin = lat != null && lng != null &&
+
+            val sameAsPin = lat != null &&
+                    lng != null &&
                     abs(center.latitude - lat) < COORD_EPSILON &&
                     abs(center.longitude - lng) < COORD_EPSILON
-            if (!sameAsPin) currentOnPinMoved(center.latitude, center.longitude)
+
+            if (!sameAsPin) {
+                currentOnPinMoved(
+                    center.latitude,
+                    center.longitude,
+                )
+            }
         }
 
         val listener = DelayedMapListener(
@@ -384,6 +516,7 @@ private fun LocationPickerMap(
             },
             400L,
         )
+
         mapView.addMapListener(listener)
 
         onDispose {
@@ -392,27 +525,35 @@ private fun LocationPickerMap(
         }
     }
 
-    // Georef o el GPS sugieren una posición: llevamos el mapa hasta ahí.
-    // Si el mapa ya está en ese punto (porque el vendedor acaba de moverlo), no animamos.
     LaunchedEffect(pinLatitud, pinLongitud) {
-        if (pinLatitud == null || pinLongitud == null) return@LaunchedEffect
+        if (pinLatitud == null || pinLongitud == null) {
+            return@LaunchedEffect
+        }
+
         val center = mapView.mapCenter
-        val yaEstaAhi = abs(center.latitude - pinLatitud) < COORD_EPSILON &&
-                abs(center.longitude - pinLongitud) < COORD_EPSILON
+
+        val yaEstaAhi =
+            abs(center.latitude - pinLatitud) < COORD_EPSILON &&
+                    abs(center.longitude - pinLongitud) < COORD_EPSILON
+
         if (!yaEstaAhi) {
             mapView.controller.setZoom(PIN_ZOOM)
-            mapView.controller.animateTo(GeoPoint(pinLatitud, pinLongitud))
+
+            mapView.controller.animateTo(
+                GeoPoint(pinLatitud, pinLongitud),
+            )
         }
     }
 
-    Box(modifier = modifier.clip(RoundedCornerShape(16.dp))) {
+    Box(
+        modifier = modifier.clip(RoundedCornerShape(16.dp)),
+    ) {
         AndroidView(
             factory = { mapView },
             modifier = Modifier.fillMaxSize(),
         )
 
         if (hasPin) {
-            // La base del círculo queda justo en el centro del mapa.
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
@@ -429,6 +570,7 @@ private fun LocationPickerMap(
                     modifier = Modifier.size(22.dp),
                 )
             }
+
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
@@ -447,31 +589,41 @@ private fun LocationPickerMap(
             shadowElevation = 2.dp,
         ) {
             Text(
-                text = if (hasPin) "Ajustá el pin si hace falta" else "Buscá tu dirección o mové el mapa",
+                text = if (hasPin) {
+                    "Ajustá el pin si hace falta"
+                } else {
+                    "Buscá tu dirección o mové el mapa"
+                },
                 style = MaterialTheme.typography.labelMedium,
-                color = colorResource(R.color.text_primary),
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                color = textPrimary,
+                modifier = Modifier.padding(
+                    horizontal = 12.dp,
+                    vertical = 6.dp,
+                ),
             )
         }
 
-        // Atribución obligatoria por la licencia de los datos de OpenStreetMap.
         Text(
             text = "© OpenStreetMap contributors",
             style = MaterialTheme.typography.labelSmall,
-            color = colorResource(R.color.text_secondary),
+            color = textSecondary,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .background(surfaceCard.copy(alpha = 0.7f))
-                .padding(horizontal = 4.dp, vertical = 2.dp),
+                .padding(
+                    horizontal = 4.dp,
+                    vertical = 2.dp,
+                ),
         )
     }
 }
 
-private tailrec fun Context.findLifecycleOwner(): LifecycleOwner? = when (this) {
-    is LifecycleOwner -> this
-    is ContextWrapper -> baseContext.findLifecycleOwner()
-    else -> null
-}
+private tailrec fun Context.findLifecycleOwner(): LifecycleOwner? =
+    when (this) {
+        is LifecycleOwner -> this
+        is ContextWrapper -> baseContext.findLifecycleOwner()
+        else -> null
+    }
 
 @Composable
 private fun PointOfSaleChip() {
@@ -482,7 +634,10 @@ private fun PointOfSaleChip() {
         color = green.copy(alpha = 0.12f),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            modifier = Modifier.padding(
+                horizontal = 10.dp,
+                vertical = 4.dp,
+            ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -491,7 +646,9 @@ private fun PointOfSaleChip() {
                 modifier = Modifier.size(14.dp),
                 tint = green,
             )
+
             Spacer(modifier = Modifier.width(6.dp))
+
             Text(
                 text = "TU PUNTO DE VENTA",
                 style = MaterialTheme.typography.labelSmall,
@@ -527,13 +684,16 @@ private fun NeighborhoodVisibilityCard() {
                     tint = green,
                 )
             }
+
             Spacer(modifier = Modifier.width(12.dp))
+
             Column {
                 Text(
                     text = "Visibilidad en tu radio barrial",
                     style = MaterialTheme.typography.labelLarge,
                     color = colorResource(R.color.text_primary),
                 )
+
                 Text(
                     text = "Los vecinos que viven cerca recibirán tus ofertas al instante.",
                     style = MaterialTheme.typography.bodySmall,
