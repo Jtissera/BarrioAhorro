@@ -32,6 +32,7 @@ object OnboardingRoutes {
 object BusinessRoutes {
     const val EDIT_PROFILE = "business/edit-profile"
     const val CREATE_OFFER = "business/create-offer"
+    const val EDIT_PHOTOS = "business/edit-photos"
 }
 
 object SplashRoutes {
@@ -40,4 +41,8 @@ object SplashRoutes {
 
 object CuponeraRoutes {
     const val CONTRIBUTION = "cuponera/contribution"
+}
+
+object GateRoutes {
+    const val GATE = "gate"
 }

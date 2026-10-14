@@ -24,7 +24,9 @@ import com.barrioahorro.app.ui.screens.auth.AuthSuccessScreen
 import com.barrioahorro.app.ui.screens.auth.LoginScreen
 import com.barrioahorro.app.ui.screens.auth.RegisterScreen
 import com.barrioahorro.app.ui.screens.auth.RoleSelectionScreen
-import com.barrioahorro.app.ui.screens.business.EditBusinessProfileScreen
+import com.barrioahorro.app.ui.screens.business.EditBusinessInfoScreen
+import com.barrioahorro.app.ui.screens.business.EditBusinessPhotosScreen
+import com.barrioahorro.app.ui.screens.business.EditBusinessPhotosViewModel
 import com.barrioahorro.app.ui.screens.business.EditBusinessProfileViewModel
 import com.barrioahorro.app.ui.screens.offers.CreateOfferScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessCategoryScreen
@@ -35,6 +37,8 @@ import com.barrioahorro.app.ui.screens.onboarding.OnboardingViewModel
 import com.barrioahorro.app.ui.screens.splash.SplashDestination
 import com.barrioahorro.app.ui.screens.splash.SplashScreen
 import com.barrioahorro.app.ui.screens.splash.SplashViewModel
+import com.barrioahorro.app.ui.screens.gate.GateDestination
+import com.barrioahorro.app.ui.screens.gate.GateScreen
 
 @Composable
 fun AppNavigation(
@@ -61,11 +65,30 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
             isReady = destination != null,
             onFinished = {
                 val target = when (val d = destination) {
-                    is SplashDestination.Home -> AuthRoutes.success(d.userType.name)
+                    // Un comercio nunca va directo al inicio: primero pasa por la compuerta.
+                    is SplashDestination.Home ->
+                        if (d.userType == UserType.COMERCIO) GateRoutes.GATE
+                        else AuthRoutes.success(d.userType.name)
                     else -> AuthRoutes.ROLE_SELECTION
                 }
                 navController.navigate(target) {
                     popUpTo(SplashRoutes.SPLASH) { inclusive = true }
+                }
+            },
+        )
+    }
+
+    composable(GateRoutes.GATE) {
+        GateScreen(
+            onResolved = { destination ->
+                val target = when (destination) {
+                    GateDestination.ONBOARDING -> OnboardingRoutes.BUSINESS_NAME
+                    GateDestination.CUPONERA -> CuponeraRoutes.CONTRIBUTION
+                    GateDestination.HOME -> AuthRoutes.success(UserType.COMERCIO.name)
+                    GateDestination.SESSION_EXPIRED -> AuthRoutes.ROLE_SELECTION
+                }
+                navController.navigate(target) {
+                    popUpTo(GateRoutes.GATE) { inclusive = true }
                 }
             },
         )
@@ -243,8 +266,8 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 },
             )
         }
-    } // cierra navigation(...)
-} // cierra onboardingGraph
+    }
+}
 
 fun NavGraphBuilder.businessGraph(navController: NavHostController) {
     composable(CuponeraRoutes.CONTRIBUTION) {
@@ -264,7 +287,7 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
         val viewModel: EditBusinessProfileViewModel = hiltViewModel()
         val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-        EditBusinessProfileScreen(
+        EditBusinessInfoScreen(
             state = state,
             onBusinessNameChange = viewModel::setBusinessName,
             onSelectCategory = viewModel::selectCategory,
@@ -277,25 +300,37 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
             onUpdateSlotStart = { dia, slotId, time -> viewModel.updateSlotTime(dia, slotId, horaInicio = time) },
             onUpdateSlotEnd = { dia, slotId, time -> viewModel.updateSlotTime(dia, slotId, horaFin = time) },
             onCopyMondayToAll = viewModel::copyMondayToAll,
-            onAddPhoto = viewModel::addPhoto,
-            onReplacePhoto = viewModel::replacePhoto,
-            onDeletePhoto = viewModel::deletePhoto,
-            onMovePhoto = viewModel::movePhoto,
             onRetryLoad = viewModel::loadProfile,
             onBack = { navController.popBackStack() },
             onSave = { viewModel.save(onSuccess = { navController.popBackStack() }) },
         )
     }
+
+    composable(BusinessRoutes.EDIT_PHOTOS) {
+        val viewModel: EditBusinessPhotosViewModel = hiltViewModel()
+        val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+        EditBusinessPhotosScreen(
+            state = state,
+            onAddPhoto = viewModel::addPhoto,
+            onReplacePhoto = viewModel::replacePhoto,
+            onRemovePhoto = viewModel::removePhoto,
+            onSetCover = viewModel::setAsCover,
+            onSave = viewModel::save,
+            onSavedMessageShown = viewModel::onSavedMessageShown,
+            onRetryLoad = viewModel::loadPhotos,
+            onBack = { navController.popBackStack() },
+        )
+    }
 }
 
 fun NavHostController.navigateAfterAuth(userType: UserType) {
-    if (userType == UserType.COMERCIO) {
-        navigate(OnboardingRoutes.BUSINESS_NAME) {
-            popUpTo(AuthRoutes.LOGIN) { inclusive = true }
-        }
+    val target = if (userType == UserType.COMERCIO) {
+        GateRoutes.GATE
     } else {
-        navigate(AuthRoutes.success(userType.name)) {
-            popUpTo(AuthRoutes.LOGIN) { inclusive = true }
-        }
+        AuthRoutes.success(userType.name)
+    }
+    navigate(target) {
+        popUpTo(AuthRoutes.ROLE_SELECTION) { inclusive = true }
     }
 }
