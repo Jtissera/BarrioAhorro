@@ -460,6 +460,7 @@ class OnboardingViewModel @Inject constructor(
                         longitud = state.confirmedLongitud,
                         descripcion = state.descripcion,
                         horarios = horarios,
+                        completarOnboarding = true,
                     ),
                 )
                 if (response.isSuccessful) {

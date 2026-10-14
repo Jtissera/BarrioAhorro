@@ -16,38 +16,31 @@ data class ScheduleSlotRequest(
     @field:Min(value = 1, message = "El día de la semana debe estar entre 1 (lunes) y 7 (domingo)")
     @field:Max(value = 7, message = "El día de la semana debe estar entre 1 (lunes) y 7 (domingo)")
     val diaSemana: Int,
-
     @field:Pattern(regexp = TIME_REGEX, message = "La hora de inicio debe tener formato HH:mm")
     val horaInicio: String,
-
     @field:Pattern(regexp = TIME_REGEX, message = "La hora de fin debe tener formato HH:mm")
     val horaFin: String,
-
     val activo: Boolean = true,
 )
 
 data class UpdateBusinessRequest(
     @field:Pattern(regexp = NOT_BLANK_REGEX, message = "El nombre del negocio no puede estar vacío")
     val businessName: String? = null,
-
     val categoryId: Int? = null,
-
     @field:Pattern(regexp = NOT_BLANK_REGEX, message = "La dirección no puede estar vacía")
     val direccion: String? = null,
-
     @field:DecimalMin(value = "-90.0", message = "La latitud no es válida")
     @field:DecimalMax(value = "90.0", message = "La latitud no es válida")
     val latitud: Double? = null,
-
     @field:DecimalMin(value = "-180.0", message = "La longitud no es válida")
     @field:DecimalMax(value = "180.0", message = "La longitud no es válida")
     val longitud: Double? = null,
-
     @field:Pattern(regexp = NOT_BLANK_REGEX, message = "La descripción no puede estar vacía")
     val descripcion: String? = null,
-
     @field:Valid
     val horarios: List<ScheduleSlotRequest>? = null,
+    /** Solo `true` tiene efecto: cierra el onboarding si están todos los datos. */
+    val completarOnboarding: Boolean? = null,
 )
 
 data class ScheduleSlotResponse(

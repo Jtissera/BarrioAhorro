@@ -1,3 +1,4 @@
+
 package com.barrioahorro.api.modules.business
 
 import com.barrioahorro.api.modules.business.dto.BusinessResponse
@@ -93,6 +94,23 @@ class BusinessController(
                 )
             }
             scheduleRepository.saveAll(entities)
+        }
+
+        if (request.completarOnboarding == true && !saved.onboardingCompletado) {
+            val faltantes = buildList {
+                if (saved.nombreNegocio.isNullOrBlank()) add("el nombre del negocio")
+                if (saved.rubro == null) add("el rubro")
+                if (saved.direccion.isNullOrBlank()) add("la dirección")
+                if (saved.ubicacion == null) add("la ubicación")
+                if (saved.descripcion.isNullOrBlank()) add("la descripción")
+                if (scheduleRepository.findByComercioIdOrderByDiaSemanaAscHoraInicioAsc(userId).none { it.activo }) {
+                    add("al menos un horario de atención")
+                }
+            }
+            if (faltantes.isNotEmpty()) {
+                throw badRequest("Para completar el onboarding falta: ${faltantes.joinToString(", ")}")
+            }
+            saved.onboardingCompletado = true
         }
 
         return ResponseEntity.ok(saved.toResponse())

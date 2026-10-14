@@ -61,14 +61,13 @@ class GateViewModel @Inject constructor(
         // 1) Sin onboarding completo no se entra a la app.
         if (!business.onboardingCompleted) return GateUiState.Resolved(GateDestination.ONBOARDING)
 
-        // 2) Con el aporte pendiente (y todavía ratificable) tampoco.
+        // 2) Solo con el aporte ratificado se entra al inicio; pendiente o vencido se queda en la cuponera.
         val commitment = cuponeraRepository.getCurrent().getOrElse { error ->
             return GateUiState.Failed(error.message ?: "No pudimos verificar tu aporte a la cuponera.")
         }
-        val mustRatify = commitment.estado == "PENDIENTE" && commitment.puedeRatificar
 
         return GateUiState.Resolved(
-            if (mustRatify) GateDestination.CUPONERA else GateDestination.HOME,
+            if (commitment.estado == "RATIFICADO") GateDestination.HOME else GateDestination.CUPONERA,
         )
     }
 }

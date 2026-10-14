@@ -15,6 +15,7 @@ data class UpdateBusinessRequestDto(
     val longitud: Double? = null,
     val descripcion: String? = null,
     val horarios: List<ScheduleSlotRequestDto>? = null,
+    val completarOnboarding: Boolean = false,
 )
 
 data class ScheduleSlotResponseDto(
