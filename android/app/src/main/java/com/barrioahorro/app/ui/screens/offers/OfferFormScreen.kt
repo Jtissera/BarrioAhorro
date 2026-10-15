@@ -1609,77 +1609,61 @@ private fun OfferPreview(
                             color = c.textPrimary,
                         )
 
-                        if (isTwoForOne || isWholesale) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Outlined.Storefront, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(13.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    state.businessName.ifBlank { if (isWholesale) "Almacén La Esquina" else "Mi Comercio" },
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = c.textPrimary,
-                                )
-                                if (state.categoryName.isNotBlank()) {
-                                    Spacer(Modifier.width(6.dp))
-                                    Surface(shape = RoundedCornerShape(4.dp), color = c.field) {
-                                        Text(
-                                            state.categoryName,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = c.textSecondary,
-                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                                        )
-                                    }
-                                }
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("📍 a 250 m", style = MaterialTheme.typography.labelSmall, color = c.textSecondary)
-                                Text(" • ", style = MaterialTheme.typography.labelSmall, color = c.textSecondary)
-                                val vigenciaText = when (state.vigenciaTipo) {
-                                    VigenciaTipo.HASTA_AGOTAR_STOCK -> "Hasta agotar stock"
-                                    VigenciaTipo.SOLO_HOY -> "Hoy 23:59"
-                                    VigenciaTipo.TODA_LA_SEMANA -> "Toda la semana"
-                                    VigenciaTipo.FECHA_ESPECIFICA -> state.validUntil?.let(::formatRelative) ?: "Fecha a definir"
-                                }
-                                Icon(Icons.Outlined.Schedule, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(12.dp))
-                                Spacer(Modifier.width(3.dp))
-                                Text(vigenciaText, style = MaterialTheme.typography.labelSmall, color = c.textSecondary)
-                            }
-                        } else {
-                            state.validUntil?.let {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Outlined.Schedule, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(14.dp))
-                                    Spacer(Modifier.width(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.Storefront, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(13.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                state.businessName.ifBlank { "Mi Comercio" },
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = c.textPrimary,
+                            )
+                            if (state.categoryName.isNotBlank()) {
+                                Spacer(Modifier.width(6.dp))
+                                Surface(shape = RoundedCornerShape(4.dp), color = c.field) {
                                     Text(
-                                        "Hasta ${formatRelative(it).replaceFirstChar(Char::lowercase)}",
-                                        style = MaterialTheme.typography.bodySmall,
+                                        state.categoryName,
+                                        style = MaterialTheme.typography.labelSmall,
                                         color = c.textSecondary,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
                                     )
                                 }
                             }
                         }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("📍 a 250 m", style = MaterialTheme.typography.labelSmall, color = c.textSecondary)
+                            Text(" • ", style = MaterialTheme.typography.labelSmall, color = c.textSecondary)
+                            val vigenciaText = when (state.vigenciaTipo) {
+                                VigenciaTipo.HASTA_AGOTAR_STOCK -> "Hasta agotar stock"
+                                VigenciaTipo.SOLO_HOY -> "Hoy 23:59"
+                                VigenciaTipo.TODA_LA_SEMANA -> "Toda la semana"
+                                VigenciaTipo.FECHA_ESPECIFICA -> state.validUntil?.let(::formatRelative) ?: "Fecha a definir"
+                            }
+                            Icon(Icons.Outlined.Schedule, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(12.dp))
+                            Spacer(Modifier.width(3.dp))
+                            Text(vigenciaText, style = MaterialTheme.typography.labelSmall, color = c.textSecondary)
+                        }
                     }
                 }
 
-                if (isTwoForOne || isWholesale) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFE8F7F0),
-                        modifier = Modifier.fillMaxWidth(),
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFE8F7F0),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                        ) {
-                            Icon(Icons.Outlined.Check, contentDescription = null, tint = Color(0xFF1E824C), modifier = Modifier.size(14.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                if (isWholesale) "0 vecinos confirmaron disponibilidad" else "0 vecinos confirmaron",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF1B5E39),
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
+                        Icon(Icons.Outlined.Check, contentDescription = null, tint = Color(0xFF1E824C), modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            if (isWholesale) "0 vecinos confirmaron disponibilidad" else "0 vecinos confirmaron",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF1B5E39),
+                            fontWeight = FontWeight.Bold,
+                        )
                     }
                 }
             }
