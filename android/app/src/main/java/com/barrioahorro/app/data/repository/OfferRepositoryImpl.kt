@@ -4,8 +4,10 @@ import com.barrioahorro.app.data.remote.api.OfferApiService
 import com.barrioahorro.app.data.remote.dto.ApiErrorDto
 import com.barrioahorro.app.data.remote.dto.CreateOffer2x1RequestDto
 import com.barrioahorro.app.data.remote.dto.CreateOfferCantidadRequestDto
+import com.barrioahorro.app.data.remote.dto.CreateOfferPorMayorRequestDto
 import com.barrioahorro.app.data.remote.dto.CreateOfferPorcentajeRequestDto
 import com.barrioahorro.app.data.remote.dto.OfferCreatedDto
+import com.barrioahorro.app.data.remote.dto.OfferPhotoDto
 import com.barrioahorro.app.domain.model.NewOffer
 import com.barrioahorro.app.domain.model.OfferError
 import com.barrioahorro.app.domain.repository.IOfferRepository
@@ -63,6 +65,17 @@ class OfferRepositoryImpl @Inject constructor(
                         unidadesAPagar = offer.unitsToPay,
                         unidadesALlevar = offer.unitsToTake,
                         precioUnitario = offer.unitPrice,
+                        fotoUrl = offer.photoUrl,
+                    ),
+                )
+                is NewOffer.Wholesale -> offerApiService.createPorMayor(
+                    CreateOfferPorMayorRequestDto(
+                        nombreProducto = offer.productName.trim(),
+                        vigenciaTipo = offer.vigenciaTipo,
+                        vigenteHasta = offer.validUntil?.toIsoWithOffset(),
+                        cantidadMinima = offer.minQuantity,
+                        precioUnitarioMayorista = offer.wholesalePrice,
+                        precioUnitarioRegular = offer.regularPrice,
                         fotoUrl = offer.photoUrl,
                     ),
                 )

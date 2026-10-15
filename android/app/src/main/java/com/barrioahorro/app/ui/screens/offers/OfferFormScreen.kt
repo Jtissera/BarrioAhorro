@@ -165,6 +165,10 @@ fun OfferFormScreen(
     onUnitsToTakeDecrement: () -> Unit = {},
     onUnitsToPayIncrement: () -> Unit = {},
     onUnitsToPayDecrement: () -> Unit = {},
+    onWholesalePriceChange: (String) -> Unit = {},
+    onMinQuantityChange: (Int) -> Unit = {},
+    onMinQuantityIncrement: () -> Unit = {},
+    onMinQuantityDecrement: () -> Unit = {},
     onVigenciaTipoChange: (VigenciaTipo) -> Unit = {},
     onValidUntilChange: (LocalDateTime?) -> Unit,
     onPhotoPicked: (Uri) -> Unit,
@@ -174,6 +178,7 @@ fun OfferFormScreen(
 ) {
     val c = formColors()
     val isTwoForOne = state.selectedType == OfferType.DOS_POR_UNO
+    val isWholesale = state.selectedType == OfferType.POR_MAYOR
     val isLastUnit = state.selectedType == OfferType.POR_CANTIDAD
     val price = state.price.toPriceOrNull()
     var showDatePicker by remember { mutableStateOf(false) }
@@ -209,6 +214,7 @@ fun OfferFormScreen(
             Text(
                 when {
                     isTwoForOne -> "Crear oferta 2×1"
+                    isWholesale -> "Crear oferta por mayor"
                     isLastUnit -> "Crear oferta por cantidad"
                     else -> "Crear oferta porcentual"
                 },
@@ -219,6 +225,7 @@ fun OfferFormScreen(
             Pill(
                 text = when {
                     isTwoForOne -> "PROMOCIÓN 2X1"
+                    isWholesale -> "VENTA POR MAYOR"
                     isLastUnit -> "DESCUENTO POR CANTIDAD"
                     else -> "DESCUENTO PORCENTUAL"
                 },
@@ -251,7 +258,11 @@ fun OfferFormScreen(
                         FormTextField(
                             value = state.productName,
                             onValueChange = onProductNameChange,
-                            placeholder = if (isTwoForOne) "Ej: Limón tucumano seleccionado" else "Ej: Tomate perita x 2 kg",
+                            placeholder = when {
+                                isTwoForOne -> "Ej: Limón tucumano seleccionado"
+                                isWholesale -> "Ej: Leche entera sachet 1L"
+                                else -> "Ej: Tomate perita x 2 kg"
+                            },
                             leadingIcon = {
                                 Icon(
                                     Icons.Outlined.ShoppingBag,
@@ -282,6 +293,16 @@ fun OfferFormScreen(
                                 onUnitsToPayDecrement = onUnitsToPayDecrement,
                             )
                         }
+                        isWholesale -> {
+                            WholesaleConditions(
+                                state = state,
+                                onPriceChange = onPriceChange,
+                                onWholesalePriceChange = onWholesalePriceChange,
+                                onMinQuantityChange = onMinQuantityChange,
+                                onMinQuantityIncrement = onMinQuantityIncrement,
+                                onMinQuantityDecrement = onMinQuantityDecrement,
+                            )
+                        }
                         isLastUnit -> {
                             QuantityConditions(
                                 state = state,
@@ -309,7 +330,13 @@ fun OfferFormScreen(
                 }
             }
 
-            OfferPreview(state = state, price = price, isLastUnit = isLastUnit, isTwoForOne = isTwoForOne)
+            OfferPreview(
+                state = state,
+                price = price,
+                isLastUnit = isLastUnit,
+                isTwoForOne = isTwoForOne,
+                isWholesale = isWholesale,
+            )
 
             state.error?.let {
                 Text(it, color = c.error, style = MaterialTheme.typography.bodyMedium)
@@ -721,6 +748,138 @@ private fun TwoForOneConditions(
                             color = Color(0xFF888888),
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WholesaleConditions(
+    state: CreateOfferUiState,
+    onPriceChange: (String) -> Unit,
+    onWholesalePriceChange: (String) -> Unit,
+    onMinQuantityChange: (Int) -> Unit,
+    onMinQuantityIncrement: () -> Unit,
+    onMinQuantityDecrement: () -> Unit,
+) {
+    val c = formColors()
+    val savings = state.previewWholesaleSavingsPercent
+    val regularPrice = state.priceValue
+    val wholesalePrice = state.wholesalePriceValue
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FieldLabel("Condiciones por mayor", required = true)
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFFFE0D2),
+            ) {
+                Text(
+                    "Desde ${state.minQuantity} u.",
+                    color = c.primary,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+        }
+
+        // Precio regular unitario
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            FieldLabel("Precio regular unitario", required = true)
+            FormTextField(
+                value = state.price,
+                onValueChange = { onPriceChange(it.sanitizePrice()) },
+                placeholder = "1050",
+                prefix = "$ ",
+                keyboardType = KeyboardType.Decimal,
+                containerColor = c.field,
+            )
+        }
+
+        // Precio por mayor
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            FieldLabel("Precio por mayor", required = true)
+            FormTextField(
+                value = state.wholesalePrice,
+                onValueChange = { onWholesalePriceChange(it.sanitizePrice()) },
+                placeholder = "850",
+                prefix = "$ ",
+                keyboardType = KeyboardType.Decimal,
+                containerColor = c.field,
+            )
+        }
+
+        // Cantidad mínima
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            FieldLabel("Cantidad mínima", required = true)
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = c.field,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        "${state.minQuantity} u.",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = c.textPrimary,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = onMinQuantityDecrement,
+                            enabled = state.minQuantity > 2,
+                            modifier = Modifier.size(32.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.Remove,
+                                contentDescription = "Menos",
+                                tint = if (state.minQuantity > 2) c.textPrimary else c.inactive,
+                            )
+                        }
+                        IconButton(onClick = onMinQuantityIncrement, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Filled.Add, contentDescription = "Más", tint = c.textPrimary)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Highlight card: Ahorro por bulto cerrado
+        if (regularPrice != null && wholesalePrice != null && regularPrice > BigDecimal.ZERO && wholesalePrice < regularPrice && savings != null) {
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0xFFFFF0EC),
+                border = BorderStroke(1.dp, Color(0xFFFFD6CC)),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        buildAnnotatedString {
+                            withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = c.primary)) {
+                                append("Ahorro por bulto cerrado: ")
+                            }
+                            append("Precio unitario regular ${formatMoney(regularPrice)} → Precio mayorista ${formatMoney(wholesalePrice)} (-$savings% OFF).")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = c.textPrimary,
+                    )
                 }
             }
         }
@@ -1324,6 +1483,7 @@ private fun OfferPreview(
     price: BigDecimal?,
     isLastUnit: Boolean,
     isTwoForOne: Boolean = false,
+    isWholesale: Boolean = false,
 ) {
     val c = formColors()
     val discount = state.discountPercent
@@ -1409,6 +1569,19 @@ private fun OfferPreview(
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                     )
                                 }
+                            } else if (isWholesale) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFFFE0D2),
+                                ) {
+                                    Text(
+                                        "X MAYOR",
+                                        color = c.primary,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    )
+                                }
                             } else if (discount != null) {
                                 Pill(if (isLastUnit) "${ordinal(state.requiredQuantity)} al $discount%".uppercase() else "-$discount%")
                             }
@@ -1419,22 +1592,29 @@ private fun OfferPreview(
                                 discounted = discounted,
                                 isLastUnit = isLastUnit,
                                 isTwoForOne = isTwoForOne,
+                                isWholesale = isWholesale,
                             )
                         }
 
                         Text(
-                            state.productName.ifBlank { "Limón tucumano seleccionado" },
+                            state.productName.ifBlank {
+                                when {
+                                    isTwoForOne -> "Limón tucumano seleccionado"
+                                    isWholesale -> "Leche entera sachet 1L"
+                                    else -> "Tomate perita x 2 kg"
+                                }
+                            },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = c.textPrimary,
                         )
 
-                        if (isTwoForOne) {
+                        if (isTwoForOne || isWholesale) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Outlined.Storefront, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(13.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text(
-                                    state.businessName.ifBlank { "Mi Comercio" },
+                                    state.businessName.ifBlank { if (isWholesale) "Almacén La Esquina" else "Mi Comercio" },
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = c.textPrimary,
@@ -1480,7 +1660,7 @@ private fun OfferPreview(
                     }
                 }
 
-                if (isTwoForOne) {
+                if (isTwoForOne || isWholesale) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = Color(0xFFE8F7F0),
@@ -1493,7 +1673,12 @@ private fun OfferPreview(
                         ) {
                             Icon(Icons.Outlined.Check, contentDescription = null, tint = Color(0xFF1E824C), modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("0 vecinos confirmaron", style = MaterialTheme.typography.labelSmall, color = Color(0xFF1B5E39), fontWeight = FontWeight.Bold)
+                            Text(
+                                if (isWholesale) "0 vecinos confirmaron disponibilidad" else "0 vecinos confirmaron",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFF1B5E39),
+                                fontWeight = FontWeight.Bold,
+                            )
                         }
                     }
                 }
@@ -1509,6 +1694,7 @@ private fun PreviewPrice(
     discounted: BigDecimal?,
     isLastUnit: Boolean,
     isTwoForOne: Boolean = false,
+    isWholesale: Boolean = false,
 ) {
     val c = formColors()
     Column(horizontalAlignment = Alignment.End) {
@@ -1522,6 +1708,32 @@ private fun PreviewPrice(
                         fontWeight = FontWeight.Bold,
                         color = c.textPrimary,
                     )
+                } else {
+                    Text("$ —", style = MaterialTheme.typography.titleLarge, color = c.textSecondary)
+                }
+            }
+            isWholesale -> {
+                val wh = state.wholesalePriceValue
+                val reg = state.priceValue
+                if (wh != null) {
+                    Text(
+                        "${formatMoney(wh)} c/u",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = c.textPrimary,
+                    )
+                    if (reg != null && reg > wh) {
+                        Text(
+                            buildAnnotatedString {
+                                append("antes ")
+                                withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
+                                    append(formatMoney(reg))
+                                }
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = c.textSecondary,
+                        )
+                    }
                 } else {
                     Text("$ —", style = MaterialTheme.typography.titleLarge, color = c.textSecondary)
                 }

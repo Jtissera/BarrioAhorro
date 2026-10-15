@@ -66,7 +66,7 @@ private val options = listOf(
     OfferTypeOption(OfferType.PORCENTUAL, Icons.Outlined.Percent, "Porcentual", "Un descuento en % sobre un producto", "-25%", true),
     OfferTypeOption(OfferType.DOS_POR_UNO, Icons.Outlined.Style, "2x1 o equivalente", "Llevá más unidades por el precio de menos", "2×1", true),
     OfferTypeOption(OfferType.POR_CANTIDAD, Icons.Outlined.Layers, "Por cantidad", "Descuento en la última unidad", "2da al 50%", true),
-    OfferTypeOption(OfferType.POR_MAYOR, Icons.Outlined.Inventory2, "Por mayor", "Precio especial al comprar varias unidades", "Desde 6 u.", false),
+    OfferTypeOption(OfferType.POR_MAYOR, Icons.Outlined.Inventory2, "Por mayor", "Precio especial al comprar varias unidades", "Desde 6 u.", true),
 )
 
 @Composable

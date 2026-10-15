@@ -37,5 +37,15 @@ sealed class NewOffer {
         override val validUntil: LocalDateTime? = null,
         override val photoUrl: String? = null,
     ) : NewOffer()
+
+    data class Wholesale(
+        override val productName: String,
+        val minQuantity: Short,
+        val wholesalePrice: BigDecimal,
+        val regularPrice: BigDecimal?,
+        override val vigenciaTipo: String = "HASTA_AGOTAR_STOCK",
+        override val validUntil: LocalDateTime? = null,
+        override val photoUrl: String? = null,
+    ) : NewOffer()
 }
 

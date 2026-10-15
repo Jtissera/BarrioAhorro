@@ -36,6 +36,8 @@ data class CreateOfferUiState(
     val selectedType: OfferType? = null,
     val productName: String = "",
     val price: String = "",
+    val wholesalePrice: String = "",
+    val minQuantity: Int = 6,
     val discountPercent: Int? = null,
     val requiredQuantity: Int = 2,
     val unitsToTake: Int = 2,
@@ -50,6 +52,7 @@ data class CreateOfferUiState(
     val categoryName: String = "",
 ) {
     val priceValue: BigDecimal? get() = price.replace(",", ".").toBigDecimalOrNull()
+    val wholesalePriceValue: BigDecimal? get() = wholesalePrice.replace(",", ".").toBigDecimalOrNull()
 
     /** Precio con descuento, solo para la vista previa. El precio real lo calcula el backend. */
     val previewDiscountedPrice: BigDecimal?
@@ -79,6 +82,15 @@ data class CreateOfferUiState(
             null
         }
 
+    /** Porcentaje de ahorro en venta por mayor */
+    val previewWholesaleSavingsPercent: Int?
+        get() {
+            val reg = priceValue ?: return null
+            val wh = wholesalePriceValue ?: return null
+            if (reg <= BigDecimal.ZERO || wh >= reg || wh <= BigDecimal.ZERO) return null
+            return ((reg - wh).divide(reg, 4, RoundingMode.HALF_UP).multiply(BigDecimal(100))).toInt()
+        }
+
     val canSubmit: Boolean
         get() {
             if (isSubmitting || isUploadingPhoto || productName.isBlank()) return false
@@ -91,7 +103,11 @@ data class CreateOfferUiState(
                 OfferType.PORCENTUAL -> discountPercent != null
                 OfferType.DOS_POR_UNO -> unitsToTake > unitsToPay && unitsToPay >= 1
                 OfferType.POR_CANTIDAD -> discountPercent != null && requiredQuantity >= 2
-                OfferType.POR_MAYOR, null -> false
+                OfferType.POR_MAYOR -> {
+                    val wh = wholesalePriceValue
+                    wh != null && wh > BigDecimal.ZERO && wh < p && minQuantity >= 2
+                }
+                null -> false
             }
         }
 }
@@ -141,8 +157,8 @@ class CreateOfferViewModel @Inject constructor(
         it.copy(
             selectedType = type,
             error = null,
-            // 2x1 arranca por defecto con hasta agotar stock (como en el mockup), porcentual con fecha específica
-            vigenciaTipo = if (type == OfferType.DOS_POR_UNO) VigenciaTipo.HASTA_AGOTAR_STOCK else it.vigenciaTipo,
+            // 2x1 y por mayor arrancan por defecto con hasta agotar stock (como en los mockups), porcentual con fecha específica
+            vigenciaTipo = if (type == OfferType.DOS_POR_UNO || type == OfferType.POR_MAYOR) VigenciaTipo.HASTA_AGOTAR_STOCK else it.vigenciaTipo,
         )
     }
     fun clearType() = _uiState.update { current ->
@@ -176,6 +192,11 @@ class CreateOfferViewModel @Inject constructor(
 
     fun incrementUnitsToPay() = setUnitsToPay((_uiState.value.unitsToPay + 1).coerceAtMost(_uiState.value.unitsToTake - 1))
     fun decrementUnitsToPay() = setUnitsToPay((_uiState.value.unitsToPay - 1).coerceAtLeast(1))
+
+    fun setWholesalePrice(value: String) = _uiState.update { it.copy(wholesalePrice = value, error = null) }
+    fun setMinQuantity(value: Int) = _uiState.update { it.copy(minQuantity = value.coerceAtLeast(2), error = null) }
+    fun incrementMinQuantity() = setMinQuantity(_uiState.value.minQuantity + 1)
+    fun decrementMinQuantity() = setMinQuantity((_uiState.value.minQuantity - 1).coerceAtLeast(2))
 
     fun submit() {
         val state = _uiState.value
@@ -261,7 +282,20 @@ class CreateOfferViewModel @Inject constructor(
                     photoUrl = photoUrl,
                 )
             }
-            else -> null // to do: por mayor
+            OfferType.POR_MAYOR -> {
+                val wh = wholesalePrice.replace(",", ".").toBigDecimalOrNull() ?: return null
+                if (wh <= BigDecimal.ZERO || priceValue <= BigDecimal.ZERO || wh >= priceValue || minQuantity < 2) return null
+                NewOffer.Wholesale(
+                    productName = productName,
+                    minQuantity = minQuantity.toShort(),
+                    wholesalePrice = wh,
+                    regularPrice = priceValue,
+                    vigenciaTipo = vigenciaTipo.apiValue,
+                    validUntil = until,
+                    photoUrl = photoUrl,
+                )
+            }
+            null -> null
         }
     }
 

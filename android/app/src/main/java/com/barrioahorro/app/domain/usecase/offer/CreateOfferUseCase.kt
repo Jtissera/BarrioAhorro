@@ -41,6 +41,13 @@ class CreateOfferUseCase @Inject constructor(
                 offer.unitPrice <= BigDecimal.ZERO -> OfferError.InvalidPrice
                 else -> null
             }
+            is NewOffer.Wholesale -> when {
+                offer.minQuantity < 2 -> OfferError.Rejected("La cantidad mínima debe ser al menos 2 unidades")
+                offer.wholesalePrice <= BigDecimal.ZERO -> OfferError.InvalidPrice
+                offer.regularPrice != null && offer.regularPrice <= BigDecimal.ZERO -> OfferError.InvalidPrice
+                offer.regularPrice != null && offer.wholesalePrice >= offer.regularPrice -> OfferError.Rejected("El precio mayorista debe ser menor al precio regular")
+                else -> null
+            }
         }
     }
 }

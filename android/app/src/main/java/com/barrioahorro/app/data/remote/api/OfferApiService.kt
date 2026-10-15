@@ -2,6 +2,7 @@ package com.barrioahorro.app.data.remote.api
 
 import com.barrioahorro.app.data.remote.dto.CreateOffer2x1RequestDto
 import com.barrioahorro.app.data.remote.dto.CreateOfferCantidadRequestDto
+import com.barrioahorro.app.data.remote.dto.CreateOfferPorMayorRequestDto
 import com.barrioahorro.app.data.remote.dto.CreateOfferPorcentajeRequestDto
 import com.barrioahorro.app.data.remote.dto.OfferCreatedDto
 import com.barrioahorro.app.data.remote.dto.OfferPhotoDto
@@ -22,6 +23,9 @@ interface OfferApiService {
 
     @POST("api/business/me/offers/2x1")
     suspend fun create2x1(@Body request: CreateOffer2x1RequestDto): Response<OfferCreatedDto>
+
+    @POST("api/business/me/offers/por-mayor")
+    suspend fun createPorMayor(@Body request: CreateOfferPorMayorRequestDto): Response<OfferCreatedDto>
 
     @Multipart
     @POST("api/business/me/offers/fotos")

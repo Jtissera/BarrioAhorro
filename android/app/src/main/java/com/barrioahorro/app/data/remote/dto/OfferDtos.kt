@@ -31,6 +31,16 @@ data class CreateOffer2x1RequestDto(
     val fotoUrl: String? = null,
 )
 
+data class CreateOfferPorMayorRequestDto(
+    val nombreProducto: String,
+    val vigenciaTipo: String,
+    val vigenteHasta: String? = null,
+    val cantidadMinima: Short,
+    val precioUnitarioMayorista: BigDecimal,
+    val precioUnitarioRegular: BigDecimal? = null,
+    val fotoUrl: String? = null,
+)
+
 data class OfferCreatedDto(
     val id: Long,
 )
