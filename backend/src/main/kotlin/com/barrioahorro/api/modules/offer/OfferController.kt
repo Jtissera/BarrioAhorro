@@ -5,9 +5,11 @@ import com.barrioahorro.api.modules.offer.dto.CreateOfferPorMayorRequest
 import com.barrioahorro.api.modules.offer.dto.CreateOfferCantidadRequest
 import com.barrioahorro.api.modules.offer.dto.CreateOfferPorcentajeRequest
 import com.barrioahorro.api.modules.offer.dto.OfferResponse
+import com.barrioahorro.api.modules.offer.dto.OfferPhotoUploadResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.MediaType
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -16,6 +18,8 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/api/business")
@@ -89,6 +93,15 @@ class OfferController(
     ): ResponseEntity<OfferResponse> {
         val userId = authentication.principal as Long
         return ResponseEntity.ok(offerService.toggleOfferStatus(userId, id))
+    }
+
+    @PostMapping("/me/offers/fotos", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun uploadOfferPhoto(
+        authentication: Authentication,
+        @RequestParam("file") file: MultipartFile,
+    ): ResponseEntity<OfferPhotoUploadResponse> {
+        val userId = authentication.principal as Long
+        return ResponseEntity.status(HttpStatus.CREATED).body(offerService.uploadPhoto(userId, file))
     }
 
     // ==========================================

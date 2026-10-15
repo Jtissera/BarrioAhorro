@@ -142,3 +142,7 @@ data class OfferResponse(
     val detalleCantidad: OfferCantidadDetailResponse? = null,
     val detallePorcentaje: OfferPorcentajeDetailResponse? = null,
 )
+
+data class OfferPhotoUploadResponse(
+    val url: String,
+)
