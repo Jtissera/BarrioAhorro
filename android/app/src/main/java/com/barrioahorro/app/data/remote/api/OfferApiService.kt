@@ -6,9 +6,11 @@ import com.barrioahorro.app.data.remote.dto.CreateOfferPorMayorRequestDto
 import com.barrioahorro.app.data.remote.dto.CreateOfferPorcentajeRequestDto
 import com.barrioahorro.app.data.remote.dto.OfferCreatedDto
 import com.barrioahorro.app.data.remote.dto.OfferPhotoDto
+import com.barrioahorro.app.data.remote.dto.OfferResponseDto
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
@@ -30,5 +32,8 @@ interface OfferApiService {
     @Multipart
     @POST("api/business/me/offers/fotos")
     suspend fun uploadPhoto(@Part file: MultipartBody.Part): Response<OfferPhotoDto>
+
+    @GET("api/business/me/offers")
+    suspend fun getMyOffers(): Response<List<OfferResponseDto>>
 }
 

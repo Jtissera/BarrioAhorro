@@ -18,11 +18,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.barrioahorro.app.domain.model.UserType
 import com.barrioahorro.app.ui.theme.AppColors
-import com.barrioahorro.app.ui.theme.Rust
+import com.barrioahorro.app.ui.theme.Cream
 
-/** Placeholder mínimo hasta que exista el home real de la app. */
 @Composable
-fun AuthSuccessScreen(userType: UserType, onCreateOffer: () -> Unit) {
+fun AuthSuccessScreen(userType: UserType, onNavigateToOffers: () -> Unit) {
     Scaffold(containerColor = MaterialTheme.colorScheme.surface) { paddingValues ->
         Column(
             modifier = Modifier
@@ -33,7 +32,7 @@ fun AuthSuccessScreen(userType: UserType, onCreateOffer: () -> Unit) {
         ) {
             Row {
                 Text(text = "barrio", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(text = "ahorro", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Rust)
+                Text(text = "ahorro", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Cream)
             }
 
             Text(
@@ -51,12 +50,12 @@ fun AuthSuccessScreen(userType: UserType, onCreateOffer: () -> Unit) {
             )
             if (userType == UserType.COMERCIO) {
                 Button(
-                    onClick = onCreateOffer,
+                    onClick = onNavigateToOffers,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 32.dp),
                 ) {
-                    Text("Crear oferta")
+                    Text("Ir a mis ofertas")
                 }
             }
         }
@@ -71,5 +70,5 @@ private fun userTypeMessage(userType: UserType): String = when (userType) {
 @Preview(showBackground = true)
 @Composable
 private fun AuthSuccessScreenPreview() {
-    AuthSuccessScreen(userType = UserType.CLIENTE, onCreateOffer = {})
+    AuthSuccessScreen(userType = UserType.COMERCIO, onNavigateToOffers = {})
 }

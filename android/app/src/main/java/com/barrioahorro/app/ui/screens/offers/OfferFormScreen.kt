@@ -12,13 +12,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -105,6 +105,8 @@ import androidx.core.content.FileProvider
 import coil3.compose.AsyncImage
 import com.barrioahorro.app.R
 import com.barrioahorro.app.di.BASE_URL
+import com.barrioahorro.app.ui.components.BusinessBottomBar
+import com.barrioahorro.app.ui.components.BusinessTab
 import com.barrioahorro.app.ui.components.ToldoConFranjas
 import java.io.File
 import java.math.BigDecimal
@@ -175,6 +177,7 @@ fun OfferFormScreen(
     onRemovePhoto: () -> Unit,
     onBack: () -> Unit,
     onSubmit: () -> Unit,
+    onTabSelected: (BusinessTab) -> Unit = {},
 ) {
     val c = formColors()
     val isTwoForOne = state.selectedType == OfferType.DOS_POR_UNO
@@ -187,20 +190,26 @@ fun OfferFormScreen(
 
     Scaffold(
         containerColor = c.background,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             ToldoConFranjas(
                 modifier = Modifier
-                    .background(colorResource(R.color.splash_background))
-                    .statusBarsPadding(),
+                    .background(colorResource(R.color.splash_background)),
             )
         },
         bottomBar = {
-            BottomActions(
-                isSubmitting = state.isSubmitting,
-                canSubmit = state.canSubmit,
-                onBack = onBack,
-                onSubmit = onSubmit,
-            )
+            Column {
+                BottomActions(
+                    isSubmitting = state.isSubmitting,
+                    canSubmit = state.canSubmit,
+                    onBack = onBack,
+                    onSubmit = onSubmit,
+                )
+                BusinessBottomBar(
+                    selectedTab = BusinessTab.OFERTAS,
+                    onTabSelected = onTabSelected,
+                )
+            }
         },
     ) { padding ->
         Column(
@@ -1773,7 +1782,6 @@ private fun BottomActions(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
             .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,

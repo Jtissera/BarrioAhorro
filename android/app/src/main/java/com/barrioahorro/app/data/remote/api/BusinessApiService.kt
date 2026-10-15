@@ -1,6 +1,7 @@
 package com.barrioahorro.app.data.remote.api
 
 import com.barrioahorro.app.data.remote.dto.BusinessResponseDto
+import com.barrioahorro.app.data.remote.dto.DashboardResponseDto
 import com.barrioahorro.app.data.remote.dto.PhotoResponseDto
 import com.barrioahorro.app.data.remote.dto.ReorderPhotosRequestDto
 import com.barrioahorro.app.data.remote.dto.UpdateBusinessRequestDto
@@ -20,6 +21,9 @@ interface BusinessApiService {
 
     @GET("api/business/me")
     suspend fun getMyBusiness(): Response<BusinessResponseDto>
+
+    @GET("api/business/me/dashboard")
+    suspend fun getDashboard(): Response<DashboardResponseDto>
 
     @PATCH("api/business/me")
     suspend fun updateMyBusiness(@Body request: UpdateBusinessRequestDto): Response<BusinessResponseDto>
