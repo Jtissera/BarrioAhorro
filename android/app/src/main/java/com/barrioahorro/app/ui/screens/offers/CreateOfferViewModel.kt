@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barrioahorro.app.data.local.image.PhotoCompressor
+import com.barrioahorro.app.data.remote.api.BusinessApiService
 import com.barrioahorro.app.domain.model.NewOffer
 import com.barrioahorro.app.domain.model.OfferError
 import com.barrioahorro.app.domain.repository.Result
@@ -45,6 +46,8 @@ data class CreateOfferUiState(
     val error: String? = null,
     val photoUrl: String? = null,
     val isUploadingPhoto: Boolean = false,
+    val businessName: String = "",
+    val categoryName: String = "",
 ) {
     val priceValue: BigDecimal? get() = price.replace(",", ".").toBigDecimalOrNull()
 
@@ -102,6 +105,7 @@ class CreateOfferViewModel @Inject constructor(
     private val createOfferUseCase: CreateOfferUseCase,
     private val uploadOfferPhotoUseCase: UploadOfferPhotoUseCase,
     private val photoCompressor: PhotoCompressor,
+    private val businessApiService: BusinessApiService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateOfferUiState())
@@ -109,6 +113,29 @@ class CreateOfferViewModel @Inject constructor(
 
     private val _events = Channel<CreateOfferEvent>()
     val events = _events.receiveAsFlow()
+
+    init {
+        loadBusinessInfo()
+    }
+
+    private fun loadBusinessInfo() {
+        viewModelScope.launch {
+            try {
+                val response = businessApiService.getMyBusiness()
+                val business = response.body()
+                if (response.isSuccessful && business != null) {
+                    _uiState.update { current ->
+                        current.copy(
+                            businessName = business.businessName.orEmpty(),
+                            categoryName = business.categoryName.orEmpty(),
+                        )
+                    }
+                }
+            } catch (_: Exception) {
+                // Silencioso: si falla la conexión se mantendrán los valores por defecto
+            }
+        }
+    }
 
     fun selectType(type: OfferType) = _uiState.update {
         it.copy(
@@ -118,7 +145,12 @@ class CreateOfferViewModel @Inject constructor(
             vigenciaTipo = if (type == OfferType.DOS_POR_UNO) VigenciaTipo.HASTA_AGOTAR_STOCK else it.vigenciaTipo,
         )
     }
-    fun clearType() = _uiState.update { CreateOfferUiState() }
+    fun clearType() = _uiState.update { current ->
+        CreateOfferUiState(
+            businessName = current.businessName,
+            categoryName = current.categoryName,
+        )
+    }
     fun setProductName(value: String) = _uiState.update { it.copy(productName = value, error = null) }
     fun setPrice(value: String) = _uiState.update { it.copy(price = value, error = null) }
     fun setDiscount(value: Int?) = _uiState.update { it.copy(discountPercent = value, error = null) }

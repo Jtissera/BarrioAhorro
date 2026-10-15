@@ -1433,10 +1433,22 @@ private fun OfferPreview(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Outlined.Storefront, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(13.dp))
                                 Spacer(Modifier.width(4.dp))
-                                Text("Verdulería Don Pepe", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = c.textPrimary)
-                                Spacer(Modifier.width(6.dp))
-                                Surface(shape = RoundedCornerShape(4.dp), color = c.field) {
-                                    Text("Verdulería", style = MaterialTheme.typography.labelSmall, color = c.textSecondary, modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
+                                Text(
+                                    state.businessName.ifBlank { "Mi Comercio" },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = c.textPrimary,
+                                )
+                                if (state.categoryName.isNotBlank()) {
+                                    Spacer(Modifier.width(6.dp))
+                                    Surface(shape = RoundedCornerShape(4.dp), color = c.field) {
+                                        Text(
+                                            state.categoryName,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = c.textSecondary,
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                        )
+                                    }
                                 }
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1481,7 +1493,7 @@ private fun OfferPreview(
                         ) {
                             Icon(Icons.Outlined.Check, contentDescription = null, tint = Color(0xFF1E824C), modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("8 vecinos confirmaron", style = MaterialTheme.typography.labelSmall, color = Color(0xFF1B5E39), fontWeight = FontWeight.Bold)
+                            Text("0 vecinos confirmaron", style = MaterialTheme.typography.labelSmall, color = Color(0xFF1B5E39), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
