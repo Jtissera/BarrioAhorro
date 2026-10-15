@@ -14,8 +14,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.text.NumberFormat
+import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
@@ -209,10 +212,15 @@ class MyOffersViewModel @Inject constructor(
             "FECHA_ESPECIFICA" -> {
                 if (vigenteHasta == null) return "Fecha a definir"
                 runCatching {
-                    val odt = OffsetDateTime.parse(vigenteHasta)
-                    val date = odt.toLocalDate()
+                    val local = runCatching {
+                        OffsetDateTime.parse(vigenteHasta).atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime()
+                    }.getOrNull() ?: runCatching {
+                        Instant.parse(vigenteHasta).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                    }.getOrNull() ?: LocalDateTime.parse(vigenteHasta)
+
+                    val date = local.toLocalDate()
                     val today = LocalDate.now()
-                    val time = odt.format(timeFormatter)
+                    val time = local.format(timeFormatter)
                     when {
                         date == today -> "Hasta hoy $time"
                         date == today.plusDays(1) -> "Hasta mañana $time"
