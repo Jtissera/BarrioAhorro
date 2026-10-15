@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.barrioahorro.app.domain.model.UserType
 import com.barrioahorro.app.ui.theme.AppColors
-import com.barrioahorro.app.ui.theme.Rust
+import com.barrioahorro.app.ui.theme.Cream
 
 /** Placeholder mínimo hasta que exista el home real de la app. */
 @Composable
@@ -33,7 +33,7 @@ fun AuthSuccessScreen(userType: UserType, onCreateOffer: () -> Unit) {
         ) {
             Row {
                 Text(text = "barrio", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(text = "ahorro", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Rust)
+                Text(text = "ahorro", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Cream)
             }
 
             Text(
