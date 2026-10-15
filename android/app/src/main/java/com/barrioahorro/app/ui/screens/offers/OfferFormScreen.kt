@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -33,9 +35,21 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.AddAPhoto
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ConfirmationNumber
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.ShoppingBag
+import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.outlined.Storefront
+import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material.icons.outlined.Verified
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.AlertDialog
@@ -81,6 +95,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -146,17 +161,24 @@ fun OfferFormScreen(
     onDiscountChange: (Int?) -> Unit,
     onIncrementQuantity: () -> Unit,
     onDecrementQuantity: () -> Unit,
-    onValidUntilChange: (LocalDateTime) -> Unit,
+    onUnitsToTakeIncrement: () -> Unit = {},
+    onUnitsToTakeDecrement: () -> Unit = {},
+    onUnitsToPayIncrement: () -> Unit = {},
+    onUnitsToPayDecrement: () -> Unit = {},
+    onVigenciaTipoChange: (VigenciaTipo) -> Unit = {},
+    onValidUntilChange: (LocalDateTime?) -> Unit,
     onPhotoPicked: (Uri) -> Unit,
     onRemovePhoto: () -> Unit,
     onBack: () -> Unit,
     onSubmit: () -> Unit,
 ) {
     val c = formColors()
+    val isTwoForOne = state.selectedType == OfferType.DOS_POR_UNO
     val isLastUnit = state.selectedType == OfferType.POR_CANTIDAD
     val price = state.price.toPriceOrNull()
     var showDatePicker by remember { mutableStateOf(false) }
     var pickedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var showVigenciaSheet by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = c.background,
@@ -185,12 +207,21 @@ fun OfferFormScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                if (isLastUnit) "Crear oferta por cantidad" else "Crear oferta porcentual",
+                when {
+                    isTwoForOne -> "Crear oferta 2×1"
+                    isLastUnit -> "Crear oferta por cantidad"
+                    else -> "Crear oferta porcentual"
+                },
                 style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
                 color = c.textPrimary,
             )
             Pill(
-                text = if (isLastUnit) "DESCUENTO POR CANTIDAD" else "DESCUENTO PORCENTUAL",
+                text = when {
+                    isTwoForOne -> "PROMOCIÓN 2X1"
+                    isLastUnit -> "DESCUENTO POR CANTIDAD"
+                    else -> "DESCUENTO PORCENTUAL"
+                },
                 icon = Icons.Filled.LocalOffer,
             )
 
@@ -205,11 +236,30 @@ fun OfferFormScreen(
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FieldLabel("Producto", required = true)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            FieldLabel("Producto", required = true)
+                            Text(
+                                "Reconocido por vecinos",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = c.textSecondary,
+                            )
+                        }
                         FormTextField(
                             value = state.productName,
                             onValueChange = onProductNameChange,
-                            placeholder = "Ej: Tomate perita x 2 kg",
+                            placeholder = if (isTwoForOne) "Ej: Limón tucumano seleccionado" else "Ej: Tomate perita x 2 kg",
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Outlined.ShoppingBag,
+                                    contentDescription = null,
+                                    tint = c.textSecondary,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
                         )
                     }
 
@@ -220,31 +270,46 @@ fun OfferFormScreen(
                         onRemove = onRemovePhoto,
                     )
 
-                    if (isLastUnit) {
-                        QuantityConditions(
-                            state = state,
-                            price = price,
-                            onPriceChange = onPriceChange,
-                            onDiscountChange = onDiscountChange,
-                            onIncrement = onIncrementQuantity,
-                            onDecrement = onDecrementQuantity,
-                        )
-                    } else {
-                        PercentageConditions(
-                            state = state,
-                            onPriceChange = onPriceChange,
-                            onDiscountChange = onDiscountChange,
-                        )
+                    when {
+                        isTwoForOne -> {
+                            TwoForOneConditions(
+                                state = state,
+                                price = price,
+                                onPriceChange = onPriceChange,
+                                onUnitsToTakeIncrement = onUnitsToTakeIncrement,
+                                onUnitsToTakeDecrement = onUnitsToTakeDecrement,
+                                onUnitsToPayIncrement = onUnitsToPayIncrement,
+                                onUnitsToPayDecrement = onUnitsToPayDecrement,
+                            )
+                        }
+                        isLastUnit -> {
+                            QuantityConditions(
+                                state = state,
+                                price = price,
+                                onPriceChange = onPriceChange,
+                                onDiscountChange = onDiscountChange,
+                                onIncrement = onIncrementQuantity,
+                                onDecrement = onDecrementQuantity,
+                            )
+                        }
+                        else -> {
+                            PercentageConditions(
+                                state = state,
+                                onPriceChange = onPriceChange,
+                                onDiscountChange = onDiscountChange,
+                            )
+                        }
                     }
 
                     ValiditySection(
+                        vigenciaTipo = state.vigenciaTipo,
                         validUntil = state.validUntil,
-                        onPickClick = { showDatePicker = true },
+                        onPickVigenciaClick = { showVigenciaSheet = true },
                     )
                 }
             }
 
-            OfferPreview(state = state, price = price, isLastUnit = isLastUnit)
+            OfferPreview(state = state, price = price, isLastUnit = isLastUnit, isTwoForOne = isTwoForOne)
 
             state.error?.let {
                 Text(it, color = c.error, style = MaterialTheme.typography.bodyMedium)
@@ -346,9 +411,321 @@ fun OfferFormScreen(
             },
         )
     }
+
+    if (showVigenciaSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showVigenciaSheet = false },
+            containerColor = c.card,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(
+                    "Vigencia y disponibilidad",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = c.textPrimary,
+                )
+                Text(
+                    "Elegí cuánto tiempo estará disponible esta oferta para los vecinos:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = c.textSecondary,
+                )
+
+                VigenciaOptionItem(
+                    title = "Hasta agotar stock",
+                    subtitle = "Ideal para liquidar stock rápido. Permanece activa hasta agotar.",
+                    icon = Icons.Outlined.Schedule,
+                    isSelected = state.vigenciaTipo == VigenciaTipo.HASTA_AGOTAR_STOCK,
+                    onClick = {
+                        onVigenciaTipoChange(VigenciaTipo.HASTA_AGOTAR_STOCK)
+                        onValidUntilChange(null)
+                        showVigenciaSheet = false
+                    },
+                )
+
+                VigenciaOptionItem(
+                    title = "Solo hoy",
+                    subtitle = "Válida hasta las 23:59 de hoy.",
+                    icon = Icons.Outlined.Today,
+                    isSelected = state.vigenciaTipo == VigenciaTipo.SOLO_HOY,
+                    onClick = {
+                        onVigenciaTipoChange(VigenciaTipo.SOLO_HOY)
+                        onValidUntilChange(null)
+                        showVigenciaSheet = false
+                    },
+                )
+
+                VigenciaOptionItem(
+                    title = "Toda la semana",
+                    subtitle = "Válida durante 7 días corridos a partir de hoy.",
+                    icon = Icons.Outlined.DateRange,
+                    isSelected = state.vigenciaTipo == VigenciaTipo.TODA_LA_SEMANA,
+                    onClick = {
+                        onVigenciaTipoChange(VigenciaTipo.TODA_LA_SEMANA)
+                        onValidUntilChange(null)
+                        showVigenciaSheet = false
+                    },
+                )
+
+                VigenciaOptionItem(
+                    title = "Fecha específica",
+                    subtitle = "Elegí el día y horario límite exacto en el calendario.",
+                    icon = Icons.Outlined.CalendarMonth,
+                    isSelected = state.vigenciaTipo == VigenciaTipo.FECHA_ESPECIFICA,
+                    onClick = {
+                        onVigenciaTipoChange(VigenciaTipo.FECHA_ESPECIFICA)
+                        showVigenciaSheet = false
+                        showDatePicker = true
+                    },
+                )
+            }
+        }
+    }
 }
 
 // ---------- Secciones ----------
+
+@Composable
+private fun TwoForOneConditions(
+    state: CreateOfferUiState,
+    price: BigDecimal?,
+    onPriceChange: (String) -> Unit,
+    onUnitsToTakeIncrement: () -> Unit,
+    onUnitsToTakeDecrement: () -> Unit,
+    onUnitsToPayIncrement: () -> Unit,
+    onUnitsToPayDecrement: () -> Unit,
+) {
+    val c = formColors()
+    val llevas = state.unitsToTake
+    val pagas = state.unitsToPay
+    val savingsPercent = state.preview2x1SavingsPercent
+    val totalPromo = state.preview2x1TotalPromo
+    val unitPrice = state.preview2x1UnitPrice
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FieldLabel("Configuración de la oferta", required = true)
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFFFE0D2),
+            ) {
+                Text(
+                    "Promoción por volumen",
+                    color = c.primary,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Llevás
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                FieldLabel("Llevás", required = true)
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = c.field,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Icon(
+                            Icons.Outlined.ShoppingCart,
+                            contentDescription = null,
+                            tint = c.textSecondary,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = onUnitsToTakeDecrement, enabled = llevas > 2, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Filled.Remove, contentDescription = "Menos", tint = if (llevas > 2) c.textPrimary else c.inactive)
+                            }
+                            Text(
+                                "$llevas",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = c.textPrimary,
+                                modifier = Modifier.padding(horizontal = 4.dp),
+                            )
+                            IconButton(onClick = onUnitsToTakeIncrement, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Filled.Add, contentDescription = "Más", tint = c.textPrimary)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Pagás
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                FieldLabel("Pagás", required = true)
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = c.field,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Icon(
+                            Icons.Outlined.ConfirmationNumber,
+                            contentDescription = null,
+                            tint = c.textSecondary,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = onUnitsToPayDecrement, enabled = pagas > 1, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Filled.Remove, contentDescription = "Menos", tint = if (pagas > 1) c.textPrimary else c.inactive)
+                            }
+                            Text(
+                                "$pagas",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = c.textPrimary,
+                                modifier = Modifier.padding(horizontal = 4.dp),
+                            )
+                            IconButton(onClick = onUnitsToPayIncrement, enabled = pagas < llevas - 1, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Filled.Add, contentDescription = "Más", tint = if (pagas < llevas - 1) c.textPrimary else c.inactive)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Tarjeta dinámica de ahorro
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFFFFF2EB),
+            border = BorderStroke(1.dp, Color(0xFFFFD9C7)),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .background(c.primary, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("%", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFFFE0D2),
+                    ) {
+                        Text(
+                            "${llevas}X${pagas} ACTIVO",
+                            color = c.primary,
+                            fontWeight = FontWeight.ExtraBold,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "$savingsPercent% de ahorro directo",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2C6B4F),
+                    )
+                }
+                Text(
+                    "El vecino paga $pagas unidad${if (pagas > 1) "es" else ""} y se lleva $llevas. Promoción clásica que liquida stock rápido.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = c.textSecondary,
+                )
+            }
+        }
+
+        // Precio unitario regular
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            FieldLabel("Precio unitario regular", required = true)
+            FormTextField(
+                value = state.price,
+                onValueChange = { onPriceChange(it.sanitizePrice()) },
+                placeholder = "950",
+                prefix = "$ ",
+                keyboardType = KeyboardType.Decimal,
+                textStyle = MaterialTheme.typography.titleMedium,
+            )
+        }
+
+        // Resumen total promo
+        Surface(
+            shape = RoundedCornerShape(14.dp),
+            color = Color(0xFFE8F7F0),
+            border = BorderStroke(1.dp, Color(0xFFBCE8D3)),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Outlined.Payments,
+                        contentDescription = null,
+                        tint = Color(0xFF1E824C),
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Total promo para el cliente:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF1B5E39),
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    if (totalPromo != null && unitPrice != null) {
+                        Text(
+                            formatMoney(totalPromo),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1B5E39),
+                        )
+                        Text(
+                            "(${formatMoney(unitPrice)} c/u)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF2E7D32),
+                        )
+                    } else {
+                        Text(
+                            "—",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color(0xFF888888),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun PercentageConditions(
@@ -603,57 +980,147 @@ private fun PhotoSection(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        FieldLabel("Foto del producto")
-        Surface(
-            shape = shape,
-            color = c.field,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(shape)
-                .clickable(enabled = !isUploading) { showSheet = true },
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            FieldLabel("Foto del producto", required = true)
+            if (photoUrl != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Outlined.CheckCircle,
+                        contentDescription = null,
+                        tint = Color(0xFF2E7D32),
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "Foto cargada",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2E7D32),
+                    )
+                }
+            }
+        }
+
+        if (photoUrl != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Box(
                     modifier = Modifier
-                        .size(72.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(14.dp))
                         .background(c.card),
-                    contentAlignment = Alignment.Center,
                 ) {
-                    if (photoUrl != null) {
-                        AsyncImage(
-                            model = photoUrl.toAbsoluteUrl(),
-                            contentDescription = "Foto del producto",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.matchParentSize(),
+                    AsyncImage(
+                        model = photoUrl.toAbsoluteUrl(),
+                        contentDescription = "Foto del producto",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.matchParentSize(),
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(topStart = 8.dp),
+                        color = Color.Black.copy(alpha = 0.65f),
+                        modifier = Modifier.align(Alignment.BottomEnd),
+                    ) {
+                        Text(
+                            "1/1",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         )
-                    } else {
-                        Icon(Icons.Outlined.AddAPhoto, contentDescription = null, tint = c.textSecondary)
                     }
-                    if (isUploading) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = c.primary, strokeWidth = 2.dp)
+                    IconButton(
+                        onClick = onRemove,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .align(Alignment.TopEnd)
+                            .background(Color.Black.copy(alpha = 0.5f), CircleShape),
+                    ) {
+                        Icon(Icons.Filled.Close, contentDescription = "Quitar foto", tint = Color.White, modifier = Modifier.size(14.dp))
                     }
                 }
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        when {
-                            isUploading -> "Subiendo foto…"
-                            photoUrl != null -> "Foto lista"
-                            else -> "Subir foto"
-                        },
-                        style = MaterialTheme.typography.labelLarge,
-                        color = c.textPrimary,
-                    )
-                    Text(
-                        if (photoUrl != null) "Tocá para cambiarla" else "Sacá una foto o elegila de la galería",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = c.textSecondary,
-                    )
+
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = c.field,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(80.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable(enabled = !isUploading) { showSheet = true },
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(
+                            Icons.Filled.PhotoCamera,
+                            contentDescription = null,
+                            tint = c.primary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Cambiar o agregar foto",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = c.primary,
+                            textAlign = TextAlign.Center,
+                        )
+                        Text(
+                            "Muestra el producto real en góndola",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = c.textSecondary,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
-                if (photoUrl != null && !isUploading) {
-                    IconButton(onClick = onRemove) {
-                        Icon(Icons.Filled.Close, contentDescription = "Quitar foto", tint = c.textSecondary)
+            }
+        } else {
+            Surface(
+                shape = shape,
+                color = c.field,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(shape)
+                    .clickable(enabled = !isUploading) { showSheet = true },
+            ) {
+                Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(c.card),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (isUploading) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = c.primary, strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Outlined.AddAPhoto, contentDescription = null, tint = c.textSecondary)
+                        }
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            if (isUploading) "Subiendo foto…" else "Agregar foto",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = c.textPrimary,
+                        )
+                        Text(
+                            "Muestra el producto real en góndola",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = c.textSecondary,
+                        )
                     }
                 }
             }
@@ -707,26 +1174,112 @@ private fun String.toAbsoluteUrl(): String =
     if (startsWith("http")) this else BASE_URL.trimEnd('/') + "/" + trimStart('/')
 
 @Composable
-private fun ValiditySection(validUntil: LocalDateTime?, onPickClick: () -> Unit) {
+private fun ValiditySection(
+    vigenciaTipo: VigenciaTipo,
+    validUntil: LocalDateTime?,
+    onPickVigenciaClick: () -> Unit,
+) {
     val now = remember { LocalDateTime.now() }
+    val c = formColors()
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        FieldLabel("Vigencia de la oferta", required = true)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FieldLabel("Vigencia y disponibilidad", required = true)
+            Icon(
+                Icons.Outlined.CalendarMonth,
+                contentDescription = null,
+                tint = c.textSecondary,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ValidityBox(
-                label = "DESDE",
-                value = formatRelative(now),
-                icon = Icons.Outlined.CalendarMonth,
+                label = "Desde",
+                value = "• Hoy, ${now.format(DateTimeFormatter.ofPattern("HH:mm"))}",
+                icon = Icons.Outlined.Schedule,
                 onClick = null,
                 modifier = Modifier.weight(1f),
             )
+
+            val (icon, text) = when (vigenciaTipo) {
+                VigenciaTipo.HASTA_AGOTAR_STOCK -> Icons.Outlined.Schedule to "Hasta agotar stock"
+                VigenciaTipo.SOLO_HOY -> Icons.Outlined.Today to "Solo hoy (23:59)"
+                VigenciaTipo.TODA_LA_SEMANA -> Icons.Outlined.DateRange to "Toda la semana"
+                VigenciaTipo.FECHA_ESPECIFICA -> Icons.Outlined.CalendarMonth to (validUntil?.let(::formatRelative) ?: "Elegir fecha")
+            }
+
             ValidityBox(
-                label = "HASTA",
-                value = validUntil?.let(::formatRelative) ?: "Elegir",
-                icon = Icons.Outlined.Schedule,
-                onClick = onPickClick,
-                highlight = validUntil == null,
+                label = "Hasta",
+                value = text,
+                icon = icon,
+                onClick = onPickVigenciaClick,
+                highlight = vigenciaTipo == VigenciaTipo.FECHA_ESPECIFICA && validUntil == null,
                 modifier = Modifier.weight(1f),
             )
+        }
+    }
+}
+
+@Composable
+private fun VigenciaOptionItem(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    val c = formColors()
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
+        color = if (isSelected) c.primaryContainer.copy(alpha = 0.4f) else c.field,
+        border = if (isSelected) BorderStroke(1.5.dp, c.primary) else null,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(if (isSelected) c.primary else c.card, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = if (isSelected) c.onPrimary else c.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = c.textPrimary,
+                )
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = c.textSecondary,
+                )
+            }
+            if (isSelected) {
+                Icon(
+                    Icons.Outlined.CheckCircle,
+                    contentDescription = null,
+                    tint = c.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
     }
 }
@@ -756,7 +1309,8 @@ private fun ValidityBox(
                 Spacer(Modifier.width(6.dp))
                 Text(
                     value,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
                     color = if (highlight) c.primary else c.textPrimary,
                 )
             }
@@ -765,7 +1319,12 @@ private fun ValidityBox(
 }
 
 @Composable
-private fun OfferPreview(state: CreateOfferUiState, price: BigDecimal?, isLastUnit: Boolean) {
+private fun OfferPreview(
+    state: CreateOfferUiState,
+    price: BigDecimal?,
+    isLastUnit: Boolean,
+    isTwoForOne: Boolean = false,
+) {
     val c = formColors()
     val discount = state.discountPercent
     val discounted = state.previewDiscountedPrice
@@ -777,12 +1336,24 @@ private fun OfferPreview(state: CreateOfferUiState, price: BigDecimal?, isLastUn
             Text(
                 "Así la van a ver tus vecinos",
                 style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
                 color = c.textPrimary,
                 modifier = Modifier.weight(1f),
             )
-            Text("EN VIVO", style = MaterialTheme.typography.labelSmall, color = c.secondary)
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = Color(0xFFFFE0D2),
+            ) {
+                Text(
+                    "En vivo",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = c.primary,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                )
+            }
         }
-        Text("Vista previa en tiempo real", style = MaterialTheme.typography.bodySmall, color = c.textSecondary)
+        Text("Vista previa en tiempo real en el feed del barrio", style = MaterialTheme.typography.bodySmall, color = c.textSecondary)
 
         Card(
             shape = RoundedCornerShape(20.dp),
@@ -791,44 +1362,126 @@ private fun OfferPreview(state: CreateOfferUiState, price: BigDecimal?, isLastUn
             modifier = Modifier.fillMaxWidth(),
         ) {
             ToldoConFranjas(stripes = 20, height = 10.dp)
-            Row(Modifier.padding(14.dp)) {
-                Surface(shape = RoundedCornerShape(12.dp), color = c.field, modifier = Modifier.size(84.dp)) {
-                    Box(contentAlignment = Alignment.Center) {
-                        if (state.photoUrl != null) {
-                            AsyncImage(
-                                model = state.photoUrl.toAbsoluteUrl(),
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.matchParentSize(),
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row {
+                    Surface(shape = RoundedCornerShape(12.dp), color = c.field, modifier = Modifier.size(88.dp)) {
+                        Box(contentAlignment = Alignment.Center) {
+                            if (state.photoUrl != null) {
+                                AsyncImage(
+                                    model = state.photoUrl.toAbsoluteUrl(),
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.matchParentSize(),
+                                )
+                            } else {
+                                Icon(Icons.Outlined.Image, contentDescription = null, tint = c.inactive)
+                            }
+                            Surface(
+                                shape = CircleShape,
+                                color = Color.Black.copy(alpha = 0.4f),
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .align(Alignment.TopEnd)
+                                    .padding(3.dp),
+                            ) {
+                                Icon(
+                                    Icons.Outlined.FavoriteBorder,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.padding(2.dp),
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(verticalAlignment = Alignment.Top) {
+                            if (isTwoForOne) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFFFE0D2),
+                                ) {
+                                    Text(
+                                        "${state.unitsToTake}X${state.unitsToPay}",
+                                        color = c.primary,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    )
+                                }
+                            } else if (discount != null) {
+                                Pill(if (isLastUnit) "${ordinal(state.requiredQuantity)} al $discount%".uppercase() else "-$discount%")
+                            }
+                            Spacer(Modifier.weight(1f))
+                            PreviewPrice(
+                                state = state,
+                                price = price,
+                                discounted = discounted,
+                                isLastUnit = isLastUnit,
+                                isTwoForOne = isTwoForOne,
                             )
+                        }
+
+                        Text(
+                            state.productName.ifBlank { "Limón tucumano seleccionado" },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = c.textPrimary,
+                        )
+
+                        if (isTwoForOne) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.Storefront, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(13.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Verdulería Don Pepe", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = c.textPrimary)
+                                Spacer(Modifier.width(6.dp))
+                                Surface(shape = RoundedCornerShape(4.dp), color = c.field) {
+                                    Text("Verdulería", style = MaterialTheme.typography.labelSmall, color = c.textSecondary, modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
+                                }
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("📍 a 250 m", style = MaterialTheme.typography.labelSmall, color = c.textSecondary)
+                                Text(" • ", style = MaterialTheme.typography.labelSmall, color = c.textSecondary)
+                                val vigenciaText = when (state.vigenciaTipo) {
+                                    VigenciaTipo.HASTA_AGOTAR_STOCK -> "Hasta agotar stock"
+                                    VigenciaTipo.SOLO_HOY -> "Hoy 23:59"
+                                    VigenciaTipo.TODA_LA_SEMANA -> "Toda la semana"
+                                    VigenciaTipo.FECHA_ESPECIFICA -> state.validUntil?.let(::formatRelative) ?: "Fecha a definir"
+                                }
+                                Icon(Icons.Outlined.Schedule, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(12.dp))
+                                Spacer(Modifier.width(3.dp))
+                                Text(vigenciaText, style = MaterialTheme.typography.labelSmall, color = c.textSecondary)
+                            }
                         } else {
-                            Icon(Icons.Outlined.Image, contentDescription = null, tint = c.inactive)
+                            state.validUntil?.let {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Outlined.Schedule, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(14.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        "Hasta ${formatRelative(it).replaceFirstChar(Char::lowercase)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = c.textSecondary,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-                Spacer(Modifier.width(12.dp))
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(verticalAlignment = Alignment.Top) {
-                        if (discount != null) {
-                            Pill(if (isLastUnit) "${ordinal(state.requiredQuantity)} al $discount%".uppercase() else "-$discount%")
-                        }
-                        Spacer(Modifier.weight(1f))
-                        PreviewPrice(state = state, price = price, discounted = discounted, isLastUnit = isLastUnit)
-                    }
-                    Text(
-                        state.productName.ifBlank { "Tu producto" },
-                        style = MaterialTheme.typography.titleMedium,
-                        color = c.textPrimary,
-                    )
-                    state.validUntil?.let {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Outlined.Schedule, contentDescription = null, tint = c.textSecondary, modifier = Modifier.size(14.dp))
+
+                if (isTwoForOne) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFE8F7F0),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                        ) {
+                            Icon(Icons.Outlined.Check, contentDescription = null, tint = Color(0xFF1E824C), modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text(
-                                "Hasta ${formatRelative(it).replaceFirstChar(Char::lowercase)}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = c.textSecondary,
-                            )
+                            Text("8 vecinos confirmaron", style = MaterialTheme.typography.labelSmall, color = Color(0xFF1B5E39), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -843,10 +1496,24 @@ private fun PreviewPrice(
     price: BigDecimal?,
     discounted: BigDecimal?,
     isLastUnit: Boolean,
+    isTwoForOne: Boolean = false,
 ) {
     val c = formColors()
     Column(horizontalAlignment = Alignment.End) {
         when {
+            isTwoForOne -> {
+                val unit = state.preview2x1UnitPrice
+                if (unit != null) {
+                    Text(
+                        "${formatMoney(unit)} c/u",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = c.textPrimary,
+                    )
+                } else {
+                    Text("$ —", style = MaterialTheme.typography.titleLarge, color = c.textSecondary)
+                }
+            }
             price == null || discounted == null -> {
                 Text("$ —", style = MaterialTheme.typography.titleLarge, color = c.textSecondary)
             }
@@ -901,23 +1568,24 @@ private fun BottomActions(
             .navigationBarsPadding()
             .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         FilledTonalButton(
             onClick = onBack,
             enabled = !isSubmitting,
-            modifier = Modifier.height(56.dp),
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier.size(56.dp),
             colors = ButtonDefaults.filledTonalButtonColors(
                 containerColor = colorResource(R.color.surface_secondary),
                 contentColor = c.textPrimary,
             ),
         ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-            Spacer(Modifier.width(6.dp))
-            Text("Volver", style = MaterialTheme.typography.titleMedium)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
         }
         Button(
             onClick = onSubmit,
             enabled = canSubmit,
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = c.primary,
                 contentColor = c.onPrimary,
@@ -931,7 +1599,16 @@ private fun BottomActions(
             if (isSubmitting) {
                 CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp, color = c.onPrimary)
             } else {
-                Text("Publicar oferta", style = MaterialTheme.typography.titleMedium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Outlined.RocketLaunch,
+                        contentDescription = null,
+                        tint = c.onPrimary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Publicar oferta", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
@@ -981,6 +1658,7 @@ private fun FormTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier.fillMaxWidth(),
     placeholder: String? = null,
+    leadingIcon: @Composable (() -> Unit)? = null,
     prefix: String? = null,
     suffix: String? = null,
     suffixColor: Color? = null,
@@ -997,6 +1675,7 @@ private fun FormTextField(
         singleLine = true,
         textStyle = textStyle,
         placeholder = placeholder?.let { { Text(it, color = c.textSecondary) } },
+        leadingIcon = leadingIcon,
         prefix = prefix?.let { { Text(it, color = c.textSecondary) } },
         suffix = suffix?.let {
             { Text(it, style = MaterialTheme.typography.labelLarge, color = suffixColor ?: c.textSecondary) }

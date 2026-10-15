@@ -18,7 +18,10 @@ class CreateOfferUseCase @Inject constructor(
 
     private fun validate(offer: NewOffer): OfferError? {
         if (offer.productName.isBlank()) return OfferError.EmptyProductName
-        if (!offer.validUntil.isAfter(LocalDateTime.now())) return OfferError.PastDate
+        if (offer.vigenciaTipo == "FECHA_ESPECIFICA") {
+            val until = offer.validUntil ?: return OfferError.Rejected("Debés seleccionar una fecha de finalización")
+            if (!until.isAfter(LocalDateTime.now())) return OfferError.PastDate
+        }
 
         return when (offer) {
             is NewOffer.Percentage -> when {
@@ -30,6 +33,12 @@ class CreateOfferUseCase @Inject constructor(
                 offer.unitPrice <= BigDecimal.ZERO -> OfferError.InvalidPrice
                 offer.requiredQuantity < 2 -> OfferError.InvalidQuantity
                 offer.lastUnitDiscountPercent !in 1..99 -> OfferError.InvalidPercent
+                else -> null
+            }
+            is NewOffer.TwoForOne -> when {
+                offer.unitsToTake <= offer.unitsToPay -> OfferError.Rejected("Las unidades a llevar deben ser mayores a las unidades a pagar")
+                offer.unitsToPay < 1 -> OfferError.Rejected("Las unidades a pagar deben ser al menos 1")
+                offer.unitPrice <= BigDecimal.ZERO -> OfferError.InvalidPrice
                 else -> null
             }
         }

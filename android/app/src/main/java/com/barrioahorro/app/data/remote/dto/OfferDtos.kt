@@ -5,7 +5,7 @@ import java.math.BigDecimal
 data class CreateOfferPorcentajeRequestDto(
     val nombreProducto: String,
     val vigenciaTipo: String,
-    val vigenteHasta: String,
+    val vigenteHasta: String? = null,
     val precioOriginal: BigDecimal,
     val porcentajeDescuento: Int,
     val fotoUrl: String? = null,
@@ -14,10 +14,20 @@ data class CreateOfferPorcentajeRequestDto(
 data class CreateOfferCantidadRequestDto(
     val nombreProducto: String,
     val vigenciaTipo: String,
-    val vigenteHasta: String,
+    val vigenteHasta: String? = null,
     val cantidadRequerida: Int,
     val precioUnitario: BigDecimal,
     val porcentajeDescuentoUltimaUnidad: Int,
+    val fotoUrl: String? = null,
+)
+
+data class CreateOffer2x1RequestDto(
+    val nombreProducto: String,
+    val vigenciaTipo: String,
+    val vigenteHasta: String? = null,
+    val unidadesAPagar: Short,
+    val unidadesALlevar: Short,
+    val precioUnitario: BigDecimal,
     val fotoUrl: String? = null,
 )
 

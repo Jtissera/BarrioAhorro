@@ -2,6 +2,7 @@ package com.barrioahorro.app.data.repository
 
 import com.barrioahorro.app.data.remote.api.OfferApiService
 import com.barrioahorro.app.data.remote.dto.ApiErrorDto
+import com.barrioahorro.app.data.remote.dto.CreateOffer2x1RequestDto
 import com.barrioahorro.app.data.remote.dto.CreateOfferCantidadRequestDto
 import com.barrioahorro.app.data.remote.dto.CreateOfferPorcentajeRequestDto
 import com.barrioahorro.app.data.remote.dto.OfferCreatedDto
@@ -36,8 +37,8 @@ class OfferRepositoryImpl @Inject constructor(
                 is NewOffer.Percentage -> offerApiService.createPorcentaje(
                     CreateOfferPorcentajeRequestDto(
                         nombreProducto = offer.productName.trim(),
-                        vigenciaTipo = VIGENCIA_FECHA_ESPECIFICA,
-                        vigenteHasta = offer.validUntil.toIsoWithOffset(),
+                        vigenciaTipo = offer.vigenciaTipo,
+                        vigenteHasta = offer.validUntil?.toIsoWithOffset(),
                         precioOriginal = offer.originalPrice,
                         porcentajeDescuento = offer.discountPercent,
                         fotoUrl = offer.photoUrl,
@@ -46,11 +47,22 @@ class OfferRepositoryImpl @Inject constructor(
                 is NewOffer.LastUnit -> offerApiService.createCantidad(
                     CreateOfferCantidadRequestDto(
                         nombreProducto = offer.productName.trim(),
-                        vigenciaTipo = VIGENCIA_FECHA_ESPECIFICA,
-                        vigenteHasta = offer.validUntil.toIsoWithOffset(),
+                        vigenciaTipo = offer.vigenciaTipo,
+                        vigenteHasta = offer.validUntil?.toIsoWithOffset(),
                         cantidadRequerida = offer.requiredQuantity,
                         precioUnitario = offer.unitPrice,
                         porcentajeDescuentoUltimaUnidad = offer.lastUnitDiscountPercent,
+                        fotoUrl = offer.photoUrl,
+                    ),
+                )
+                is NewOffer.TwoForOne -> offerApiService.create2x1(
+                    CreateOffer2x1RequestDto(
+                        nombreProducto = offer.productName.trim(),
+                        vigenciaTipo = offer.vigenciaTipo,
+                        vigenteHasta = offer.validUntil?.toIsoWithOffset(),
+                        unidadesAPagar = offer.unitsToPay,
+                        unidadesALlevar = offer.unitsToTake,
+                        precioUnitario = offer.unitPrice,
                         fotoUrl = offer.photoUrl,
                     ),
                 )
