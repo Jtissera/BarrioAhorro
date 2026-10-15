@@ -1155,7 +1155,7 @@ private fun PhotoSection(
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        "Foto cargada",
+                        "1/1 cargada",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF2E7D32),
@@ -1229,7 +1229,7 @@ private fun PhotoSection(
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "Cambiar o agregar foto",
+                            "Cambiar foto",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = c.primary,
