@@ -5,21 +5,41 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 private val BarrioAhorroColorScheme = lightColorScheme(
-    primary = InkBlack,
-    onPrimary = CardWhite,
-    secondary = Rust,
+    // Marca
+    primary = Primary,
+    onPrimary = OnPrimary,
+    primaryContainer = PrimaryContainer,
+    onPrimaryContainer = Ink,
+
+    secondary = Secondary,
     onSecondary = CardWhite,
+    secondaryContainer = SecondaryContainer,
+    onSecondaryContainer = Ink,
+
+    tertiary = Tertiary,
+    onTertiary = InkBlack,
+    tertiaryContainer = TertiaryContainer,
+    onTertiaryContainer = Ink,
+
+    // Fondos
     background = Cream,
     onBackground = Ink,
     surface = CardWhite,
     onSurface = Ink,
-    surfaceVariant = ToggleBg,
+    surfaceVariant = SurfaceSecondary,
     onSurfaceVariant = WarmGray,
-    outline = BorderGray,
-    error = ErrorRed,
-    onError = CardWhite,
-)
+    surfaceTint = Primary,
 
+    // Bordes
+    outline = BorderGray,
+    outlineVariant = TrackBeige,
+
+    // Errores
+    error = ErrorRed,
+    onError = OnPrimary,
+    errorContainer = ErrorContainer,
+    onErrorContainer = Ink,
+)
 
 @Composable
 fun AndroidTheme(

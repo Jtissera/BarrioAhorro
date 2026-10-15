@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.barrioahorro.app.domain.model.UserType
 import com.barrioahorro.app.ui.theme.AppColors
-import com.barrioahorro.app.ui.theme.Rust
+import com.barrioahorro.app.ui.theme.Cream
 
 @Composable
 fun AuthSuccessScreen(userType: UserType, onNavigateToOffers: () -> Unit) {
@@ -32,7 +32,7 @@ fun AuthSuccessScreen(userType: UserType, onNavigateToOffers: () -> Unit) {
         ) {
             Row {
                 Text(text = "barrio", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(text = "ahorro", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Rust)
+                Text(text = "ahorro", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Cream)
             }
 
             Text(

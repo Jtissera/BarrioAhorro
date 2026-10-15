@@ -33,6 +33,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,7 +42,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -59,21 +59,15 @@ import com.barrioahorro.app.domain.model.TopOffer
 import com.barrioahorro.app.domain.repository.sampleDashboard
 import com.barrioahorro.app.ui.components.BusinessBottomBar
 import com.barrioahorro.app.ui.components.BusinessTab
+import com.barrioahorro.app.ui.theme.AppColors
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.PrimaryContainer
+import com.barrioahorro.app.ui.theme.WarmGray
 import java.text.NumberFormat
 import java.util.Locale
-
-// TODO: reemplazar por los tokens reales del tema/paleta crema-rojo de la app.
-internal object DashboardColors {
-    val Cream = Color(0xFFFFF7EC)
-    val Card = Color.White
-    val Red = Color(0xFFD9381E)
-    val RedSoft = Color(0xFFF6B9AE)
-    val RedTint = Color(0xFFFDE8E3)
-    val TextDark = Color(0xFF2B1B17)
-    val TextMuted = Color(0xFF8A7B74)
-    val Divider = Color(0xFFEFE6DC)
-    val Star = Color(0xFFF5A623)
-}
 
 @Composable
 fun DashboardScreen(
@@ -86,7 +80,7 @@ fun DashboardScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     Scaffold(
-        containerColor = DashboardColors.Cream,
+        containerColor = Cream,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             BusinessBottomBar(
@@ -116,29 +110,53 @@ internal fun DashboardContent(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier.fillMaxSize().background(DashboardColors.Cream)) {
+    Box(
+        modifier
+            .fillMaxSize()
+            .background(Cream)
+    ) {
         when (state) {
-            DashboardUiState.Loading -> CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = DashboardColors.Red
-            )
-            is DashboardUiState.Error -> Column(
-                modifier = Modifier.align(Alignment.Center).padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(state.message, color = DashboardColors.TextDark, textAlign = TextAlign.Center)
-                Button(
-                    onClick = onRetry,
-                    colors = ButtonDefaults.buttonColors(containerColor = DashboardColors.Red)
-                ) { Text("Reintentar") }
+            DashboardUiState.Loading -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Primary
+                )
             }
-            is DashboardUiState.Success -> DashboardBody(
-                data = state.data,
-                onAddOffer = onAddOffer,
-                onSeeAllOffers = onSeeAllOffers,
-                onSeeAllReviews = onSeeAllReviews
-            )
+
+            is DashboardUiState.Error -> {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = state.message,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Button(
+                        onClick = onRetry,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Primary,
+                            contentColor = CardWhite
+                        )
+                    ) {
+                        Text("Reintentar")
+                    }
+                }
+            }
+
+            is DashboardUiState.Success -> {
+                DashboardBody(
+                    data = state.data,
+                    onAddOffer = onAddOffer,
+                    onSeeAllOffers = onSeeAllOffers,
+                    onSeeAllReviews = onSeeAllReviews
+                )
+            }
         }
     }
 }
@@ -158,36 +176,61 @@ private fun DashboardBody(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Column {
-            Text("Hola,", fontSize = 13.sp, color = DashboardColors.TextMuted)
             Text(
-                data.businessName,
+                text = "Hola,",
+                fontSize = 13.sp,
+                color = WarmGray
+            )
+
+            Text(
+                text = data.businessName,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = DashboardColors.TextDark
+                color = Ink
             )
         }
 
         Button(
             onClick = onAddOffer,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = DashboardColors.Red,
-                contentColor = Color.White
+                containerColor = Primary,
+                contentColor = CardWhite
             )
         ) {
-            Icon(Icons.Filled.Add, contentDescription = null)
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = null
+            )
+
             Spacer(Modifier.width(8.dp))
-            Text("Agregar oferta", fontWeight = FontWeight.Bold)
+
+            Text(
+                text = "Agregar oferta",
+                fontWeight = FontWeight.Bold
+            )
         }
 
-        ViewsCard(totalViews = data.totalViews, viewsByDay = data.viewsByDay)
+        ViewsCard(
+            totalViews = data.totalViews,
+            viewsByDay = data.viewsByDay
+        )
 
         DashboardSection(title = "Ofertas más vistas") {
-            if (data.topOffers.isEmpty()) EmptyHint("Todavía no hay visualizaciones")
+            if (data.topOffers.isEmpty()) {
+                EmptyHint("Todavía no hay visualizaciones")
+            }
+
             data.topOffers.forEachIndexed { index, offer ->
                 if (index > 0) RowDivider()
-                TopOfferRow(rank = index + 1, offer = offer)
+
+                TopOfferRow(
+                    rank = index + 1,
+                    offer = offer
+                )
             }
         }
 
@@ -196,7 +239,10 @@ private fun DashboardBody(
             actionLabel = "Ver todas",
             onAction = onSeeAllReviews
         ) {
-            if (data.recentReviews.isEmpty()) EmptyHint("Todavía no recibiste reseñas")
+            if (data.recentReviews.isEmpty()) {
+                EmptyHint("Todavía no recibiste reseñas")
+            }
+
             data.recentReviews.forEachIndexed { index, review ->
                 if (index > 0) RowDivider()
                 ReviewRow(review)
@@ -208,7 +254,10 @@ private fun DashboardBody(
             actionLabel = "Ver todas",
             onAction = onSeeAllOffers
         ) {
-            if (data.activeOffers.isEmpty()) EmptyHint("No tenés ofertas activas")
+            if (data.activeOffers.isEmpty()) {
+                EmptyHint("No tenés ofertas activas")
+            }
+
             data.activeOffers.forEachIndexed { index, offer ->
                 if (index > 0) RowDivider()
                 ActiveOfferRow(offer)
@@ -218,15 +267,24 @@ private fun DashboardBody(
 }
 
 @Composable
-private fun ViewsCard(totalViews: Int, viewsByDay: List<DayViews>) {
+private fun ViewsCard(
+    totalViews: Int,
+    viewsByDay: List<DayViews>
+) {
     DashboardSection(title = "Visualizaciones") {
         Text(
-            formatCount(totalViews),
+            text = formatCount(totalViews),
             fontSize = 34.sp,
             fontWeight = FontWeight.Bold,
-            color = DashboardColors.TextDark
+            color = Ink
         )
-        Text("Últimos 7 días", fontSize = 12.sp, color = DashboardColors.TextMuted)
+
+        Text(
+            text = "Últimos 7 días",
+            fontSize = 12.sp,
+            color = WarmGray
+        )
+
         ViewsBarChart(viewsByDay)
     }
 }
@@ -234,35 +292,55 @@ private fun ViewsCard(totalViews: Int, viewsByDay: List<DayViews>) {
 @Composable
 private fun ViewsBarChart(data: List<DayViews>) {
     if (data.isEmpty()) return
+
     val max = data.maxOf { it.views }.coerceAtLeast(1)
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().height(110.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(110.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.Bottom
         ) {
             data.forEach { day ->
-                val fraction = (day.views.toFloat() / max).coerceIn(0.04f, 1f)
+                val fraction =
+                    (day.views.toFloat() / max).coerceIn(0.04f, 1f)
+
                 Box(
-                    Modifier
+                    modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(fraction)
-                        .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-                        .background(if (day.views == max) DashboardColors.Red else DashboardColors.RedSoft)
+                        .clip(
+                            RoundedCornerShape(
+                                topStart = 6.dp,
+                                topEnd = 6.dp
+                            )
+                        )
+                        .background(
+                            if (day.views == max) {
+                                Primary
+                            } else {
+                                PrimaryContainer
+                            }
+                        )
                 )
             }
         }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             data.forEach { day ->
                 Text(
-                    day.label,
+                    text = day.label,
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     fontSize = 11.sp,
-                    color = DashboardColors.TextMuted
+                    color = WarmGray
                 )
             }
         }
@@ -280,86 +358,133 @@ private fun DashboardSection(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = DashboardColors.Card)
+        colors = CardDefaults.cardColors(
+            containerColor = CardWhite
+        )
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    title,
+                    text = title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = DashboardColors.TextDark
+                    color = Ink
                 )
+
                 if (actionLabel != null && onAction != null) {
-                    TextButton(onClick = onAction, contentPadding = PaddingValues(0.dp)) {
-                        Text(actionLabel, fontSize = 13.sp, color = DashboardColors.Red)
+                    TextButton(
+                        onClick = onAction,
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text(
+                            text = actionLabel,
+                            fontSize = 13.sp,
+                            color = Primary
+                        )
                     }
                 }
             }
+
             content()
         }
     }
 }
 
 @Composable
-private fun TopOfferRow(rank: Int, offer: TopOffer) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+private fun TopOfferRow(
+    rank: Int,
+    offer: TopOffer
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Box(
-            Modifier.size(28.dp).clip(CircleShape).background(DashboardColors.RedTint),
+            modifier = Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(PrimaryContainer),
             contentAlignment = Alignment.Center
         ) {
-            Text("$rank", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = DashboardColors.Red)
+            Text(
+                text = "$rank",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = Primary
+            )
         }
+
         Spacer(Modifier.width(12.dp))
+
         Text(
-            offer.title,
+            text = offer.title,
             modifier = Modifier.weight(1f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            color = DashboardColors.TextDark
+            color = Ink
         )
+
         Spacer(Modifier.width(8.dp))
-        Text("${formatCount(offer.views)} vistas", fontSize = 12.sp, color = DashboardColors.TextMuted)
+
+        Text(
+            text = "${formatCount(offer.views)} vistas",
+            fontSize = 12.sp,
+            color = WarmGray
+        )
     }
 }
 
 @Composable
 private fun ReviewRow(review: BusinessReview) {
-    Row(verticalAlignment = Alignment.Top) {
+    Row(
+        verticalAlignment = Alignment.Top
+    ) {
         Box(
-            Modifier.size(36.dp).clip(CircleShape).background(DashboardColors.RedTint),
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(PrimaryContainer),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                review.authorName.firstOrNull()?.uppercase() ?: "?",
+                text = review.authorName.firstOrNull()?.uppercase() ?: "?",
                 fontWeight = FontWeight.Bold,
-                color = DashboardColors.Red
+                color = Primary
             )
         }
+
         Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    review.authorName,
+                    text = review.authorName,
                     fontWeight = FontWeight.SemiBold,
-                    color = DashboardColors.TextDark
+                    color = Ink
                 )
+
                 RatingStars(review.rating)
             }
+
             Text(
-                review.comment,
+                text = review.comment,
                 fontSize = 13.sp,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                color = DashboardColors.TextMuted
+                color = WarmGray
             )
         }
     }
@@ -370,10 +495,14 @@ private fun RatingStars(rating: Int) {
     Row {
         repeat(5) { index ->
             Icon(
-                Icons.Filled.Star,
+                imageVector = Icons.Filled.Star,
                 contentDescription = null,
                 modifier = Modifier.size(14.dp),
-                tint = if (index < rating) DashboardColors.Star else DashboardColors.Divider
+                tint = if (index < rating) {
+                    MaterialTheme.colorScheme.tertiary
+                } else {
+                    MaterialTheme.colorScheme.outlineVariant
+                }
             )
         }
     }
@@ -381,49 +510,70 @@ private fun RatingStars(rating: Int) {
 
 @Composable
 private fun ActiveOfferRow(offer: ActiveOffer) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Column(Modifier.weight(1f)) {
             Text(
-                offer.title,
+                text = offer.title,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = DashboardColors.TextDark
+                color = Ink
             )
+
             offer.expiresLabel?.let {
-                Text(it, fontSize = 12.sp, color = DashboardColors.TextMuted)
+                Text(
+                    text = it,
+                    fontSize = 12.sp,
+                    color = WarmGray
+                )
             }
         }
+
         offer.priceLabel?.let { price ->
             Spacer(Modifier.width(8.dp))
+
             Text(
-                price,
+                text = price,
                 fontWeight = FontWeight.Bold,
-                color = DashboardColors.Red
+                color = Primary
             )
         }
     }
 }
 
 @Composable
-private fun RowDivider() = HorizontalDivider(color = DashboardColors.Divider)
+private fun RowDivider() {
+    HorizontalDivider(
+        color = MaterialTheme.colorScheme.outlineVariant
+    )
+}
 
 @Composable
-private fun EmptyHint(text: String) =
-    Text(text, fontSize = 13.sp, color = DashboardColors.TextMuted)
+private fun EmptyHint(text: String) {
+    Text(
+        text = text,
+        fontSize = 13.sp,
+        color = WarmGray
+    )
+}
 
 private fun formatCount(n: Int): String =
-    NumberFormat.getIntegerInstance(Locale.forLanguageTag("es-AR")).format(n)
+    NumberFormat.getIntegerInstance(Locale.forLanguageTag("es-AR"))
+        .format(n)
 
 
 
 @Preview(showBackground = true, heightDp = 1200)
 @Composable
 private fun DashboardPreview() {
-    DashboardContent(
-        state = DashboardUiState.Success(sampleDashboard),
-        onAddOffer = {},
-        onSeeAllOffers = {},
-        onSeeAllReviews = {},
-        onRetry = {}
-    )
+    MaterialTheme {
+        DashboardContent(
+            state = DashboardUiState.Success(sampleDashboard),
+            onAddOffer = {},
+            onSeeAllOffers = {},
+            onSeeAllReviews = {},
+            onRetry = {}
+        )
+    }
 }
