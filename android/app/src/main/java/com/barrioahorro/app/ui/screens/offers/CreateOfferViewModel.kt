@@ -1,11 +1,14 @@
 package com.barrioahorro.app.ui.screens.offers
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.barrioahorro.app.data.local.image.PhotoCompressor
 import com.barrioahorro.app.domain.model.NewOffer
 import com.barrioahorro.app.domain.model.OfferError
 import com.barrioahorro.app.domain.repository.Result
 import com.barrioahorro.app.domain.usecase.offer.CreateOfferUseCase
+import com.barrioahorro.app.domain.usecase.offer.UploadOfferPhotoUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +33,8 @@ data class CreateOfferUiState(
     val validUntil: LocalDateTime? = null,
     val isSubmitting: Boolean = false,
     val error: String? = null,
+    val photoUrl: String? = null,
+    val isUploadingPhoto: Boolean = false,
 ) {
     private val priceValue: BigDecimal? get() = price.replace(",", ".").toBigDecimalOrNull()
 
@@ -42,7 +47,7 @@ data class CreateOfferUiState(
         }
 
     val canSubmit: Boolean
-        get() = !isSubmitting && productName.isNotBlank() && priceValue != null &&
+        get() = !isSubmitting && !isUploadingPhoto && productName.isNotBlank() && priceValue != null &&
                 discountPercent != null && validUntil != null
 }
 
@@ -53,6 +58,8 @@ sealed class CreateOfferEvent {
 @HiltViewModel
 class CreateOfferViewModel @Inject constructor(
     private val createOfferUseCase: CreateOfferUseCase,
+    private val uploadOfferPhotoUseCase: UploadOfferPhotoUseCase,
+    private val photoCompressor: PhotoCompressor,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateOfferUiState())
@@ -92,6 +99,29 @@ class CreateOfferViewModel @Inject constructor(
         }
     }
 
+    fun onPhotoPicked(uri: Uri) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUploadingPhoto = true, error = null) }
+
+            val bytes = photoCompressor.compress(uri)
+            if (bytes == null) {
+                _uiState.update { it.copy(isUploadingPhoto = false, error = "No pudimos leer la foto") }
+                return@launch
+            }
+
+            when (val result = uploadOfferPhotoUseCase(bytes)) {
+                is Result.Success -> _uiState.update {
+                    it.copy(isUploadingPhoto = false, photoUrl = result.value)
+                }
+                is Result.Failure -> _uiState.update {
+                    it.copy(isUploadingPhoto = false, error = result.error.toMessage())
+                }
+            }
+        }
+    }
+
+    fun removePhoto() = _uiState.update { it.copy(photoUrl = null) }
+
     private fun CreateOfferUiState.toNewOffer(): NewOffer? {
         val priceValue = price.replace(",", ".").toBigDecimalOrNull() ?: return null
         val discount = discountPercent ?: return null
@@ -102,6 +132,7 @@ class CreateOfferViewModel @Inject constructor(
                 validUntil = until,
                 originalPrice = priceValue,
                 discountPercent = discount,
+                photoUrl = photoUrl,
             )
             OfferType.POR_CANTIDAD -> NewOffer.LastUnit(
                 productName = productName,
@@ -109,6 +140,7 @@ class CreateOfferViewModel @Inject constructor(
                 unitPrice = priceValue,
                 requiredQuantity = requiredQuantity,
                 lastUnitDiscountPercent = discount,
+                photoUrl = photoUrl,
             )
             else -> null // to do: 2x1 y por mayor
         }

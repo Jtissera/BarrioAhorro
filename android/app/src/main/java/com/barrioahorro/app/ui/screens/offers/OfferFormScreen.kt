@@ -1,5 +1,9 @@
 package com.barrioahorro.app.ui.screens.offers
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +26,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocalOffer
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.AddAPhoto
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -45,6 +52,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
@@ -64,10 +72,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -77,8 +86,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
+import coil3.compose.AsyncImage
 import com.barrioahorro.app.R
+import com.barrioahorro.app.di.BASE_URL
 import com.barrioahorro.app.ui.components.ToldoConFranjas
+import java.io.File
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.NumberFormat
@@ -134,6 +147,8 @@ fun OfferFormScreen(
     onIncrementQuantity: () -> Unit,
     onDecrementQuantity: () -> Unit,
     onValidUntilChange: (LocalDateTime) -> Unit,
+    onPhotoPicked: (Uri) -> Unit,
+    onRemovePhoto: () -> Unit,
     onBack: () -> Unit,
     onSubmit: () -> Unit,
 ) {
@@ -198,7 +213,12 @@ fun OfferFormScreen(
                         )
                     }
 
-                    PhotoPlaceholder()
+                    PhotoSection(
+                        photoUrl = state.photoUrl,
+                        isUploading = state.isUploadingPhoto,
+                        onPhotoPicked = onPhotoPicked,
+                        onRemove = onRemovePhoto,
+                    )
 
                     if (isLastUnit) {
                         QuantityConditions(
@@ -551,29 +571,141 @@ private fun QuantityConditions(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PhotoPlaceholder() {
+private fun PhotoSection(
+    photoUrl: String?,
+    isUploading: Boolean,
+    onPhotoPicked: (Uri) -> Unit,
+    onRemove: () -> Unit,
+) {
     val c = formColors()
+    val context = LocalContext.current
+    val shape = RoundedCornerShape(14.dp)
+    var showSheet by rememberSaveable { mutableStateOf(false) }
+    // Se guarda como String para sobrevivir si la Activity se recrea mientras está abierta la cámara.
+    var pendingCameraUri by rememberSaveable { mutableStateOf<String?>(null) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        val uri = pendingCameraUri?.let(Uri::parse)
+        pendingCameraUri = null
+        if (ok && uri != null) onPhotoPicked(uri)
+    }
+    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) onPhotoPicked(uri)
+    }
+
+    fun openCamera() {
+        val dir = File(context.cacheDir, "camera").apply { mkdirs() }
+        val file = File.createTempFile("oferta_", ".jpg", dir)
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        pendingCameraUri = uri.toString()
+        cameraLauncher.launch(uri)
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         FieldLabel("Foto del producto")
         Surface(
-            shape = RoundedCornerShape(14.dp),
+            shape = shape,
             color = c.field,
             modifier = Modifier
                 .fillMaxWidth()
-                .alpha(0.6f),
+                .clip(shape)
+                .clickable(enabled = !isUploading) { showSheet = true },
         ) {
-            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.AddAPhoto, contentDescription = null, tint = c.textSecondary)
+            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(c.card),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (photoUrl != null) {
+                        AsyncImage(
+                            model = photoUrl.toAbsoluteUrl(),
+                            contentDescription = "Foto del producto",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.matchParentSize(),
+                        )
+                    } else {
+                        Icon(Icons.Outlined.AddAPhoto, contentDescription = null, tint = c.textSecondary)
+                    }
+                    if (isUploading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = c.primary, strokeWidth = 2.dp)
+                    }
+                }
                 Spacer(Modifier.width(12.dp))
-                Column {
-                    Text("Subir foto", style = MaterialTheme.typography.labelLarge, color = c.textPrimary)
-                    Text("Próximamente", style = MaterialTheme.typography.bodySmall, color = c.textSecondary)
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        when {
+                            isUploading -> "Subiendo foto…"
+                            photoUrl != null -> "Foto lista"
+                            else -> "Subir foto"
+                        },
+                        style = MaterialTheme.typography.labelLarge,
+                        color = c.textPrimary,
+                    )
+                    Text(
+                        if (photoUrl != null) "Tocá para cambiarla" else "Sacá una foto o elegila de la galería",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = c.textSecondary,
+                    )
+                }
+                if (photoUrl != null && !isUploading) {
+                    IconButton(onClick = onRemove) {
+                        Icon(Icons.Filled.Close, contentDescription = "Quitar foto", tint = c.textSecondary)
+                    }
+                }
+            }
+        }
+    }
+
+    if (showSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSheet = false },
+            containerColor = c.background,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text("Foto del producto", style = MaterialTheme.typography.titleMedium, color = c.textPrimary)
+                PhotoSourceOption(Icons.Filled.PhotoCamera, "Sacar foto") {
+                    showSheet = false
+                    openCamera()
+                }
+                PhotoSourceOption(Icons.Filled.PhotoLibrary, "Elegir de la galería") {
+                    showSheet = false
+                    galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                 }
             }
         }
     }
 }
+
+@Composable
+private fun PhotoSourceOption(icon: ImageVector, text: String, onClick: () -> Unit) {
+    val c = formColors()
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
+        color = c.card,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = c.primary)
+            Spacer(Modifier.width(12.dp))
+            Text(text, style = MaterialTheme.typography.labelLarge, color = c.textPrimary)
+        }
+    }
+}
+
+private fun String.toAbsoluteUrl(): String =
+    if (startsWith("http")) this else BASE_URL.trimEnd('/') + "/" + trimStart('/')
 
 @Composable
 private fun ValiditySection(validUntil: LocalDateTime?, onPickClick: () -> Unit) {
@@ -663,7 +795,16 @@ private fun OfferPreview(state: CreateOfferUiState, price: BigDecimal?, isLastUn
             Row(Modifier.padding(14.dp)) {
                 Surface(shape = RoundedCornerShape(12.dp), color = c.field, modifier = Modifier.size(84.dp)) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.Outlined.Image, contentDescription = null, tint = c.inactive)
+                        if (state.photoUrl != null) {
+                            AsyncImage(
+                                model = state.photoUrl.toAbsoluteUrl(),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.matchParentSize(),
+                            )
+                        } else {
+                            Icon(Icons.Outlined.Image, contentDescription = null, tint = c.inactive)
+                        }
                     }
                 }
                 Spacer(Modifier.width(12.dp))
