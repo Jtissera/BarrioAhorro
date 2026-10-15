@@ -35,6 +35,7 @@ object BusinessRoutes {
     const val EDIT_PROFILE = "business/edit-profile"
     const val CREATE_OFFER = "business/create-offer"
     const val EDIT_PHOTOS = "business/edit-photos"
+    const val PROFILE = "business/profile"
 }
 
 object SplashRoutes {

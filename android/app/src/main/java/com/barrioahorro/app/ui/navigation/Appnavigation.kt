@@ -43,6 +43,7 @@ import com.barrioahorro.app.ui.screens.splash.SplashScreen
 import com.barrioahorro.app.ui.screens.splash.SplashViewModel
 import com.barrioahorro.app.ui.screens.dashboard.DashboardScreen
 import com.barrioahorro.app.ui.components.BusinessTab
+import com.barrioahorro.app.ui.screens.business.BusinessProfileScreen
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
@@ -325,6 +326,14 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
         )
     }
 
+    composable(BusinessRoutes.PROFILE) {
+        BusinessProfileScreen(
+            onEditData = { navController.navigate(BusinessRoutes.EDIT_PROFILE) },
+            onEditPhotos = { navController.navigate(BusinessRoutes.EDIT_PHOTOS) },
+            onTabSelected = { tab -> navController.navigateToBusinessTab(tab) },
+        )
+    }
+
 
     composable(BusinessRoutes.EDIT_PROFILE) {
         val viewModel: EditBusinessProfileViewModel = hiltViewModel()
@@ -384,7 +393,8 @@ fun NavHostController.navigateToBusinessTab(tab: BusinessTab) {
         BusinessTab.INICIO -> BusinessRoutes.DASHBOARD
         BusinessTab.OFERTAS -> BusinessRoutes.MY_OFFERS
         BusinessTab.CUPONERA -> CuponeraRoutes.CONTRIBUTION
-        BusinessTab.PERFIL -> BusinessRoutes.EDIT_PROFILE
+        BusinessTab.PERFIL -> BusinessRoutes.PROFILE
+        //BusinessTab.PERFIL -> BusinessRoutes.EDIT_PROFILE
     }
 
     if (currentDestination?.route == destination) return
