@@ -31,6 +31,7 @@ object OnboardingRoutes {
 
 object BusinessRoutes {
     const val DASHBOARD = "business/dashboard"
+    const val MY_OFFERS = "business/my-offers"
     const val EDIT_PROFILE = "business/edit-profile"
     const val CREATE_OFFER = "business/create-offer"
     const val EDIT_PHOTOS = "business/edit-photos"

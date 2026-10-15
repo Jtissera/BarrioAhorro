@@ -32,6 +32,7 @@ import com.barrioahorro.app.ui.screens.business.EditBusinessProfileViewModel
 import com.barrioahorro.app.ui.screens.gate.GateDestination
 import com.barrioahorro.app.ui.screens.gate.GateScreen
 import com.barrioahorro.app.ui.screens.offers.CreateOfferScreen
+import com.barrioahorro.app.ui.screens.offers.MyOffersScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessCategoryScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessLocationScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessNameScreen
@@ -41,6 +42,7 @@ import com.barrioahorro.app.ui.screens.splash.SplashDestination
 import com.barrioahorro.app.ui.screens.splash.SplashScreen
 import com.barrioahorro.app.ui.screens.splash.SplashViewModel
 import com.barrioahorro.app.ui.screens.dashboard.DashboardScreen
+import com.barrioahorro.app.ui.components.BusinessTab
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
@@ -134,7 +136,12 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
             ?.let { UserType.valueOf(it) } ?: UserType.CLIENTE
         AuthSuccessScreen(
             userType = userType,
-            onCreateOffer = { navController.navigate(BusinessRoutes.CREATE_OFFER) },
+            onNavigateToOffers = {
+                val target = if (userType == UserType.COMERCIO) BusinessRoutes.MY_OFFERS else AuthRoutes.ROLE_SELECTION
+                navController.navigate(target) {
+                    popUpTo(AuthRoutes.SUCCESS_PATTERN) { inclusive = true }
+                }
+            },
         )
     }
 
@@ -147,6 +154,7 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
                 Toast.makeText(context, "¡Oferta publicada!", Toast.LENGTH_SHORT).show()
                 navController.popBackStack()
             },
+            onTabSelected = { tab -> navController.navigateToBusinessTab(tab) },
         )
     }
 }
@@ -297,11 +305,7 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
                 navController.navigate(BusinessRoutes.CREATE_OFFER)
             },
             onSeeAllOffers = {
-                Toast.makeText(
-                    context,
-                    "La pantalla de todas las ofertas todavía no está disponible",
-                    Toast.LENGTH_SHORT
-                ).show()
+                navController.navigate(BusinessRoutes.MY_OFFERS)
             },
             onSeeAllReviews = {
                 Toast.makeText(
@@ -309,7 +313,15 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
                     "La pantalla de todas las reseñas todavía no está disponible",
                     Toast.LENGTH_SHORT
                 ).show()
-            }
+            },
+            onTabSelected = { tab -> navController.navigateToBusinessTab(tab) },
+        )
+    }
+
+    composable(BusinessRoutes.MY_OFFERS) {
+        MyOffersScreen(
+            onCreateOffer = { navController.navigate(BusinessRoutes.CREATE_OFFER) },
+            onTabSelected = { tab -> navController.navigateToBusinessTab(tab) },
         )
     }
 
@@ -364,5 +376,24 @@ fun NavHostController.navigateAfterAuth(userType: UserType) {
     }
     navigate(target) {
         popUpTo(AuthRoutes.ROLE_SELECTION) { inclusive = true }
+    }
+}
+
+fun NavHostController.navigateToBusinessTab(tab: BusinessTab) {
+    val destination = when (tab) {
+        BusinessTab.INICIO -> BusinessRoutes.DASHBOARD
+        BusinessTab.OFERTAS -> BusinessRoutes.MY_OFFERS
+        BusinessTab.CUPONERA -> CuponeraRoutes.CONTRIBUTION
+        BusinessTab.PERFIL -> BusinessRoutes.EDIT_PROFILE
+    }
+
+    if (currentDestination?.route == destination) return
+
+    navigate(destination) {
+        popUpTo(BusinessRoutes.DASHBOARD) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = true
     }
 }

@@ -8,6 +8,7 @@ import com.barrioahorro.app.data.remote.dto.CreateOfferPorMayorRequestDto
 import com.barrioahorro.app.data.remote.dto.CreateOfferPorcentajeRequestDto
 import com.barrioahorro.app.data.remote.dto.OfferCreatedDto
 import com.barrioahorro.app.data.remote.dto.OfferPhotoDto
+import com.barrioahorro.app.data.remote.dto.OfferResponseDto
 import com.barrioahorro.app.domain.model.NewOffer
 import com.barrioahorro.app.domain.model.OfferError
 import com.barrioahorro.app.domain.repository.IOfferRepository
@@ -131,6 +132,27 @@ class OfferRepositoryImpl @Inject constructor(
                 else -> OfferError.Unknown(message)
             },
         )
+
+    override suspend fun getMyOffers(): Result<List<OfferResponseDto>, OfferError> {
+        return try {
+            val response = offerApiService.getMyOffers()
+            if (response.isSuccessful) {
+                Result.Success(response.body() ?: emptyList())
+            } else {
+                val message = runCatching { gson.fromJson(response.errorBody()?.string(), ApiErrorDto::class.java)?.error }.getOrNull()
+                Result.Failure(
+                    when (response.code()) {
+                        HTTP_FORBIDDEN -> OfferError.NotABusiness
+                        else -> OfferError.Unknown(message ?: "Error al obtener ofertas (${response.code()})")
+                    },
+                )
+            }
+        } catch (e: IOException) {
+            Result.Failure(OfferError.NoConnection)
+        } catch (e: Exception) {
+            Result.Failure(OfferError.Unknown(e.message))
+        }
+    }
 
     private fun LocalDateTime.toIsoWithOffset(): String =
         atZone(ZoneId.systemDefault()).toOffsetDateTime().toString()

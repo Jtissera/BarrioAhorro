@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,9 +33,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -58,6 +57,8 @@ import com.barrioahorro.app.domain.model.BusinessReview
 import com.barrioahorro.app.domain.model.DayViews
 import com.barrioahorro.app.domain.model.TopOffer
 import com.barrioahorro.app.domain.repository.sampleDashboard
+import com.barrioahorro.app.ui.components.BusinessBottomBar
+import com.barrioahorro.app.ui.components.BusinessTab
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -79,18 +80,31 @@ fun DashboardScreen(
     onAddOffer: () -> Unit,
     onSeeAllOffers: () -> Unit,
     onSeeAllReviews: () -> Unit,
+    onTabSelected: (BusinessTab) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    DashboardContent(
-        state = state,
-        onAddOffer = onAddOffer,
-        onSeeAllOffers = onSeeAllOffers,
-        onSeeAllReviews = onSeeAllReviews,
-        onRetry = viewModel::load,
-        modifier = modifier
-    )
+    Scaffold(
+        containerColor = DashboardColors.Cream,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        bottomBar = {
+            BusinessBottomBar(
+                selectedTab = BusinessTab.INICIO,
+                onTabSelected = onTabSelected,
+            )
+        },
+        modifier = modifier,
+    ) { padding ->
+        DashboardContent(
+            state = state,
+            onAddOffer = onAddOffer,
+            onSeeAllOffers = onSeeAllOffers,
+            onSeeAllReviews = onSeeAllReviews,
+            onRetry = viewModel::load,
+            modifier = Modifier.padding(padding)
+        )
+    }
 }
 
 @Composable
@@ -400,39 +414,7 @@ private fun EmptyHint(text: String) =
 private fun formatCount(n: Int): String =
     NumberFormat.getIntegerInstance(Locale.forLanguageTag("es-AR")).format(n)
 
-// ---------- Bottom bar ----------
 
-enum class BusinessTab(val label: String, val icon: ImageVector) {
-    Home("Inicio", Icons.Filled.Home),
-    Offers("Ofertas", Icons.Filled.ShoppingCart),
-    Reviews("Reseñas", Icons.Filled.Star),
-    Profile("Perfil", Icons.Filled.Person)
-}
-
-@Composable
-fun BusinessBottomBar(
-    selected: BusinessTab,
-    onSelect: (BusinessTab) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    NavigationBar(modifier = modifier, containerColor = DashboardColors.Card) {
-        BusinessTab.entries.forEach { tab ->
-            NavigationBarItem(
-                selected = tab == selected,
-                onClick = { onSelect(tab) },
-                icon = { Icon(tab.icon, contentDescription = tab.label) },
-                label = { Text(tab.label, fontSize = 11.sp) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = DashboardColors.Red,
-                    selectedTextColor = DashboardColors.Red,
-                    indicatorColor = DashboardColors.RedTint,
-                    unselectedIconColor = DashboardColors.TextMuted,
-                    unselectedTextColor = DashboardColors.TextMuted
-                )
-            )
-        }
-    }
-}
 
 @Preview(showBackground = true, heightDp = 1200)
 @Composable
