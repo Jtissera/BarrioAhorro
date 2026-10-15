@@ -40,6 +40,7 @@ import com.barrioahorro.app.ui.screens.onboarding.OnboardingViewModel
 import com.barrioahorro.app.ui.screens.splash.SplashDestination
 import com.barrioahorro.app.ui.screens.splash.SplashScreen
 import com.barrioahorro.app.ui.screens.splash.SplashViewModel
+import com.barrioahorro.app.ui.screens.dashboard.DashboardScreen
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
@@ -84,7 +85,7 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
                 val target = when (destination) {
                     GateDestination.ONBOARDING -> OnboardingRoutes.BUSINESS_NAME
                     GateDestination.CUPONERA -> CuponeraRoutes.CONTRIBUTION
-                    GateDestination.HOME -> AuthRoutes.success(UserType.COMERCIO.name)
+                    GateDestination.HOME -> BusinessRoutes.DASHBOARD
                     GateDestination.SESSION_EXPIRED -> AuthRoutes.ROLE_SELECTION
                 }
                 navController.navigate(target) {
@@ -278,11 +279,37 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
                 }
             },
             onRatified = {
-                navController.navigate(AuthRoutes.success(UserType.COMERCIO.name)) {
-                    // Limpia todo el stack
-                    popUpTo(navController.graph.id) { inclusive = true }
+                navController.navigate(BusinessRoutes.DASHBOARD) {
+                    popUpTo(navController.graph.id) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
                 }
             },
+        )
+    }
+
+    composable(BusinessRoutes.DASHBOARD) {
+        val context = LocalContext.current
+
+        DashboardScreen(
+            onAddOffer = {
+                navController.navigate(BusinessRoutes.CREATE_OFFER)
+            },
+            onSeeAllOffers = {
+                Toast.makeText(
+                    context,
+                    "La pantalla de todas las ofertas todavía no está disponible",
+                    Toast.LENGTH_SHORT
+                ).show()
+            },
+            onSeeAllReviews = {
+                Toast.makeText(
+                    context,
+                    "La pantalla de todas las reseñas todavía no está disponible",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         )
     }
 

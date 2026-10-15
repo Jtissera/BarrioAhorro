@@ -6,6 +6,7 @@ import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.Pattern
+import java.math.BigDecimal
 
 private const val TIME_REGEX = "^([01]\\d|2[0-3]):[0-5]\\d$"
 
@@ -62,4 +63,33 @@ data class BusinessResponse(
     val horarios: List<ScheduleSlotResponse>,
     val fotos: List<PhotoResponse>,
     val onboardingCompleted: Boolean,
+)
+
+
+
+data class DashboardResponse(
+    val businessName: String,
+    val totalViews: Int,
+    val viewsByDay: List<DashboardDayViews>,
+    val topOffers: List<DashboardTopOffer>,
+    val recentReviews: List<DashboardReview>,
+    val activeOffers: List<DashboardActiveOffer>,
+)
+
+data class DashboardDayViews(val label: String, val views: Int)
+
+data class DashboardTopOffer(val id: Long, val title: String, val views: Int)
+
+data class DashboardReview(
+    val id: Long,
+    val authorName: String,
+    val rating: Int,
+    val comment: String,
+)
+
+data class DashboardActiveOffer(
+    val id: Long,
+    val title: String,
+    val unitPrice: BigDecimal?,
+    val expiresLabel: String?,
 )
