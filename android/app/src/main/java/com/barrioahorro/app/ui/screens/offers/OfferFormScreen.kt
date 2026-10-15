@@ -583,7 +583,6 @@ private fun PhotoSection(
     val context = LocalContext.current
     val shape = RoundedCornerShape(14.dp)
     var showSheet by rememberSaveable { mutableStateOf(false) }
-    // Se guarda como String para sobrevivir si la Activity se recrea mientras está abierta la cámara.
     var pendingCameraUri by rememberSaveable { mutableStateOf<String?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
