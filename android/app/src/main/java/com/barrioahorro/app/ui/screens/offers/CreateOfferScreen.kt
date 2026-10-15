@@ -40,6 +40,8 @@ fun CreateOfferScreen(
                 onValidUntilChange = viewModel::setValidUntil,
                 onBack = viewModel::clearType,
                 onSubmit = viewModel::submit,
+                onPhotoPicked = viewModel::onPhotoPicked,
+                onRemovePhoto = viewModel::removePhoto,
             )
         }
     }

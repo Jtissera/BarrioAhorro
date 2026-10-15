@@ -1,6 +1,7 @@
 package com.barrioahorro.api.modules.offer
 
 import com.barrioahorro.api.modules.business.BusinessRepository
+import com.barrioahorro.api.modules.business.PhotoStorage
 import com.barrioahorro.api.modules.offer.dto.CreateOffer2x1Request
 import com.barrioahorro.api.modules.offer.dto.CreateOfferPorMayorRequest
 import com.barrioahorro.api.modules.offer.dto.CreateOfferCantidadRequest
@@ -10,12 +11,14 @@ import com.barrioahorro.api.modules.offer.dto.OfferPorMayorDetailResponse
 import com.barrioahorro.api.modules.offer.dto.OfferCantidadDetailResponse
 import com.barrioahorro.api.modules.offer.dto.OfferPorcentajeDetailResponse
 import com.barrioahorro.api.modules.offer.dto.OfferResponse
+import com.barrioahorro.api.modules.offer.dto.OfferPhotoUploadResponse
 import com.barrioahorro.api.modules.offer.enum.TipoBeneficio
 import com.barrioahorro.api.modules.offer.enum.TipoVigencia
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
+import org.springframework.web.multipart.MultipartFile
 import java.time.LocalTime
 import java.time.OffsetDateTime
 
@@ -27,6 +30,7 @@ class OfferService(
     private val offerCantidadRepository: OfferCantidadRepository,
     private val offerPorcentajeRepository: OfferPorcentajeRepository,
     private val businessRepository: BusinessRepository,
+    private val photoStorage: PhotoStorage,
 ) {
 
     @Transactional
@@ -175,6 +179,18 @@ class OfferService(
         )
 
         return offer.toResponse(detailPorcentaje = detail)
+    }
+
+    fun uploadPhoto(userId: Long, file: MultipartFile): OfferPhotoUploadResponse {
+        if (!businessRepository.existsById(userId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Solo los comercios pueden subir fotos de ofertas")
+        }
+        if (file.isEmpty) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "No se recibió ninguna imagen")
+        }
+        val url = photoStorage.store(file.bytes)
+            ?: throw ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "La foto debe ser JPEG, PNG o WebP")
+        return OfferPhotoUploadResponse(url)
     }
 
     @Transactional(readOnly = true)

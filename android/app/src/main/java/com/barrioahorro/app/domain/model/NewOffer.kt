@@ -6,12 +6,14 @@ import java.time.LocalDateTime
 sealed class NewOffer {
     abstract val productName: String
     abstract val validUntil: LocalDateTime
+    abstract val photoUrl: String?
 
     data class Percentage(
         override val productName: String,
         override val validUntil: LocalDateTime,
         val originalPrice: BigDecimal,
         val discountPercent: Int,
+        override val photoUrl: String? = null,
     ) : NewOffer()
 
     data class LastUnit(
@@ -20,6 +22,7 @@ sealed class NewOffer {
         val unitPrice: BigDecimal,
         val requiredQuantity: Int,
         val lastUnitDiscountPercent: Int,
+        override val photoUrl: String? = null,
     ) : NewOffer()
 }
 

@@ -5,4 +5,5 @@ import com.barrioahorro.app.domain.model.OfferError
 
 interface IOfferRepository {
     suspend fun createOffer(offer: NewOffer): Result<Long, OfferError>
+    suspend fun uploadPhoto(bytes: ByteArray): Result<String, OfferError>
 }

@@ -8,6 +8,7 @@ data class CreateOfferPorcentajeRequestDto(
     val vigenteHasta: String,
     val precioOriginal: BigDecimal,
     val porcentajeDescuento: Int,
+    val fotoUrl: String? = null,
 )
 
 data class CreateOfferCantidadRequestDto(
@@ -17,6 +18,7 @@ data class CreateOfferCantidadRequestDto(
     val cantidadRequerida: Int,
     val precioUnitario: BigDecimal,
     val porcentajeDescuentoUltimaUnidad: Int,
+    val fotoUrl: String? = null,
 )
 
 data class OfferCreatedDto(
@@ -27,3 +29,6 @@ data class ApiErrorDto(
     val error: String?,
 )
 
+data class OfferPhotoDto(
+    val url: String?,
+)

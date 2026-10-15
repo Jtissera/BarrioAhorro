@@ -15,9 +15,13 @@ import java.io.IOException
 import java.time.LocalDateTime
 import java.time.ZoneId
 import javax.inject.Inject
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 private const val HTTP_BAD_REQUEST = 400
 private const val HTTP_FORBIDDEN = 403
+private const val HTTP_UNSUPPORTED_MEDIA_TYPE = 415
 private const val VIGENCIA_FECHA_ESPECIFICA = "FECHA_ESPECIFICA"
 
 class OfferRepositoryImpl @Inject constructor(
@@ -36,6 +40,7 @@ class OfferRepositoryImpl @Inject constructor(
                         vigenteHasta = offer.validUntil.toIsoWithOffset(),
                         precioOriginal = offer.originalPrice,
                         porcentajeDescuento = offer.discountPercent,
+                        fotoUrl = offer.photoUrl,
                     ),
                 )
                 is NewOffer.LastUnit -> offerApiService.createCantidad(
@@ -46,6 +51,7 @@ class OfferRepositoryImpl @Inject constructor(
                         cantidadRequerida = offer.requiredQuantity,
                         precioUnitario = offer.unitPrice,
                         porcentajeDescuentoUltimaUnidad = offer.lastUnitDiscountPercent,
+                        fotoUrl = offer.photoUrl,
                     ),
                 )
             }
@@ -53,6 +59,29 @@ class OfferRepositoryImpl @Inject constructor(
             onSuccess = { response -> response.toResult() },
             onFailure = { it.toFailure() },
         )
+
+    override suspend fun uploadPhoto(bytes: ByteArray): Result<String, OfferError> {
+        return try {
+            val body = bytes.toRequestBody("image/jpeg".toMediaType())
+            val part = MultipartBody.Part.createFormData("file", "oferta.jpg", body)
+            val response = offerApiService.uploadPhoto(part)
+            val url = response.body()?.url
+
+            if (response.isSuccessful && url != null) {
+                Result.Success(url)
+            } else {
+                Result.Failure(
+                    when (response.code()) {
+                        HTTP_FORBIDDEN -> OfferError.NotABusiness
+                        HTTP_BAD_REQUEST, HTTP_UNSUPPORTED_MEDIA_TYPE -> OfferError.Rejected("La foto debe ser JPEG, PNG o WebP")
+                        else -> OfferError.Unknown("HTTP ${response.code()}")
+                    },
+                )
+            }
+        } catch (e: IOException) {
+            Result.Failure(OfferError.NoConnection)
+        }
+    }
 
     private fun Response<OfferCreatedDto>.toResult(): Result<Long, OfferError> {
         val body = body()
