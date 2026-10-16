@@ -3,7 +3,7 @@ package com.barrioahorro.app.ui.screens.business
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -39,7 +39,6 @@ fun BusinessMainScreen(
 
     Scaffold(
         containerColor = Cream,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             BusinessBottomBar(
                 selectedTab = selectedTab,
@@ -51,7 +50,8 @@ fun BusinessMainScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .consumeWindowInsets(padding),
         ) {
             when (selectedTab) {
                 BusinessTab.INICIO -> DashboardScreen(

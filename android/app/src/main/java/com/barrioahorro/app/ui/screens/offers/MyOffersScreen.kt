@@ -102,7 +102,6 @@ fun MyOffersScreen(
 
     Scaffold(
         containerColor = c.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             ToldoConFranjas(
                 modifier = Modifier

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -84,10 +83,8 @@ fun EditBusinessPhotosScreen(
 
     val showContent = !state.isLoading && state.loadError == null
 
-    // MainActivity's Scaffold already applies the system insets; they are not added again here.
     Scaffold(
         containerColor = Cream,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { ProfileTopBar(title = "Fotos del comercio", onBack = requestBack) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {

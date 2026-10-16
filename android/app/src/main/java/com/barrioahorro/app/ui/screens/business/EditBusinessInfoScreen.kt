@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -128,10 +127,8 @@ fun EditBusinessInfoScreen(
 
     val showForm = !state.isLoading && state.loadError == null
 
-    // MainActivity's Scaffold already applies the system insets; they are not added again here.
     Scaffold(
         containerColor = background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { ProfileTopBar(title = "Editar información", onBack = onBack) },
         bottomBar = {
             if (showForm) {

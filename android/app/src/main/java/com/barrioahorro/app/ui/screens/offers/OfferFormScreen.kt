@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -210,11 +210,11 @@ fun OfferFormScreen(
 
     Scaffold(
         containerColor = c.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             ToldoConFranjas(
                 modifier = Modifier
-                    .background(Cream),
+                    .background(Cream)
+                    .statusBarsPadding(),
             )
         },
         bottomBar = {
@@ -1796,6 +1796,7 @@ private fun BottomActions(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .navigationBarsPadding()
             .padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
