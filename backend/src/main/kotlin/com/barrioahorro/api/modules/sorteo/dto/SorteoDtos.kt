@@ -7,7 +7,7 @@ import java.time.OffsetDateTime
 
 data class RatifySorteoRequest(
     @field:NotBlank(message = "Contanos qué premio vas a aportar")
-    @field:Size(max = 200, message = "La descripción del premio puede tener hasta 200 caracteres")
+    @field:Size(max = 60, message = "La descripción del premio puede tener hasta 60 caracteres")
     val premioDescripcion: String,
 )
 
