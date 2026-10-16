@@ -39,10 +39,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.barrioahorro.app.R
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.PrimaryContainer
+import com.barrioahorro.app.ui.theme.Secondary
+import com.barrioahorro.app.ui.theme.WarmGray
 import com.barrioahorro.app.ui.components.feedback.ErrorCard
 import com.barrioahorro.app.ui.components.onboarding.ONBOARDING_TOTAL_STEPS
 import com.barrioahorro.app.ui.components.onboarding.OnboardingPrimaryButton
@@ -62,8 +68,8 @@ fun BusinessCategoryScreen(
     onBack: () -> Unit,
     onFinish: () -> Unit,
 ) {
-    val background = colorResource(R.color.splash_background)
-    val textSecondary = colorResource(R.color.text_secondary)
+    val background = Cream
+    val textSecondary = WarmGray
 
     Scaffold(containerColor = background) { paddingValues ->
         Column(
@@ -83,7 +89,7 @@ fun BusinessCategoryScreen(
             Text(
                 text = "¿Cuál es tu rubro?",
                 style = MaterialTheme.typography.headlineMedium,
-                color = colorResource(R.color.text_primary),
+                color = Ink,
                 modifier = Modifier.padding(top = 8.dp),
             )
             Text(
@@ -102,7 +108,7 @@ fun BusinessCategoryScreen(
                         .fillMaxWidth(),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator(color = colorResource(R.color.primary))
+                    CircularProgressIndicator(color = Primary)
                 }
             } else {
                 LazyVerticalGrid(
@@ -131,7 +137,7 @@ fun BusinessCategoryScreen(
                 Icon(
                     imageVector = Icons.Outlined.Info,
                     contentDescription = null,
-                    tint = colorResource(R.color.secondary),
+                    tint = Secondary,
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -159,13 +165,13 @@ private fun CategoryCard(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
-    val primary = colorResource(R.color.primary)
-    val contentColor = if (isSelected) primary else colorResource(R.color.text_primary)
+    val primary = Primary
+    val contentColor = if (isSelected) primary else Ink
 
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
-        color = if (isSelected) colorResource(R.color.primary_container) else colorResource(R.color.surface_card),
+        color = if (isSelected) PrimaryContainer else CardWhite,
         border = if (isSelected) BorderStroke(1.5.dp, primary) else null,
         modifier = Modifier
             .fillMaxWidth()
@@ -204,7 +210,7 @@ private fun CategoryCard(
                     Icon(
                         imageVector = Icons.Filled.Check,
                         contentDescription = "Seleccionado",
-                        tint = colorResource(R.color.on_primary),
+                        tint = OnPrimary,
                         modifier = Modifier.size(12.dp),
                     )
                 }

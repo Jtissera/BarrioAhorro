@@ -29,10 +29,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.barrioahorro.app.R
+import com.barrioahorro.app.ui.theme.BadgeOrange
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.WarmGray
 
 enum class BusinessTab {
     INICIO,
@@ -67,7 +69,7 @@ fun BusinessBottomBar(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        color = Color.White,
+        color = CardWhite,
         shadowElevation = 8.dp,
         modifier = modifier.fillMaxWidth(),
     ) {
@@ -120,8 +122,8 @@ private fun RowScope.BottomNavItem(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
-    val primaryColor = colorResource(R.color.primary)
-    val textSecondaryColor = colorResource(R.color.text_secondary)
+    val primaryColor = Primary
+    val textSecondaryColor = WarmGray
 
     Column(
         modifier = Modifier
@@ -136,7 +138,7 @@ private fun RowScope.BottomNavItem(
             modifier = Modifier
                 .size(width = 52.dp, height = 28.dp)
                 .clip(RoundedCornerShape(14.dp))
-                .background(if (isSelected) Color(0xFFFFE0D2) else Color.Transparent),
+                .background(if (isSelected) BadgeOrange else Color.Transparent),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

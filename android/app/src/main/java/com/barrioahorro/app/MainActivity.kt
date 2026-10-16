@@ -12,10 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.barrioahorro.app.ui.navigation.AppNavigation
 import com.barrioahorro.app.ui.theme.AndroidTheme
+import com.barrioahorro.app.ui.theme.Cream
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.activity.SystemBarStyle
-import androidx.compose.ui.graphics.Color
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
             AndroidTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    containerColor = Color(0xFFFBF6E6),
+                    containerColor = Cream,
                 ) { innerPadding ->
                     AppNavigation(
                         modifier = Modifier.padding(innerPadding)

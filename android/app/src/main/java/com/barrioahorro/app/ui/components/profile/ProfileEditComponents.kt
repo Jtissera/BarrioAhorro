@@ -30,20 +30,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.barrioahorro.app.R
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.Secondary
+import com.barrioahorro.app.ui.theme.SecondaryContainer
+import com.barrioahorro.app.ui.theme.SurfaceBottomBar
 
 private const val AWNING_STRIPES = 12
 
 /** Striped awning accent shown at the top of the merchant screens. */
 @Composable
 fun AwningStripe(modifier: Modifier = Modifier) {
-    val red = colorResource(R.color.primary)
-    val cream = colorResource(R.color.splash_background)
+    val red = Primary
+    val cream = Cream
     Row(modifier = modifier.fillMaxWidth().height(10.dp)) {
         repeat(AWNING_STRIPES) { index ->
             Box(
@@ -59,7 +65,7 @@ fun AwningStripe(modifier: Modifier = Modifier) {
 /** Top bar of the merchant edit screens: awning stripe, back action and title. */
 @Composable
 fun ProfileTopBar(title: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.fillMaxWidth().background(colorResource(R.color.splash_background))) {
+    Column(modifier = modifier.fillMaxWidth().background(Cream)) {
         AwningStripe()
         Row(
             modifier = Modifier.fillMaxWidth().padding(end = 16.dp, top = 4.dp),
@@ -69,13 +75,13 @@ fun ProfileTopBar(title: String, onBack: () -> Unit, modifier: Modifier = Modifi
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Volver",
-                    tint = colorResource(R.color.text_primary),
+                    tint = Ink,
                 )
             }
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
-                color = colorResource(R.color.text_primary),
+                color = Ink,
             )
         }
     }
@@ -96,7 +102,7 @@ fun FormFieldHeader(
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
-            color = colorResource(R.color.text_primary),
+            color = Ink,
         )
         trailing?.invoke()
     }
@@ -128,7 +134,7 @@ fun StatusChip(
 /** Red inline hint with a warning icon, used for validation and save errors. */
 @Composable
 fun ErrorHint(text: String, modifier: Modifier = Modifier) {
-    val color = colorResource(R.color.primary)
+    val color = Primary
     Row(modifier = modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.Top) {
         Icon(Icons.Filled.Warning, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
         Spacer(modifier = Modifier.width(6.dp))
@@ -151,16 +157,16 @@ fun PrimaryPillButton(
     isLoading: Boolean = false,
     height: Dp = 56.dp,
 ) {
-    val onPrimary = colorResource(R.color.on_primary)
+    val onPrimary = OnPrimary
     Button(
         onClick = { if (!isLoading) onClick() },
         enabled = enabled,
         shape = CircleShape,
         contentPadding = PaddingValues(horizontal = 16.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = colorResource(R.color.primary),
+            containerColor = Primary,
             contentColor = onPrimary,
-            disabledContainerColor = colorResource(R.color.neutral_inactive),
+            disabledContainerColor = MutedLabel,
             disabledContentColor = onPrimary,
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
@@ -190,8 +196,8 @@ fun CreamPillButton(
         onClick = onClick,
         shape = CircleShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = colorResource(R.color.splash_background),
-            contentColor = colorResource(R.color.text_primary),
+            containerColor = Cream,
+            contentColor = Ink,
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
         modifier = modifier.fillMaxWidth().height(height),
@@ -207,7 +213,7 @@ fun BottomActionSurface(
     content: @Composable () -> Unit,
 ) {
     Surface(
-        color = colorResource(R.color.surface_bottom_bar).copy(alpha = 0.95f),
+        color = SurfaceBottomBar.copy(alpha = 0.95f),
         modifier = modifier
             .fillMaxWidth()
             .shadow(elevation = 12.dp, ambientColor = SHADOW_UMBER, spotColor = SHADOW_UMBER),
@@ -233,9 +239,9 @@ private fun ProfileEditComponentsPreview() {
         }
         StatusChip(
             text = "Abierto",
-            containerColor = colorResource(R.color.secondary_container),
-            contentColor = colorResource(R.color.secondary),
-            dotColor = colorResource(R.color.secondary),
+            containerColor = SecondaryContainer,
+            contentColor = Secondary,
+            dotColor = Secondary,
         )
         ErrorHint(text = "Ingresá la dirección")
         PrimaryPillButton(text = "Guardar cambios", onClick = {})

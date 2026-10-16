@@ -65,12 +65,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.ErrorRed
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.PrimaryContainer
+import com.barrioahorro.app.ui.theme.Secondary
+import com.barrioahorro.app.ui.theme.SurfaceMuted
+import com.barrioahorro.app.ui.theme.SurfaceSecondary
+import com.barrioahorro.app.ui.theme.Tertiary
+import com.barrioahorro.app.ui.theme.TertiaryContainer
+import com.barrioahorro.app.ui.theme.TrackBeige
+import com.barrioahorro.app.ui.theme.WarmGray
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -170,8 +183,8 @@ fun BusinessPhotosSection(
         if (needsPermission) cameraPermissionLauncher.launch(Manifest.permission.CAMERA) else launchCamera()
     }
 
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
+    val textPrimary = Ink
+    val textSecondary = WarmGray
     val canAdd = photos.size < MAX_BUSINESS_PHOTOS
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -224,8 +237,8 @@ fun BusinessPhotosSection(
         if (isUpdating) {
             Spacer(modifier = Modifier.height(12.dp))
             LinearProgressIndicator(
-                color = colorResource(R.color.primary),
-                trackColor = colorResource(R.color.surface_muted),
+                color = Primary,
+                trackColor = SurfaceMuted,
                 modifier = Modifier.fillMaxWidth().clip(CircleShape),
             )
         }
@@ -284,17 +297,17 @@ private fun CoverPhotoCard(
     onChange: () -> Unit,
     onRemove: () -> Unit,
 ) {
-    val onPrimary = colorResource(R.color.on_primary)
+    val onPrimary = OnPrimary
 
     Surface(
         shape = photoShape,
-        color = colorResource(R.color.surface_card),
-        border = BorderStroke(1.dp, colorResource(R.color.outline_variant).copy(alpha = 0.3f)),
+        color = CardWhite,
+        border = BorderStroke(1.dp, TrackBeige.copy(alpha = 0.3f)),
         shadowElevation = 1.dp,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column {
-            Box(modifier = Modifier.fillMaxWidth().height(COVER_HEIGHT).background(colorResource(R.color.surface_muted))) {
+            Box(modifier = Modifier.fillMaxWidth().height(COVER_HEIGHT).background(SurfaceMuted)) {
                 AsyncImage(
                     model = photo.url,
                     contentDescription = "Foto de portada",
@@ -316,7 +329,7 @@ private fun CoverPhotoCard(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(10.dp)
-                        .background(colorResource(R.color.secondary), CircleShape)
+                        .background(Secondary, CircleShape)
                         .padding(horizontal = 10.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -358,8 +371,8 @@ private fun CoverPhotoCard(
                     onClick = onRemove,
                     enabled = enabled,
                     shape = CircleShape,
-                    border = BorderStroke(1.dp, colorResource(R.color.outline_variant)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = colorResource(R.color.error)),
+                    border = BorderStroke(1.dp, TrackBeige),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorRed),
                     modifier = Modifier.height(48.dp),
                 ) {
                     Icon(Icons.Outlined.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -430,12 +443,12 @@ private fun PhotoTile(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val badgeText = colorResource(R.color.surface_secondary)
+    val badgeText = SurfaceSecondary
     Box(
         modifier = modifier
             .shadow(1.dp, photoShape)
             .clip(photoShape)
-            .background(colorResource(R.color.surface_muted)),
+            .background(SurfaceMuted),
     ) {
         AsyncImage(
             model = photo.url,
@@ -452,7 +465,7 @@ private fun PhotoTile(
                     .padding(horizontal = 8.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Filled.Star, contentDescription = null, tint = colorResource(R.color.tertiary), modifier = Modifier.size(11.dp))
+                Icon(Icons.Filled.Star, contentDescription = null, tint = Tertiary, modifier = Modifier.size(11.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Portada", style = MaterialTheme.typography.labelSmall, color = badgeText)
             }
@@ -472,7 +485,7 @@ private fun PhotoTile(
 /** "Usar como portada" pill shown on every gallery photo that is not the cover. */
 @Composable
 private fun SetCoverChip(enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val content = colorResource(R.color.text_primary)
+    val content = Ink
     val tint = if (enabled) content else content.copy(alpha = 0.35f)
     Row(
         modifier = modifier
@@ -490,7 +503,7 @@ private fun SetCoverChip(enabled: Boolean, onClick: () -> Unit, modifier: Modifi
 
 @Composable
 private fun TileAction(icon: ImageVector, description: String, enabled: Boolean, onClick: () -> Unit) {
-    val tint = colorResource(R.color.text_primary)
+    val tint = Ink
     Box(
         modifier = Modifier
             .size(30.dp)
@@ -510,18 +523,18 @@ private fun TileAction(icon: ImageVector, description: String, enabled: Boolean,
 
 @Composable
 private fun AddPhotoTile(label: String, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val textSecondary = colorResource(R.color.text_secondary)
+    val textSecondary = WarmGray
     Column(
         modifier = modifier
             .clip(photoShape)
-            .background(colorResource(R.color.surface_secondary))
-            .border(1.dp, colorResource(R.color.outline_variant), photoShape)
+            .background(SurfaceSecondary)
+            .border(1.dp, TrackBeige, photoShape)
             .clickable(enabled = enabled, onClick = onClick),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            modifier = Modifier.size(48.dp).background(colorResource(R.color.splash_background), CircleShape),
+            modifier = Modifier.size(48.dp).background(Cream, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(Icons.Filled.AddAPhoto, contentDescription = null, tint = textSecondary, modifier = Modifier.size(24.dp))
@@ -533,7 +546,7 @@ private fun AddPhotoTile(label: String, enabled: Boolean, onClick: () -> Unit, m
 
 @Composable
 private fun CoverTipsCard() {
-    val textSecondary = colorResource(R.color.text_secondary)
+    val textSecondary = WarmGray
     val tips = listOf(
         "Sacá la foto de día con buena luz natural sobre el frente.",
         "Mostrá el cartel del negocio y la mercadería fresca visible.",
@@ -541,19 +554,19 @@ private fun CoverTipsCard() {
     )
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = colorResource(R.color.splash_background),
+        color = Cream,
         shadowElevation = 1.dp,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(modifier = Modifier.padding(16.dp)) {
             Box(
-                modifier = Modifier.size(32.dp).background(colorResource(R.color.tertiary_container), CircleShape),
+                modifier = Modifier.size(32.dp).background(TertiaryContainer, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.Outlined.Lightbulb,
                     contentDescription = null,
-                    tint = colorResource(R.color.text_primary),
+                    tint = Ink,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -562,7 +575,7 @@ private fun CoverTipsCard() {
                 Text(
                     text = "Consejos para tu portada",
                     style = MaterialTheme.typography.titleMedium,
-                    color = colorResource(R.color.text_primary),
+                    color = Ink,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 tips.forEach { tip ->
@@ -570,7 +583,7 @@ private fun CoverTipsCard() {
                         Icon(
                             Icons.Filled.Check,
                             contentDescription = null,
-                            tint = colorResource(R.color.secondary),
+                            tint = Secondary,
                             modifier = Modifier.padding(top = 2.dp).size(12.dp),
                         )
                         Spacer(modifier = Modifier.width(6.dp))
@@ -613,14 +626,14 @@ private fun PhotoSourceSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = colorResource(R.color.surface_card),
+        containerColor = CardWhite,
         scrimColor = DarkUmber.copy(alpha = 0.5f),
         dragHandle = {
             Box(
                 modifier = Modifier
                     .padding(top = 16.dp, bottom = 8.dp)
                     .size(width = 48.dp, height = 6.dp)
-                    .background(colorResource(R.color.splash_background), CircleShape),
+                    .background(Cream, CircleShape),
             )
         },
     ) {
@@ -640,7 +653,7 @@ private fun PhotoSourceSheetContent(
     onTakePhoto: (() -> Unit)?,
     onPickFromGallery: () -> Unit,
 ) {
-    val textPrimary = colorResource(R.color.text_primary)
+    val textPrimary = Ink
     Column(modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -653,7 +666,7 @@ private fun PhotoSourceSheetContent(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(colorResource(R.color.splash_background))
+                    .background(Cream)
                     .clickable(onClick = onDismiss),
                 contentAlignment = Alignment.Center,
             ) {
@@ -664,7 +677,7 @@ private fun PhotoSourceSheetContent(
         Text(
             text = "Elegí una opción para actualizar la imagen de tu negocio",
             style = MaterialTheme.typography.bodyMedium,
-            color = colorResource(R.color.text_secondary),
+            color = WarmGray,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -694,17 +707,17 @@ private fun PhotoSourceSheetContent(
 private fun PhotoSourceOption(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = colorResource(R.color.surface_card),
+        color = CardWhite,
         shadowElevation = 1.dp,
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier.size(44.dp).background(colorResource(R.color.primary), CircleShape),
+                modifier = Modifier.size(44.dp).background(Primary, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(icon, contentDescription = null, tint = colorResource(R.color.on_primary), modifier = Modifier.size(22.dp))
+                Icon(icon, contentDescription = null, tint = OnPrimary, modifier = Modifier.size(22.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -712,18 +725,18 @@ private fun PhotoSourceOption(icon: ImageVector, title: String, subtitle: String
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = colorResource(R.color.text_primary),
+                    color = Ink,
                 )
-                Text(text = subtitle, style = MaterialTheme.typography.bodyMedium, color = colorResource(R.color.text_secondary))
+                Text(text = subtitle, style = MaterialTheme.typography.bodyMedium, color = WarmGray)
             }
             Box(
-                modifier = Modifier.size(32.dp).background(colorResource(R.color.splash_background), CircleShape),
+                modifier = Modifier.size(32.dp).background(Cream, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
-                    tint = colorResource(R.color.text_primary),
+                    tint = Ink,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -743,29 +756,29 @@ private fun RemovePhotoDialog(photoUrl: String, onConfirm: () -> Unit, onDismiss
 private fun RemovePhotoDialogContent(photoUrl: String?, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = colorResource(R.color.surface_card),
+        color = CardWhite,
         shadowElevation = 24.dp,
         modifier = Modifier.widthIn(max = 340.dp),
     ) {
         Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
-                modifier = Modifier.size(48.dp).background(colorResource(R.color.primary_container), CircleShape),
+                modifier = Modifier.size(48.dp).background(PrimaryContainer, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Outlined.Delete, contentDescription = null, tint = colorResource(R.color.primary), modifier = Modifier.size(22.dp))
+                Icon(Icons.Outlined.Delete, contentDescription = null, tint = Primary, modifier = Modifier.size(22.dp))
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "¿Quitar esta foto?",
                 style = MaterialTheme.typography.titleLarge,
-                color = colorResource(R.color.text_primary),
+                color = Ink,
                 textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Esta foto ya no se mostrará en tu perfil público ni en tus ofertas. Podés volver a subirla cuando quieras.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = colorResource(R.color.text_secondary),
+                color = WarmGray,
                 textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -774,7 +787,7 @@ private fun RemovePhotoDialogContent(photoUrl: String?, onConfirm: () -> Unit, o
                     .size(width = 96.dp, height = 80.dp)
                     .shadow(1.dp, photoShape)
                     .clip(photoShape)
-                    .background(colorResource(R.color.surface_muted)),
+                    .background(SurfaceMuted),
             ) {
                 if (photoUrl != null) {
                     AsyncImage(

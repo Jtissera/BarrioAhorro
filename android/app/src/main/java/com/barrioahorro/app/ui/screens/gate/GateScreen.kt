@@ -15,12 +15,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.barrioahorro.app.R
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
 
 @Composable
 fun GateScreen(
@@ -37,7 +39,7 @@ fun GateScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(colorResource(R.color.splash_background)),
+            .background(Cream),
         contentAlignment = Alignment.Center,
     ) {
         when (val current = state) {
@@ -50,13 +52,13 @@ fun GateScreen(
                     Text(
                         text = current.message,
                         textAlign = TextAlign.Center,
-                        color = colorResource(R.color.text_primary),
+                        color = Ink,
                     )
                     Button(
                         onClick = viewModel::check,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = colorResource(R.color.primary),
-                            contentColor = colorResource(R.color.on_primary),
+                            containerColor = Primary,
+                            contentColor = OnPrimary,
                         ),
                     ) {
                         Text("Reintentar")
@@ -64,7 +66,7 @@ fun GateScreen(
                 }
             }
 
-            else -> CircularProgressIndicator(color = colorResource(R.color.primary))
+            else -> CircularProgressIndicator(color = Primary)
         }
     }
 }

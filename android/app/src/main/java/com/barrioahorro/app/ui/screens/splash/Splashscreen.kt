@@ -32,16 +32,17 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.barrioahorro.app.R
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.Primary
 import kotlinx.coroutines.flow.first
 
-
-private val SplashRed = Color(0xFFD42E12)
-private val SplashBrown = Color(0xFF2F1A11)
+private val SplashRed = Primary
+private val SplashBrown = Ink
 
 private val EaseOutBack = CubicBezierEasing(0.34f, 1.56f, 0.64f, 1f)
 private const val STRIPE_COUNT = 14
@@ -71,7 +72,7 @@ fun SplashScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(colorResource(R.color.splash_background)),
+            .background(Cream),
     ) {
         AwningStripes(
             progress = { segment(timeline.value, 0f, 0.4f) },

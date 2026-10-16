@@ -46,13 +46,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.barrioahorro.app.R
-import com.barrioahorro.app.ui.components.BusinessBottomBar
-import com.barrioahorro.app.ui.components.BusinessTab
 import com.barrioahorro.app.ui.components.ToldoConFranjas
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.PrimaryContainer
+import com.barrioahorro.app.ui.theme.SurfaceSecondary
+import com.barrioahorro.app.ui.theme.WarmGray
 
 private data class OfferTypeOption(
     val type: OfferType,
@@ -77,18 +82,18 @@ fun OfferTypeSelectorScreen(
 ) {
     var selected by rememberSaveable { mutableStateOf<OfferType?>(null) }
 
-    val primary = colorResource(R.color.primary)
-    val onPrimary = colorResource(R.color.on_primary)
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
+    val primary = Primary
+    val onPrimary = OnPrimary
+    val textPrimary = Ink
+    val textSecondary = WarmGray
 
     Scaffold(
-        containerColor = colorResource(R.color.splash_background),
+        containerColor = Cream,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             ToldoConFranjas(
                 modifier = Modifier
-                    .background(colorResource(R.color.splash_background)),
+                    .background(Cream),
             )
         },
         bottomBar = {
@@ -102,7 +107,7 @@ fun OfferTypeSelectorScreen(
                     onClick = onBack,
                     modifier = Modifier.height(52.dp),
                     colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = colorResource(R.color.surface_secondary),
+                        containerColor = SurfaceSecondary,
                         contentColor = textPrimary,
                     ),
                 ) {
@@ -116,7 +121,7 @@ fun OfferTypeSelectorScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = primary,
                         contentColor = onPrimary,
-                        disabledContainerColor = colorResource(R.color.neutral_inactive),
+                        disabledContainerColor = MutedLabel,
                         disabledContentColor = onPrimary,
                     ),
                     modifier = Modifier
@@ -173,13 +178,13 @@ fun OfferTypeSelectorScreen(
 
 @Composable
 private fun OfferTypeCard(option: OfferTypeOption, isSelected: Boolean, onClick: () -> Unit) {
-    val primary = colorResource(R.color.primary)
-    val primaryContainer = colorResource(R.color.primary_container)
-    val onPrimary = colorResource(R.color.on_primary)
-    val card = colorResource(R.color.surface_card)
-    val soft = colorResource(R.color.surface_secondary)
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
+    val primary = Primary
+    val primaryContainer = PrimaryContainer
+    val onPrimary = OnPrimary
+    val card = CardWhite
+    val soft = SurfaceSecondary
+    val textPrimary = Ink
+    val textSecondary = WarmGray
 
     Card(
         onClick = onClick,

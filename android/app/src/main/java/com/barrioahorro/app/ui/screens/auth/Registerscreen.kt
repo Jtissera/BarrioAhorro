@@ -29,11 +29,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.Secondary
+import com.barrioahorro.app.ui.theme.WarmGray
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.barrioahorro.app.R
@@ -91,12 +98,12 @@ private fun RegisterContent(
     onSubmit: () -> Unit,
     onNavigateToLogin: () -> Unit,
 ) {
-    val background = colorResource(R.color.splash_background)
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
-    val primary = colorResource(R.color.primary)
-    val onPrimary = colorResource(R.color.on_primary)
-    val inactive = colorResource(R.color.neutral_inactive)
+    val background = Cream
+    val textPrimary = Ink
+    val textSecondary = WarmGray
+    val primary = Primary
+    val onPrimary = OnPrimary
+    val inactive = MutedLabel
 
     Scaffold(
         containerColor = background,
@@ -273,10 +280,10 @@ private fun PasswordRequirements(
     password: String,
     modifier: Modifier = Modifier,
 ) {
-    val success = colorResource(R.color.secondary)
-    val inactive = colorResource(R.color.neutral_inactive)
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
+    val success = Secondary
+    val inactive = MutedLabel
+    val textPrimary = Ink
+    val textSecondary = WarmGray
 
     val requirements = listOf(
         "Al menos 8 caracteres" to (password.length >= 8),
@@ -286,7 +293,7 @@ private fun PasswordRequirements(
                 password.any { !it.isLetterOrDigit() },
     )
 
-    val card = colorResource(R.color.surface_card)
+    val card = CardWhite
     val shape = RoundedCornerShape(12.dp)
 
     Column(

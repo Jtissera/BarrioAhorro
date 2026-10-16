@@ -33,11 +33,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
-import com.barrioahorro.app.R
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.PrimaryContainer
+import com.barrioahorro.app.ui.theme.Secondary
+import com.barrioahorro.app.ui.theme.Tertiary
+import com.barrioahorro.app.ui.theme.WarmGray
 import com.barrioahorro.app.ui.components.onboarding.OnboardingPrimaryButton
 import com.barrioahorro.app.ui.components.onboarding.OnboardingTopBar
 import com.barrioahorro.app.ui.components.onboarding.onboardingFieldColors
@@ -58,12 +64,12 @@ fun BusinessNameScreen(
     var name by rememberSaveable { mutableStateOf(initialName) }
     var description by rememberSaveable { mutableStateOf(initialDescription) }
 
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
+    val textPrimary = Ink
+    val textSecondary = WarmGray
     val isNameValid = name.trim().length >= MIN_NAME_LENGTH
 
     Scaffold(
-        containerColor = colorResource(R.color.splash_background),
+        containerColor = Cream,
         modifier = modifier,
     ) { paddingValues ->
         Column(
@@ -109,7 +115,7 @@ fun BusinessNameScreen(
                             Icon(
                                 imageVector = Icons.Filled.CheckCircle,
                                 contentDescription = null,
-                                tint = colorResource(R.color.secondary),
+                                tint = Secondary,
                             )
                         }
                     },
@@ -172,7 +178,7 @@ fun BusinessNameScreen(
                     Icon(
                         imageVector = Icons.Outlined.Lightbulb,
                         contentDescription = null,
-                        tint = colorResource(R.color.tertiary),
+                        tint = Tertiary,
                         modifier = Modifier.size(16.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -198,7 +204,7 @@ fun BusinessNameScreen(
 private fun NameTipCard(modifier: Modifier = Modifier) {
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = colorResource(R.color.surface_card),
+        color = CardWhite,
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(
@@ -207,14 +213,14 @@ private fun NameTipCard(modifier: Modifier = Modifier) {
         ) {
             Surface(
                 shape = RoundedCornerShape(10.dp),
-                color = colorResource(R.color.primary_container),
+                color = PrimaryContainer,
                 modifier = Modifier.size(36.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Outlined.Storefront,
                         contentDescription = null,
-                        tint = colorResource(R.color.primary),
+                        tint = Primary,
                         modifier = Modifier.size(20.dp),
                     )
                 }
@@ -223,7 +229,7 @@ private fun NameTipCard(modifier: Modifier = Modifier) {
             Text(
                 text = "Usá el nombre que aparece en tu cartel.",
                 style = MaterialTheme.typography.bodySmall,
-                color = colorResource(R.color.text_primary),
+                color = Ink,
             )
         }
     }

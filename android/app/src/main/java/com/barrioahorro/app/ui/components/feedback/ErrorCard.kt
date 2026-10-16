@@ -22,11 +22,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import com.barrioahorro.app.R
-
+import com.barrioahorro.app.ui.theme.ErrorRed
+import com.barrioahorro.app.ui.theme.PrimaryContainer
 
 @Composable
 fun ErrorCard(
@@ -35,8 +34,8 @@ fun ErrorCard(
     actionText: String? = null,
     onActionClick: (() -> Unit)? = null,
 ) {
-    val error = colorResource(R.color.error)
-    val container = colorResource(R.color.primary_container)
+    val error = ErrorRed
+    val container = PrimaryContainer
     val shape = RoundedCornerShape(10.dp)
 
 

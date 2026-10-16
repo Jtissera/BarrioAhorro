@@ -36,17 +36,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.barrioahorro.app.R
 import com.barrioahorro.app.ui.components.profile.BottomActionSurface
 import com.barrioahorro.app.ui.components.profile.CreamPillButton
 import com.barrioahorro.app.ui.components.profile.ErrorHint
 import com.barrioahorro.app.ui.components.profile.PrimaryPillButton
 import com.barrioahorro.app.ui.components.profile.ProfileTopBar
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.PrimaryContainer
+import com.barrioahorro.app.ui.theme.WarmGray
 
 /**
  * "Fotos del comercio": manages the photos shown on the public profile.
@@ -82,7 +86,7 @@ fun EditBusinessPhotosScreen(
 
     // MainActivity's Scaffold already applies the system insets; they are not added again here.
     Scaffold(
-        containerColor = colorResource(R.color.splash_background),
+        containerColor = Cream,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = { ProfileTopBar(title = "Fotos del comercio", onBack = requestBack) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -109,7 +113,7 @@ fun EditBusinessPhotosScreen(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator(color = colorResource(R.color.primary))
+                CircularProgressIndicator(color = Primary)
             }
 
             state.loadError != null -> Column(
@@ -165,29 +169,29 @@ private fun DiscardChangesDialog(onDiscard: () -> Unit, onDismiss: () -> Unit) {
 private fun DiscardChangesDialogContent(onDiscard: () -> Unit, onDismiss: () -> Unit) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = colorResource(R.color.surface_card),
+        color = CardWhite,
         shadowElevation = 24.dp,
         modifier = Modifier.widthIn(max = 340.dp),
     ) {
         Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
-                modifier = Modifier.size(48.dp).background(colorResource(R.color.primary_container), CircleShape),
+                modifier = Modifier.size(48.dp).background(PrimaryContainer, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Outlined.EditOff, contentDescription = null, tint = colorResource(R.color.primary), modifier = Modifier.size(22.dp))
+                Icon(Icons.Outlined.EditOff, contentDescription = null, tint = Primary, modifier = Modifier.size(22.dp))
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "¿Descartar cambios?",
                 style = MaterialTheme.typography.titleLarge,
-                color = colorResource(R.color.text_primary),
+                color = Ink,
                 textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Tenés cambios en tus fotos que todavía no guardaste. Si salís ahora, se van a perder.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = colorResource(R.color.text_secondary),
+                color = WarmGray,
                 textAlign = TextAlign.Center,
             )
             Spacer(modifier = Modifier.height(24.dp))

@@ -37,9 +37,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.WarmGray
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -76,7 +80,7 @@ fun BusinessProfileScreen(
 
     when {
         state.isLoading -> Box(modifier, Alignment.Center) {
-            CircularProgressIndicator(color = colorResource(R.color.primary))
+            CircularProgressIndicator(color = Primary)
         }
 
         error != null -> Column(
@@ -115,13 +119,13 @@ private fun ProfileBody(
                     text = state.businessName,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.ExtraBold,
-                    color = colorResource(R.color.text_primary),
+                    color = Ink,
                 )
                 if (state.categoryName.isNotBlank()) {
                     Text(
                         text = state.categoryName,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = colorResource(R.color.primary),
+                        color = Primary,
                     )
                 }
             }
@@ -160,7 +164,7 @@ private fun Cover(url: String?) {
             Icon(
                 Icons.Outlined.Storefront,
                 contentDescription = null,
-                tint = colorResource(R.color.neutral_inactive),
+                tint = MutedLabel,
                 modifier = Modifier.size(56.dp),
             )
         }
@@ -171,7 +175,7 @@ private fun Cover(url: String?) {
 private fun ProfileCard(content: @Composable () -> Unit) {
     Card(
         shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = colorResource(R.color.surface_card)),
+        colors = CardDefaults.cardColors(containerColor = CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -184,7 +188,7 @@ private fun ProfileCard(content: @Composable () -> Unit) {
 
 @Composable
 private fun EditButton(text: String, icon: ImageVector, onClick: () -> Unit, modifier: Modifier) {
-    val primary = colorResource(R.color.primary)
+    val primary = Primary
     OutlinedButton(
         onClick = onClick,
         shape = RoundedCornerShape(50),
@@ -205,12 +209,12 @@ private fun InfoBlock(title: String, body: String) {
             text = title,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            color = colorResource(R.color.text_primary),
+            color = Ink,
         )
         Text(
             text = body,
             style = MaterialTheme.typography.bodyMedium,
-            color = colorResource(R.color.text_secondary),
+            color = WarmGray,
         )
     }
 }
@@ -222,14 +226,14 @@ private fun Schedule(days: List<DayScheduleUi>) {
             text = "Horarios",
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
-            color = colorResource(R.color.text_primary),
+            color = Ink,
         )
         days.forEach { day ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
                     text = day.label,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = colorResource(R.color.text_primary),
+                    color = Ink,
                 )
                 Text(
                     text = if (day.enabled && day.slots.isNotEmpty()) {
@@ -238,7 +242,7 @@ private fun Schedule(days: List<DayScheduleUi>) {
                         "Cerrado"
                     },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = colorResource(R.color.text_secondary),
+                    color = WarmGray,
                 )
             }
         }

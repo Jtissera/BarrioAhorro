@@ -19,12 +19,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
-import com.barrioahorro.app.R
 import com.barrioahorro.app.ui.components.feedback.ErrorCard
 import com.barrioahorro.app.ui.components.onboarding.OnboardingPrimaryButton
 import com.barrioahorro.app.ui.components.onboarding.OnboardingTopBar
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.Tertiary
+import com.barrioahorro.app.ui.theme.WarmGray
 
 private const val COMMITMENT_STEP = 5
 
@@ -42,12 +48,12 @@ fun BusinessCommitmentScreen(
     onBack: () -> Unit,
     onAccept: () -> Unit,
 ) {
-    val primary = colorResource(R.color.primary)
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
+    val primary = Primary
+    val textPrimary = Ink
+    val textSecondary = WarmGray
     var accepted by rememberSaveable { mutableStateOf(false) }
 
-    Scaffold(containerColor = colorResource(R.color.splash_background)) { paddingValues ->
+    Scaffold(containerColor = Cream) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -89,7 +95,7 @@ fun BusinessCommitmentScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    color = colorResource(R.color.surface_card),
+                    color = CardWhite,
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -104,7 +110,7 @@ fun BusinessCommitmentScreen(
                                     Text(
                                         text = "${index + 1}",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = colorResource(R.color.on_primary),
+                                        color = OnPrimary,
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -124,7 +130,7 @@ fun BusinessCommitmentScreen(
                         Icons.Filled.Info,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = colorResource(R.color.tertiary),
+                        tint = Tertiary,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
@@ -147,8 +153,8 @@ fun BusinessCommitmentScreen(
                         onCheckedChange = null,
                         colors = CheckboxDefaults.colors(
                             checkedColor = primary,
-                            checkmarkColor = colorResource(R.color.on_primary),
-                            uncheckedColor = colorResource(R.color.neutral_inactive),
+                            checkmarkColor = OnPrimary,
+                            uncheckedColor = MutedLabel,
                         ),
                         modifier = Modifier.padding(8.dp),
                     )

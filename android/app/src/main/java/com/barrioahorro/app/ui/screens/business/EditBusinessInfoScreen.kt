@@ -56,11 +56,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import com.barrioahorro.app.R
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.ErrorContainer
+import com.barrioahorro.app.ui.theme.ErrorRed
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.PrimaryContainer
+import com.barrioahorro.app.ui.theme.Secondary
+import com.barrioahorro.app.ui.theme.SecondaryContainer
+import com.barrioahorro.app.ui.theme.WarmGray
 import com.barrioahorro.app.ui.components.profile.AwningStripe
 import com.barrioahorro.app.ui.components.profile.BottomActionSurface
 import com.barrioahorro.app.ui.components.profile.ErrorHint
@@ -94,7 +103,7 @@ fun EditBusinessInfoScreen(
 ) {
     val context = LocalContext.current
     var showCategoryPicker by remember { mutableStateOf(false) }
-    val background = colorResource(R.color.splash_background)
+    val background = Cream
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -147,7 +156,7 @@ fun EditBusinessInfoScreen(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator(color = colorResource(R.color.primary))
+                CircularProgressIndicator(color = Primary)
             }
 
             state.loadError != null -> Column(
@@ -207,7 +216,7 @@ private fun EditProfileForm(
     onUpdateSlotEnd: (Int, String, String) -> Unit,
     onCopyMondayToAll: () -> Unit,
 ) {
-    val textSecondary = colorResource(R.color.text_secondary)
+    val textSecondary = WarmGray
     // Error state from the Figma "Error" frame: the save attempt failed and the address is still missing.
     val addressNeedsAttention = state.error != null && state.direccion.isBlank()
 
@@ -265,7 +274,7 @@ private fun EditProfileForm(
                     Text(
                         text = "$length/$DESCRIPTION_MAX_CHARS",
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (length > DESCRIPTION_MAX_CHARS) colorResource(R.color.error) else textSecondary,
+                        color = if (length > DESCRIPTION_MAX_CHARS) ErrorRed else textSecondary,
                     )
                 }
                 OutlinedTextField(
@@ -299,19 +308,19 @@ private fun EditProfileForm(
 private fun MerchantBanner(businessName: String) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = colorResource(R.color.splash_background),
+        color = Cream,
         shadowElevation = 1.dp,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier.size(36.dp).background(colorResource(R.color.primary_container), CircleShape),
+                modifier = Modifier.size(36.dp).background(PrimaryContainer, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.Filled.Storefront,
                     contentDescription = null,
-                    tint = colorResource(R.color.primary),
+                    tint = Primary,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -320,12 +329,12 @@ private fun MerchantBanner(businessName: String) {
                 Text(
                     text = businessName.ifBlank { "Tu comercio" },
                     style = MaterialTheme.typography.titleMedium,
-                    color = colorResource(R.color.text_primary),
+                    color = Ink,
                 )
                 Text(
                     text = "Modificá los datos para que tus vecinos te encuentren al instante.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = colorResource(R.color.text_secondary),
+                    color = WarmGray,
                 )
             }
         }
@@ -336,20 +345,20 @@ private fun MerchantBanner(businessName: String) {
 private fun CategorySelector(categoryName: String?, onClick: () -> Unit) {
     Surface(
         shape = fieldShape,
-        color = colorResource(R.color.surface_card),
+        color = CardWhite,
         shadowElevation = 1.dp,
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().height(56.dp),
     ) {
         Row(modifier = Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier.size(32.dp).background(colorResource(R.color.secondary_container), CircleShape),
+                modifier = Modifier.size(32.dp).background(SecondaryContainer, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.Outlined.Category,
                     contentDescription = null,
-                    tint = colorResource(R.color.secondary),
+                    tint = Secondary,
                     modifier = Modifier.size(16.dp),
                 )
             }
@@ -358,13 +367,13 @@ private fun CategorySelector(categoryName: String?, onClick: () -> Unit) {
                 text = categoryName ?: "Elegí un rubro",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = if (categoryName != null) colorResource(R.color.text_primary) else colorResource(R.color.text_secondary),
+                color = if (categoryName != null) Ink else WarmGray,
                 modifier = Modifier.weight(1f),
             )
             Icon(
                 Icons.Filled.KeyboardArrowDown,
                 contentDescription = "Elegir rubro",
-                tint = colorResource(R.color.text_secondary),
+                tint = WarmGray,
             )
         }
     }
@@ -381,16 +390,16 @@ private fun AddressField(
     onDireccionChange: (String) -> Unit,
     onUseCurrentLocation: () -> Unit,
 ) {
-    val primary = colorResource(R.color.primary)
-    val secondary = colorResource(R.color.secondary)
+    val primary = Primary
+    val secondary = Secondary
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         FormFieldHeader(label = "Dirección física") {
             when {
                 needsAttention -> StatusChip(
                     text = "REQUIERE ATENCIÓN",
-                    containerColor = colorResource(R.color.error_container),
-                    contentColor = colorResource(R.color.error),
+                    containerColor = ErrorContainer,
+                    contentColor = ErrorRed,
                 )
 
                 hasLocation -> Row(verticalAlignment = Alignment.CenterVertically) {
@@ -413,7 +422,7 @@ private fun AddressField(
             leadingIcon = {
                 if (needsAttention) {
                     Box(
-                        modifier = Modifier.size(28.dp).background(colorResource(R.color.error_container), CircleShape),
+                        modifier = Modifier.size(28.dp).background(ErrorContainer, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(Icons.Filled.LocationOn, contentDescription = null, tint = primary, modifier = Modifier.size(16.dp))
@@ -424,7 +433,7 @@ private fun AddressField(
             },
             trailingIcon = when {
                 needsAttention -> {
-                    { Icon(Icons.Filled.Error, contentDescription = "Dirección incompleta", tint = colorResource(R.color.error)) }
+                    { Icon(Icons.Filled.Error, contentDescription = "Dirección incompleta", tint = ErrorRed) }
                 }
 
                 direccion.isNotEmpty() -> {
@@ -433,14 +442,14 @@ private fun AddressField(
                             modifier = Modifier
                                 .size(28.dp)
                                 .clip(CircleShape)
-                                .background(colorResource(R.color.splash_background))
+                                .background(Cream)
                                 .clickable { onDireccionChange("") },
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
                                 Icons.Filled.Close,
                                 contentDescription = "Limpiar dirección",
-                                tint = colorResource(R.color.text_primary),
+                                tint = Ink,
                                 modifier = Modifier.size(14.dp),
                             )
                         }
@@ -477,20 +486,20 @@ private fun CategoryPickerSheet(
     onSelect: (Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val textPrimary = colorResource(R.color.text_primary)
-    val primary = colorResource(R.color.primary)
+    val textPrimary = Ink
+    val primary = Primary
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        containerColor = colorResource(R.color.surface_card),
+        containerColor = CardWhite,
         scrimColor = textPrimary.copy(alpha = 0.5f),
         dragHandle = {
             Box(
                 modifier = Modifier
                     .padding(top = 16.dp, bottom = 8.dp)
                     .size(width = 48.dp, height = 6.dp)
-                    .background(colorResource(R.color.splash_background), CircleShape),
+                    .background(Cream, CircleShape),
             )
         },
     ) {
@@ -505,7 +514,7 @@ private fun CategoryPickerSheet(
                     val selected = category.id == selectedCategoryId
                     Surface(
                         shape = fieldShape,
-                        color = if (selected) colorResource(R.color.primary_container) else colorResource(R.color.splash_background),
+                        color = if (selected) PrimaryContainer else Cream,
                         onClick = { onSelect(category.id) },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
@@ -534,18 +543,18 @@ private fun CategoryPickerSheet(
 /** White, borderless field with a red focus ring: the input style of the edit-profile Figma frames. */
 @Composable
 private fun profileFieldColors(): TextFieldColors {
-    val card = colorResource(R.color.surface_card)
-    val primary = colorResource(R.color.primary)
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
-    val error = colorResource(R.color.error)
+    val card = CardWhite
+    val primary = Primary
+    val textPrimary = Ink
+    val textSecondary = WarmGray
+    val error = ErrorRed
 
     return OutlinedTextFieldDefaults.colors(
         focusedContainerColor = card,
         unfocusedContainerColor = card,
         errorContainerColor = card,
         focusedBorderColor = primary,
-        unfocusedBorderColor = colorResource(R.color.neutral_inactive).copy(alpha = 0.25f),
+        unfocusedBorderColor = MutedLabel.copy(alpha = 0.25f),
         errorBorderColor = error,
         focusedTextColor = textPrimary,
         unfocusedTextColor = textPrimary,

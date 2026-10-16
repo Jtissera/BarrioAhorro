@@ -37,11 +37,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.Secondary
+import com.barrioahorro.app.ui.theme.Tertiary
+import com.barrioahorro.app.ui.theme.WarmGray
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -95,10 +103,10 @@ fun BusinessLocationScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
-    val primary = colorResource(R.color.primary)
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
-    val inactive = colorResource(R.color.neutral_inactive)
+    val primary = Primary
+    val textPrimary = Ink
+    val textSecondary = WarmGray
+    val inactive = MutedLabel
 
     val isBusy = isFetchingLocation || isValidatingAddress
     val hasPin = pinLatitud != null && pinLongitud != null
@@ -157,7 +165,7 @@ fun BusinessLocationScreen(
     }
 
     Scaffold(
-        containerColor = colorResource(R.color.splash_background),
+        containerColor = Cream,
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -378,7 +386,7 @@ fun BusinessLocationScreen(
                         Icons.Filled.Info,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = colorResource(R.color.tertiary),
+                        tint = Tertiary,
                     )
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -417,11 +425,11 @@ private fun LocationPickerMap(
     val context = LocalContext.current
     val hasPin = pinLatitud != null && pinLongitud != null
 
-    val primary = colorResource(R.color.primary)
-    val onPrimary = colorResource(R.color.on_primary)
-    val surfaceCard = colorResource(R.color.surface_card)
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
+    val primary = Primary
+    val onPrimary = OnPrimary
+    val surfaceCard = CardWhite
+    val textPrimary = Ink
+    val textSecondary = WarmGray
 
     val currentOnPinMoved by rememberUpdatedState(onPinMoved)
     val currentPinLat by rememberUpdatedState(pinLatitud)
@@ -627,7 +635,7 @@ private tailrec fun Context.findLifecycleOwner(): LifecycleOwner? =
 
 @Composable
 private fun PointOfSaleChip() {
-    val green = colorResource(R.color.secondary)
+    val green = Secondary
 
     Surface(
         shape = CircleShape,
@@ -660,7 +668,7 @@ private fun PointOfSaleChip() {
 
 @Composable
 private fun NeighborhoodVisibilityCard() {
-    val green = colorResource(R.color.secondary)
+    val green = Secondary
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -675,7 +683,7 @@ private fun NeighborhoodVisibilityCard() {
                 modifier = Modifier
                     .size(40.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(colorResource(R.color.surface_card)),
+                    .background(CardWhite),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
@@ -691,13 +699,13 @@ private fun NeighborhoodVisibilityCard() {
                 Text(
                     text = "Visibilidad en tu radio barrial",
                     style = MaterialTheme.typography.labelLarge,
-                    color = colorResource(R.color.text_primary),
+                    color = Ink,
                 )
 
                 Text(
                     text = "Los vecinos que viven cerca recibirán tus ofertas al instante.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = colorResource(R.color.text_secondary),
+                    color = WarmGray,
                 )
             }
         }

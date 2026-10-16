@@ -91,7 +91,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -103,11 +102,33 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import coil3.compose.AsyncImage
-import com.barrioahorro.app.R
 import com.barrioahorro.app.di.BASE_URL
-import com.barrioahorro.app.ui.components.BusinessBottomBar
-import com.barrioahorro.app.ui.components.BusinessTab
 import com.barrioahorro.app.ui.components.ToldoConFranjas
+import com.barrioahorro.app.ui.theme.BadgeGreenDark
+import com.barrioahorro.app.ui.theme.BadgeGreenDot
+import com.barrioahorro.app.ui.theme.BadgeGreenSoft
+import com.barrioahorro.app.ui.theme.BadgeGreenSoftBorder
+import com.barrioahorro.app.ui.theme.BadgeGreenText
+import com.barrioahorro.app.ui.theme.BadgeOrange
+import com.barrioahorro.app.ui.theme.BadgeOrangeBorder
+import com.barrioahorro.app.ui.theme.BadgeOrangeLight
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.ErrorRed
+import com.barrioahorro.app.ui.theme.ForestGreen
+import com.barrioahorro.app.ui.theme.HighlightOrange
+import com.barrioahorro.app.ui.theme.HighlightOrangeBorder
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.PrimaryContainer
+import com.barrioahorro.app.ui.theme.Secondary
+import com.barrioahorro.app.ui.theme.SecondaryContainer
+import com.barrioahorro.app.ui.theme.StepperBorder
+import com.barrioahorro.app.ui.theme.StepperCream
+import com.barrioahorro.app.ui.theme.SurfaceSecondary
+import com.barrioahorro.app.ui.theme.WarmGray
 import java.io.File
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -140,18 +161,18 @@ private data class FormColors(
 
 @Composable
 private fun formColors() = FormColors(
-    primary = colorResource(R.color.primary),
-    primaryContainer = colorResource(R.color.primary_container),
-    onPrimary = colorResource(R.color.on_primary),
-    secondary = colorResource(R.color.secondary),
-    card = colorResource(R.color.surface_card),
-    field = colorResource(R.color.stepper_cream),
-    background = colorResource(R.color.splash_background),
-    textPrimary = colorResource(R.color.text_primary),
-    textSecondary = colorResource(R.color.text_secondary),
-    inactive = colorResource(R.color.neutral_inactive),
-    border = colorResource(R.color.stepper_border),
-    error = colorResource(R.color.error),
+    primary = Primary,
+    primaryContainer = PrimaryContainer,
+    onPrimary = OnPrimary,
+    secondary = Secondary,
+    card = CardWhite,
+    field = StepperCream,
+    background = Cream,
+    textPrimary = Ink,
+    textSecondary = WarmGray,
+    inactive = MutedLabel,
+    border = StepperBorder,
+    error = ErrorRed,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -193,7 +214,7 @@ fun OfferFormScreen(
         topBar = {
             ToldoConFranjas(
                 modifier = Modifier
-                    .background(colorResource(R.color.splash_background)),
+                    .background(Cream),
             )
         },
         bottomBar = {
@@ -545,7 +566,7 @@ private fun TwoForOneConditions(
             FieldLabel("Configuración de la oferta", required = true)
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFFFE0D2),
+                color = BadgeOrange,
             ) {
                 Text(
                     "Promoción por volumen",
@@ -646,8 +667,8 @@ private fun TwoForOneConditions(
         // Tarjeta dinámica de ahorro
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = Color(0xFFFFF2EB),
-            border = BorderStroke(1.dp, Color(0xFFFFD9C7)),
+            color = BadgeOrangeLight,
+            border = BorderStroke(1.dp, BadgeOrangeBorder),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -663,7 +684,7 @@ private fun TwoForOneConditions(
                     Spacer(Modifier.width(8.dp))
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFFFE0D2),
+                        color = BadgeOrange,
                     ) {
                         Text(
                             "${llevas}X${pagas} ACTIVO",
@@ -678,7 +699,7 @@ private fun TwoForOneConditions(
                         "$savingsPercent% de ahorro directo",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2C6B4F),
+                        color = ForestGreen,
                     )
                 }
                 Text(
@@ -705,8 +726,8 @@ private fun TwoForOneConditions(
         // Resumen total promo
         Surface(
             shape = RoundedCornerShape(14.dp),
-            color = Color(0xFFE8F7F0),
-            border = BorderStroke(1.dp, Color(0xFFBCE8D3)),
+            color = BadgeGreenSoft,
+            border = BorderStroke(1.dp, BadgeGreenSoftBorder),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Row(
@@ -720,14 +741,14 @@ private fun TwoForOneConditions(
                     Icon(
                         Icons.Outlined.Payments,
                         contentDescription = null,
-                        tint = Color(0xFF1E824C),
+                        tint = BadgeGreenDot,
                         modifier = Modifier.size(20.dp),
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
                         "Total promo para el cliente:",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF1B5E39),
+                        color = BadgeGreenText,
                     )
                 }
                 Column(horizontalAlignment = Alignment.End) {
@@ -736,18 +757,18 @@ private fun TwoForOneConditions(
                             formatMoney(totalPromo),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1B5E39),
+                            color = BadgeGreenText,
                         )
                         Text(
                             "(${formatMoney(unitPrice)} c/u)",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFF2E7D32),
+                            color = BadgeGreenDark,
                         )
                     } else {
                         Text(
                             "—",
                             style = MaterialTheme.typography.titleMedium,
-                            color = Color(0xFF888888),
+                            color = c.inactive,
                         )
                     }
                 }
@@ -779,7 +800,7 @@ private fun WholesaleConditions(
             FieldLabel("Condiciones por mayor", required = true)
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFFFE0D2),
+                color = BadgeOrange,
             ) {
                 Text(
                     "Desde ${state.minQuantity} u.",
@@ -864,8 +885,8 @@ private fun WholesaleConditions(
         if (regularPrice != null && wholesalePrice != null && regularPrice > BigDecimal.ZERO && wholesalePrice < regularPrice && savings != null) {
             Surface(
                 shape = RoundedCornerShape(14.dp),
-                color = Color(0xFFFFF0EC),
-                border = BorderStroke(1.dp, Color(0xFFFFD6CC)),
+                color = HighlightOrange,
+                border = BorderStroke(1.dp, HighlightOrangeBorder),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(
@@ -971,7 +992,7 @@ private fun PercentageConditions(
                     FieldLabel("Precio final cliente", color = c.secondary)
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = colorResource(R.color.secondary_container),
+                        color = SecondaryContainer,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
@@ -1152,7 +1173,7 @@ private fun PhotoSection(
                     Icon(
                         Icons.Outlined.CheckCircle,
                         contentDescription = null,
-                        tint = Color(0xFF2E7D32),
+                        tint = BadgeGreenDark,
                         modifier = Modifier.size(16.dp),
                     )
                     Spacer(Modifier.width(4.dp))
@@ -1160,7 +1181,7 @@ private fun PhotoSection(
                         "1/1 cargada",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2E7D32),
+                        color = BadgeGreenDark,
                     )
                 }
             }
@@ -1504,7 +1525,7 @@ private fun OfferPreview(
             )
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = Color(0xFFFFE0D2),
+                color = BadgeOrange,
             ) {
                 Text(
                     "En vivo",
@@ -1561,7 +1582,7 @@ private fun OfferPreview(
                             if (isTwoForOne) {
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
-                                    color = Color(0xFFFFE0D2),
+                                    color = BadgeOrange,
                                 ) {
                                     Text(
                                         "${state.unitsToTake}X${state.unitsToPay}",
@@ -1574,7 +1595,7 @@ private fun OfferPreview(
                             } else if (isWholesale) {
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
-                                    color = Color(0xFFFFE0D2),
+                                    color = BadgeOrange,
                                 ) {
                                     Text(
                                         "X MAYOR",
@@ -1650,7 +1671,7 @@ private fun OfferPreview(
 
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFE8F7F0),
+                    color = BadgeGreenSoft,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Row(
@@ -1658,12 +1679,12 @@ private fun OfferPreview(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center,
                     ) {
-                        Icon(Icons.Outlined.Check, contentDescription = null, tint = Color(0xFF1E824C), modifier = Modifier.size(14.dp))
+                        Icon(Icons.Outlined.Check, contentDescription = null, tint = BadgeGreenDot, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(
                             if (isWholesale) "0 vecinos confirmaron disponibilidad" else "0 vecinos confirmaron",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color(0xFF1B5E39),
+                            color = BadgeGreenText,
                             fontWeight = FontWeight.Bold,
                         )
                     }
@@ -1785,7 +1806,7 @@ private fun BottomActions(
             shape = RoundedCornerShape(14.dp),
             modifier = Modifier.size(56.dp),
             colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = colorResource(R.color.surface_secondary),
+                containerColor = SurfaceSecondary,
                 contentColor = c.textPrimary,
             ),
         ) {
