@@ -74,7 +74,6 @@ private val options = listOf(
 fun OfferTypeSelectorScreen(
     onSelect: (OfferType) -> Unit,
     onBack: () -> Unit,
-    onTabSelected: (BusinessTab) -> Unit = {},
 ) {
     var selected by rememberSaveable { mutableStateOf<OfferType?>(null) }
 
@@ -93,47 +92,41 @@ fun OfferTypeSelectorScreen(
             )
         },
         bottomBar = {
-            Column {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                FilledTonalButton(
+                    onClick = onBack,
+                    modifier = Modifier.height(52.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = colorResource(R.color.surface_secondary),
+                        contentColor = textPrimary,
+                    ),
                 ) {
-                    FilledTonalButton(
-                        onClick = onBack,
-                        modifier = Modifier.height(52.dp),
-                        colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = colorResource(R.color.surface_secondary),
-                            contentColor = textPrimary,
-                        ),
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                        Spacer(Modifier.width(6.dp))
-                        Text("Volver", style = MaterialTheme.typography.titleMedium)
-                    }
-                    Button(
-                        onClick = { selected?.let(onSelect) },
-                        enabled = selected != null,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = primary,
-                            contentColor = onPrimary,
-                            disabledContainerColor = colorResource(R.color.neutral_inactive),
-                            disabledContentColor = onPrimary,
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(52.dp),
-                    ) {
-                        Text("Continuar", style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.width(6.dp))
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
-                    }
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Volver", style = MaterialTheme.typography.titleMedium)
                 }
-                BusinessBottomBar(
-                    selectedTab = BusinessTab.OFERTAS,
-                    onTabSelected = onTabSelected,
-                )
+                Button(
+                    onClick = { selected?.let(onSelect) },
+                    enabled = selected != null,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = primary,
+                        contentColor = onPrimary,
+                        disabledContainerColor = colorResource(R.color.neutral_inactive),
+                        disabledContentColor = onPrimary,
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
+                ) {
+                    Text("Continuar", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.width(6.dp))
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                }
             }
         },
     ) { padding ->

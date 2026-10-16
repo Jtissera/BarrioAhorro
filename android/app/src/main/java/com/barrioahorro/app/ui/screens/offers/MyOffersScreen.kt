@@ -68,7 +68,6 @@ private fun myOffersColors() = MyOffersColors(
 @Composable
 fun MyOffersScreen(
     onCreateOffer: () -> Unit,
-    onTabSelected: (BusinessTab) -> Unit = {},
     viewModel: MyOffersViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -122,12 +121,6 @@ fun MyOffersScreen(
                     )
                 }
             }
-        },
-        bottomBar = {
-            BusinessBottomBar(
-                selectedTab = BusinessTab.OFERTAS,
-                onTabSelected = onTabSelected,
-            )
         },
     ) { padding ->
         LazyColumn(

@@ -58,7 +58,6 @@ import androidx.compose.ui.graphics.Color
 fun BusinessProfileScreen(
     onEditData: () -> Unit,
     onEditPhotos: () -> Unit,
-    onTabSelected: (BusinessTab) -> Unit,
     viewModel: BusinessProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -72,33 +71,25 @@ fun BusinessProfileScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    Scaffold(
-        containerColor = colorResource(R.color.splash_background),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        bottomBar = {
-            BusinessBottomBar(selectedTab = BusinessTab.PERFIL, onTabSelected = onTabSelected)
-        },
-    ) { padding ->
-        val modifier = Modifier.fillMaxSize().padding(padding)
-        val error = state.error
+    val modifier = Modifier.fillMaxSize()
+    val error = state.error
 
-        when {
-            state.isLoading -> Box(modifier, Alignment.Center) {
-                CircularProgressIndicator(color = colorResource(R.color.primary))
-            }
-
-            error != null -> Column(
-                modifier = modifier.padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                ErrorHint(text = error)
-                Spacer(Modifier.height(16.dp))
-                PrimaryPillButton(text = "Reintentar", onClick = viewModel::load, height = 48.dp)
-            }
-
-            else -> ProfileBody(state, onEditData, onEditPhotos, modifier)
+    when {
+        state.isLoading -> Box(modifier, Alignment.Center) {
+            CircularProgressIndicator(color = colorResource(R.color.primary))
         }
+
+        error != null -> Column(
+            modifier = modifier.padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            ErrorHint(text = error)
+            Spacer(Modifier.height(16.dp))
+            PrimaryPillButton(text = "Reintentar", onClick = viewModel::load, height = 48.dp)
+        }
+
+        else -> ProfileBody(state, onEditData, onEditPhotos, modifier)
     }
 }
 

@@ -177,7 +177,6 @@ fun OfferFormScreen(
     onRemovePhoto: () -> Unit,
     onBack: () -> Unit,
     onSubmit: () -> Unit,
-    onTabSelected: (BusinessTab) -> Unit = {},
 ) {
     val c = formColors()
     val isTwoForOne = state.selectedType == OfferType.DOS_POR_UNO
@@ -198,18 +197,12 @@ fun OfferFormScreen(
             )
         },
         bottomBar = {
-            Column {
-                BottomActions(
-                    isSubmitting = state.isSubmitting,
-                    canSubmit = state.canSubmit,
-                    onBack = onBack,
-                    onSubmit = onSubmit,
-                )
-                BusinessBottomBar(
-                    selectedTab = BusinessTab.OFERTAS,
-                    onTabSelected = onTabSelected,
-                )
-            }
+            BottomActions(
+                isSubmitting = state.isSubmitting,
+                canSubmit = state.canSubmit,
+                onBack = onBack,
+                onSubmit = onSubmit,
+            )
         },
     ) { padding ->
         Column(
