@@ -137,8 +137,8 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
             ?.let { UserType.valueOf(it) } ?: UserType.CLIENTE
         AuthSuccessScreen(
             userType = userType,
-            onNavigateToOffers = {
-                val target = if (userType == UserType.COMERCIO) BusinessRoutes.MY_OFFERS else AuthRoutes.ROLE_SELECTION
+            onContinue = {
+                val target = if (userType == UserType.COMERCIO) BusinessRoutes.DASHBOARD else AuthRoutes.ROLE_SELECTION
                 navController.navigate(target) {
                     popUpTo(AuthRoutes.SUCCESS_PATTERN) { inclusive = true }
                 }
@@ -288,25 +288,6 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
 
     composable(BusinessRoutes.DASHBOARD) {
         BusinessMainScreen(
-            initialTab = BusinessTab.INICIO,
-            onNavigateToCreateOffer = { navController.navigate(BusinessRoutes.CREATE_OFFER) },
-            onNavigateToEditProfile = { navController.navigate(BusinessRoutes.EDIT_PROFILE) },
-            onNavigateToEditPhotos = { navController.navigate(BusinessRoutes.EDIT_PHOTOS) },
-        )
-    }
-
-    composable(BusinessRoutes.MY_OFFERS) {
-        BusinessMainScreen(
-            initialTab = BusinessTab.OFERTAS,
-            onNavigateToCreateOffer = { navController.navigate(BusinessRoutes.CREATE_OFFER) },
-            onNavigateToEditProfile = { navController.navigate(BusinessRoutes.EDIT_PROFILE) },
-            onNavigateToEditPhotos = { navController.navigate(BusinessRoutes.EDIT_PHOTOS) },
-        )
-    }
-
-    composable(BusinessRoutes.PROFILE) {
-        BusinessMainScreen(
-            initialTab = BusinessTab.PERFIL,
             onNavigateToCreateOffer = { navController.navigate(BusinessRoutes.CREATE_OFFER) },
             onNavigateToEditProfile = { navController.navigate(BusinessRoutes.EDIT_PROFILE) },
             onNavigateToEditPhotos = { navController.navigate(BusinessRoutes.EDIT_PHOTOS) },

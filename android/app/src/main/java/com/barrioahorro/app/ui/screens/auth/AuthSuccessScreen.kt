@@ -21,7 +21,7 @@ import com.barrioahorro.app.ui.theme.AppColors
 import com.barrioahorro.app.ui.theme.Cream
 
 @Composable
-fun AuthSuccessScreen(userType: UserType, onNavigateToOffers: () -> Unit) {
+fun AuthSuccessScreen(userType: UserType, onContinue: () -> Unit) {
     Scaffold(containerColor = MaterialTheme.colorScheme.surface) { paddingValues ->
         Column(
             modifier = Modifier
@@ -50,12 +50,12 @@ fun AuthSuccessScreen(userType: UserType, onNavigateToOffers: () -> Unit) {
             )
             if (userType == UserType.COMERCIO) {
                 Button(
-                    onClick = onNavigateToOffers,
+                    onClick = onContinue,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 32.dp),
                 ) {
-                    Text("Ir a mis ofertas")
+                    Text("Continuar al inicio")
                 }
             }
         }
@@ -70,5 +70,5 @@ private fun userTypeMessage(userType: UserType): String = when (userType) {
 @Preview(showBackground = true)
 @Composable
 private fun AuthSuccessScreenPreview() {
-    AuthSuccessScreen(userType = UserType.COMERCIO, onNavigateToOffers = {})
+    AuthSuccessScreen(userType = UserType.COMERCIO, onContinue = {})
 }
