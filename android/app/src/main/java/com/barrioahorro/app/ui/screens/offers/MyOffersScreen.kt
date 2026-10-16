@@ -211,68 +211,83 @@ fun MyOffersScreen(
                 }
             }
 
-            // Lista de ofertas o estado vacío
-            if (state.filteredOffers.isEmpty()) {
-                item {
-                    Card(
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = c.card),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp),
-                    ) {
-                        Column(
+            // Lista de ofertas, estado de carga o estado vacío
+            when {
+                state.isLoading && state.allOffers.isEmpty() -> {
+                    item {
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 24.dp, vertical = 32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                                .height(220.dp),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Icon(
-                                Icons.Outlined.LocalOffer,
-                                contentDescription = null,
-                                tint = c.inactive,
-                                modifier = Modifier.size(48.dp),
-                            )
-                            Text(
-                                text = if (state.selectedTab == OfferTabFilter.VIGENTES)
-                                    "No tenés ofertas vigentes en este momento"
-                                else
-                                    "No hay ofertas finalizadas en el historial",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = c.textPrimary,
-                            )
-                            Text(
-                                text = "Publicá promociones para que tus vecinos del barrio las encuentren en su feed.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = c.textSecondary,
-                            )
-                            if (state.selectedTab == OfferTabFilter.VIGENTES) {
-                                Button(
-                                    onClick = onCreateOffer,
-                                    shape = RoundedCornerShape(14.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = c.primary,
-                                        contentColor = c.onPrimary,
-                                    ),
-                                    modifier = Modifier.padding(top = 8.dp),
-                                ) {
-                                    Text("Publicar primera oferta", fontWeight = FontWeight.Bold)
+                            CircularProgressIndicator(color = c.primary)
+                        }
+                    }
+                }
+                state.filteredOffers.isEmpty() -> {
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = c.card),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp),
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Icon(
+                                    Icons.Outlined.LocalOffer,
+                                    contentDescription = null,
+                                    tint = c.inactive,
+                                    modifier = Modifier.size(48.dp),
+                                )
+                                Text(
+                                    text = if (state.selectedTab == OfferTabFilter.VIGENTES)
+                                        "No tenés ofertas vigentes en este momento"
+                                    else
+                                        "No hay ofertas finalizadas en el historial",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = c.textPrimary,
+                                )
+                                Text(
+                                    text = "Publicá promociones para que tus vecinos del barrio las encuentren en su feed.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = c.textSecondary,
+                                )
+                                if (state.selectedTab == OfferTabFilter.VIGENTES) {
+                                    Button(
+                                        onClick = onCreateOffer,
+                                        shape = RoundedCornerShape(14.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = c.primary,
+                                            contentColor = c.onPrimary,
+                                        ),
+                                        modifier = Modifier.padding(top = 8.dp),
+                                    ) {
+                                        Text("Publicar primera oferta", fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            } else {
-                items(state.filteredOffers, key = { it.id }) { offer ->
-                    OfferItemCard(
-                        offer = offer,
-                        onEdit = {
-                            Toast.makeText(context, "Próximamente: edición de ofertas", Toast.LENGTH_SHORT).show()
-                        },
-                    )
+                else -> {
+                    items(state.filteredOffers, key = { it.id }) { offer ->
+                        OfferItemCard(
+                            offer = offer,
+                            onEdit = {
+                                Toast.makeText(context, "Próximamente: edición de ofertas", Toast.LENGTH_SHORT).show()
+                            },
+                        )
+                    }
                 }
             }
         }
