@@ -41,8 +41,9 @@ import com.barrioahorro.app.ui.screens.onboarding.OnboardingViewModel
 import com.barrioahorro.app.ui.screens.splash.SplashDestination
 import com.barrioahorro.app.ui.screens.splash.SplashScreen
 import com.barrioahorro.app.ui.screens.splash.SplashViewModel
-import com.barrioahorro.app.ui.screens.dashboard.DashboardScreen
 import com.barrioahorro.app.ui.components.BusinessTab
+import com.barrioahorro.app.ui.screens.business.BusinessMainScreen
+
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
@@ -136,8 +137,8 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
             ?.let { UserType.valueOf(it) } ?: UserType.CLIENTE
         AuthSuccessScreen(
             userType = userType,
-            onNavigateToOffers = {
-                val target = if (userType == UserType.COMERCIO) BusinessRoutes.MY_OFFERS else AuthRoutes.ROLE_SELECTION
+            onContinue = {
+                val target = if (userType == UserType.COMERCIO) BusinessRoutes.DASHBOARD else AuthRoutes.ROLE_SELECTION
                 navController.navigate(target) {
                     popUpTo(AuthRoutes.SUCCESS_PATTERN) { inclusive = true }
                 }
@@ -145,18 +146,6 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
         )
     }
 
-    composable(
-        route = BusinessRoutes.CREATE_OFFER) {
-        val context = LocalContext.current
-        CreateOfferScreen(
-            onClose = { navController.popBackStack() },
-            onPublished = {
-                Toast.makeText(context, "¡Oferta publicada!", Toast.LENGTH_SHORT).show()
-                navController.popBackStack()
-            },
-            onTabSelected = { tab -> navController.navigateToBusinessTab(tab) },
-        )
-    }
 }
 
 fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
@@ -298,30 +287,21 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
     }
 
     composable(BusinessRoutes.DASHBOARD) {
-        val context = LocalContext.current
-
-        DashboardScreen(
-            onAddOffer = {
-                navController.navigate(BusinessRoutes.CREATE_OFFER)
-            },
-            onSeeAllOffers = {
-                navController.navigate(BusinessRoutes.MY_OFFERS)
-            },
-            onSeeAllReviews = {
-                Toast.makeText(
-                    context,
-                    "La pantalla de todas las reseñas todavía no está disponible",
-                    Toast.LENGTH_SHORT
-                ).show()
-            },
-            onTabSelected = { tab -> navController.navigateToBusinessTab(tab) },
+        BusinessMainScreen(
+            onNavigateToCreateOffer = { navController.navigate(BusinessRoutes.CREATE_OFFER) },
+            onNavigateToEditProfile = { navController.navigate(BusinessRoutes.EDIT_PROFILE) },
+            onNavigateToEditPhotos = { navController.navigate(BusinessRoutes.EDIT_PHOTOS) },
         )
     }
 
-    composable(BusinessRoutes.MY_OFFERS) {
-        MyOffersScreen(
-            onCreateOffer = { navController.navigate(BusinessRoutes.CREATE_OFFER) },
-            onTabSelected = { tab -> navController.navigateToBusinessTab(tab) },
+    composable(BusinessRoutes.CREATE_OFFER) {
+        val context = LocalContext.current
+        CreateOfferScreen(
+            onClose = { navController.popBackStack() },
+            onPublished = {
+                Toast.makeText(context, "¡Oferta publicada!", Toast.LENGTH_SHORT).show()
+                navController.popBackStack()
+            },
         )
     }
 
@@ -376,24 +356,5 @@ fun NavHostController.navigateAfterAuth(userType: UserType) {
     }
     navigate(target) {
         popUpTo(AuthRoutes.ROLE_SELECTION) { inclusive = true }
-    }
-}
-
-fun NavHostController.navigateToBusinessTab(tab: BusinessTab) {
-    val destination = when (tab) {
-        BusinessTab.INICIO -> BusinessRoutes.DASHBOARD
-        BusinessTab.OFERTAS -> BusinessRoutes.MY_OFFERS
-        BusinessTab.CUPONERA -> CuponeraRoutes.CONTRIBUTION
-        BusinessTab.PERFIL -> BusinessRoutes.EDIT_PROFILE
-    }
-
-    if (currentDestination?.route == destination) return
-
-    navigate(destination) {
-        popUpTo(BusinessRoutes.DASHBOARD) {
-            saveState = true
-        }
-        launchSingleTop = true
-        restoreState = true
     }
 }

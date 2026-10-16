@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -74,31 +73,18 @@ fun DashboardScreen(
     onAddOffer: () -> Unit,
     onSeeAllOffers: () -> Unit,
     onSeeAllReviews: () -> Unit,
-    onTabSelected: (BusinessTab) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    Scaffold(
-        containerColor = Cream,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        bottomBar = {
-            BusinessBottomBar(
-                selectedTab = BusinessTab.INICIO,
-                onTabSelected = onTabSelected,
-            )
-        },
-        modifier = modifier,
-    ) { padding ->
-        DashboardContent(
-            state = state,
-            onAddOffer = onAddOffer,
-            onSeeAllOffers = onSeeAllOffers,
-            onSeeAllReviews = onSeeAllReviews,
-            onRetry = viewModel::load,
-            modifier = Modifier.padding(padding)
-        )
-    }
+    DashboardContent(
+        state = state,
+        onAddOffer = onAddOffer,
+        onSeeAllOffers = onSeeAllOffers,
+        onSeeAllReviews = onSeeAllReviews,
+        onRetry = viewModel::load,
+        modifier = modifier
+    )
 }
 
 @Composable

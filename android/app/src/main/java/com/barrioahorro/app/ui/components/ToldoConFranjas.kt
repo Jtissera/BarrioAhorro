@@ -4,20 +4,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.barrioahorro.app.R
-import androidx.compose.ui.graphics.Color
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Primary
 
 @Composable
 fun ToldoConFranjas(
     modifier: Modifier = Modifier,
     stripes: Int = 14,
     height: Dp = 14.dp,
-    altColor: Color = colorResource(R.color.surface_card),
+    altColor: Color = CardWhite,
 ) {
-    val red = colorResource(R.color.primary)
+    val red = Primary
     Row(
         modifier = modifier
             .fillMaxWidth()

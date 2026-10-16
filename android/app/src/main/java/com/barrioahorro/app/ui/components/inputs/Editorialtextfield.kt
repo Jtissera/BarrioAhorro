@@ -17,14 +17,18 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import com.barrioahorro.app.R
 import androidx.compose.material.icons.filled.CheckCircle
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.Secondary
+import com.barrioahorro.app.ui.theme.WarmGray
 
 @Composable
 fun EditorialTextField(
@@ -40,11 +44,11 @@ fun EditorialTextField(
     showEmailValidation: Boolean = false,
     onToggleVisibility: (() -> Unit)? = null,
 ) {
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
-    val primary = colorResource(R.color.primary)
-    val inactive = colorResource(R.color.neutral_inactive)
-    val white = colorResource(R.color.surface_card)
+    val textPrimary = Ink
+    val textSecondary = WarmGray
+    val primary = Primary
+    val inactive = MutedLabel
+    val white = CardWhite
 
     Column(modifier = modifier) {
         Text(
@@ -115,7 +119,7 @@ fun EditorialTextField(
                         Icon(
                             imageVector = Icons.Filled.CheckCircle,
                             contentDescription = "Gmail válido",
-                            tint = colorResource(R.color.secondary),
+                            tint = Secondary,
                         )
                     }
                 }

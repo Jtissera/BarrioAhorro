@@ -36,12 +36,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.barrioahorro.app.R
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.PrimaryContainer
+import com.barrioahorro.app.ui.theme.WarmGray
 import com.barrioahorro.app.domain.model.UserType
 import androidx.compose.foundation.layout.sizeIn
 
@@ -70,7 +76,7 @@ private fun RoleSelectionContent(
     onNavigateToLogin: () -> Unit,
 ) {
     Scaffold(
-        containerColor = colorResource(R.color.splash_background),
+        containerColor = Cream,
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -81,7 +87,7 @@ private fun RoleSelectionContent(
             Text(
                 text = "¿Cómo querés usar\nBarrio Ahorro?",
                 style = MaterialTheme.typography.headlineMedium,
-                color = colorResource(R.color.text_primary),
+                color = Ink,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 32.dp),
             )
@@ -89,7 +95,7 @@ private fun RoleSelectionContent(
             Text(
                 text = "Elegí cómo querés participar. Podés cambiarlo más adelante.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = colorResource(R.color.text_secondary),
+                color = WarmGray,
                 modifier = Modifier.padding(top = 8.dp),
             )
 
@@ -121,10 +127,10 @@ private fun RoleSelectionContent(
                 onClick = onContinue,
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = colorResource(R.color.primary),
-                    contentColor = colorResource(R.color.on_primary),
-                    disabledContainerColor = colorResource(R.color.neutral_inactive),
-                    disabledContentColor = colorResource(R.color.on_primary),
+                    containerColor = Primary,
+                    contentColor = OnPrimary,
+                    disabledContainerColor = MutedLabel,
+                    disabledContentColor = OnPrimary,
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -147,14 +153,14 @@ private fun RoleSelectionContent(
                 Text(
                     text = "¿Ya tenés cuenta? ",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = colorResource(R.color.text_primary),
+                    color = Ink,
                 )
 
                 Text(
                     text = "Iniciá sesión",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = colorResource(R.color.primary),
+                    color = Primary,
                     modifier = Modifier.clickable(
                         onClick = onNavigateToLogin,
                     ),
@@ -175,18 +181,18 @@ private fun RoleCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val primary = colorResource(R.color.primary)
-    val cardBackground = colorResource(R.color.surface_card)
-    val borderColor = colorResource(R.color.neutral_inactive)
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
-    val onPrimary = colorResource(R.color.on_primary)
+    val primary = Primary
+    val cardBackground = CardWhite
+    val borderColor = MutedLabel
+    val textPrimary = Ink
+    val textSecondary = WarmGray
+    val onPrimary = OnPrimary
 
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
         color = if (isSelected) {
-            colorResource(R.color.primary_container)
+            PrimaryContainer
         } else {
             cardBackground
         },

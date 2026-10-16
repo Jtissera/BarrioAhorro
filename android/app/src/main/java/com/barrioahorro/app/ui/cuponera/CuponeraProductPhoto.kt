@@ -54,13 +54,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import coil3.compose.AsyncImage
-import com.barrioahorro.app.R
 import com.barrioahorro.app.di.BASE_URL
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.PrimaryContainer
+import com.barrioahorro.app.ui.theme.StepperBorder
+import com.barrioahorro.app.ui.theme.StepperCream
+import com.barrioahorro.app.ui.theme.WarmGray
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -151,7 +158,7 @@ fun CuponeraProductPhoto(
             modifier = Modifier
                 .matchParentSize()
                 .clip(RoundedCornerShape(14.dp))
-                .background(colorResource(R.color.primary_container))
+                .background(PrimaryContainer)
                 .clickable(enabled = canTakePhoto, onClickLabel = "Agregar foto") {
                     showSheet = true
                 },
@@ -172,14 +179,14 @@ fun CuponeraProductPhoto(
                     text = nombre.trim().firstOrNull()?.uppercase() ?: "+",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = colorResource(R.color.primary),
+                    color = Primary,
                 )
             }
 
             if (fotoSubiendo) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(26.dp),
-                    color = colorResource(R.color.primary),
+                    color = Primary,
                     strokeWidth = 3.dp,
                 )
             }
@@ -192,15 +199,15 @@ fun CuponeraProductPhoto(
                     .offset(x = 4.dp, y = 4.dp)
                     .size(22.dp)
                     .clip(CircleShape)
-                    .background(colorResource(R.color.primary))
-                    .border(2.dp, colorResource(R.color.surface_card), CircleShape)
+                    .background(Primary)
+                    .border(2.dp, CardWhite, CircleShape)
                     .clickable { showSheet = true },
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = if (hasPhoto) Icons.Default.PhotoCamera else Icons.Default.Add,
                     contentDescription = "Agregar foto",
-                    tint = colorResource(R.color.on_primary),
+                    tint = OnPrimary,
                     modifier = Modifier.size(14.dp),
                 )
             }
@@ -230,7 +237,7 @@ private fun PhotoSourceSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        containerColor = colorResource(R.color.splash_background),
+        containerColor = Cream,
     ) {
         Column(
             modifier = Modifier
@@ -248,12 +255,12 @@ private fun PhotoSourceSheet(
                         text = "Foto del producto",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = colorResource(R.color.text_primary),
+                        color = Ink,
                     )
                     Text(
                         text = "Elegí una opción para agregar la imagen de tu producto",
                         style = MaterialTheme.typography.bodySmall,
-                        color = colorResource(R.color.text_secondary),
+                        color = WarmGray,
                     )
                 }
 
@@ -261,7 +268,7 @@ private fun PhotoSourceSheet(
                     Icon(
                         Icons.Default.Close,
                         contentDescription = "Cerrar",
-                        tint = colorResource(R.color.text_primary),
+                        tint = Ink,
                     )
                 }
             }
@@ -284,8 +291,8 @@ private fun PhotoSourceSheet(
                 onClick = onClose,
                 shape = RoundedCornerShape(27.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = colorResource(R.color.stepper_cream),
-                    contentColor = colorResource(R.color.text_primary),
+                    containerColor = StepperCream,
+                    contentColor = Ink,
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -307,8 +314,8 @@ private fun PhotoSourceOption(
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
-        color = colorResource(R.color.surface_card),
-        border = BorderStroke(1.dp, colorResource(R.color.stepper_border)),
+        color = CardWhite,
+        border = BorderStroke(1.dp, StepperBorder),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -319,13 +326,13 @@ private fun PhotoSourceOption(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(colorResource(R.color.primary)),
+                    .background(Primary),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     icon,
                     contentDescription = null,
-                    tint = colorResource(R.color.on_primary),
+                    tint = OnPrimary,
                 )
             }
 
@@ -338,12 +345,12 @@ private fun PhotoSourceOption(
                 Text(
                     text = title,
                     fontWeight = FontWeight.SemiBold,
-                    color = colorResource(R.color.text_primary),
+                    color = Ink,
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = colorResource(R.color.text_secondary),
+                    color = WarmGray,
                 )
             }
 
@@ -351,13 +358,13 @@ private fun PhotoSourceOption(
                 modifier = Modifier
                     .size(28.dp)
                     .clip(CircleShape)
-                    .background(colorResource(R.color.stepper_cream)),
+                    .background(StepperCream),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
-                    tint = colorResource(R.color.text_primary),
+                    tint = Ink,
                     modifier = Modifier.size(18.dp),
                 )
             }

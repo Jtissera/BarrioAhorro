@@ -21,11 +21,19 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.WbTwilight
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
-import com.barrioahorro.app.R
 import com.barrioahorro.app.ui.components.onboarding.OnboardingPrimaryButton
 import com.barrioahorro.app.ui.components.onboarding.OnboardingTopBar
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.ErrorRed
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.Secondary
+import com.barrioahorro.app.ui.theme.Tertiary
+import com.barrioahorro.app.ui.theme.WarmGray
 import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.Color
 
@@ -167,16 +175,16 @@ fun BusinessScheduleScreen(
     onBack: () -> Unit,
     onNext: () -> Unit,
 ) {
-    val primary = colorResource(R.color.primary)
-    val secondary = colorResource(R.color.secondary)
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
+    val primary = Primary
+    val secondary = Secondary
+    val textPrimary = Ink
+    val textSecondary = WarmGray
 
     val errors = scheduleErrors(schedule)
     val openDays = schedule.count { it.enabled && it.slots.isNotEmpty() }
     val canContinue = errors.isEmpty() && openDays > 0
 
-    Scaffold(containerColor = colorResource(R.color.splash_background)) { paddingValues ->
+    Scaffold(containerColor = Cream) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -203,7 +211,7 @@ fun BusinessScheduleScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    color = colorResource(R.color.surface_card),
+                    color = CardWhite,
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
@@ -244,7 +252,7 @@ fun BusinessScheduleScreen(
                         }
 
                         schedule.forEach { day ->
-                            HorizontalDivider(color = colorResource(R.color.neutral_inactive).copy(alpha = 0.25f))
+                            HorizontalDivider(color = MutedLabel.copy(alpha = 0.25f))
                             ScheduleDayItem(
                                 day = day,
                                 error = errors[day.diaSemana],
@@ -264,7 +272,7 @@ fun BusinessScheduleScreen(
                         Icons.Filled.Info,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = colorResource(R.color.tertiary),
+                        tint = Tertiary,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
@@ -293,8 +301,8 @@ private fun ScheduleDayItem(
     onUpdateSlotStart: (String, String) -> Unit,
     onUpdateSlotEnd: (String, String) -> Unit,
 ) {
-    val primary = colorResource(R.color.primary)
-    val inactive = colorResource(R.color.neutral_inactive)
+    val primary = Primary
+    val inactive = MutedLabel
 
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
         Row(
@@ -305,7 +313,7 @@ private fun ScheduleDayItem(
                 text = day.label,
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
-                color = colorResource(R.color.text_primary),
+                color = Ink,
             )
             if (!day.enabled) {
                 Spacer(modifier = Modifier.width(8.dp))
@@ -313,7 +321,7 @@ private fun ScheduleDayItem(
                     Text(
                         text = "Cerrado",
                         style = MaterialTheme.typography.labelSmall,
-                        color = colorResource(R.color.text_secondary),
+                        color = WarmGray,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                     )
                 }
@@ -323,9 +331,9 @@ private fun ScheduleDayItem(
                 checked = day.enabled,
                 onCheckedChange = { onToggle() },
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = colorResource(R.color.on_primary),
-                    checkedTrackColor = colorResource(R.color.secondary),
-                    uncheckedThumbColor = colorResource(R.color.on_primary),
+                    checkedThumbColor = OnPrimary,
+                    checkedTrackColor = Secondary,
+                    uncheckedThumbColor = OnPrimary,
                     uncheckedTrackColor = inactive.copy(alpha = 0.5f),
                     uncheckedBorderColor = Color.Transparent,
                 ),
@@ -361,7 +369,7 @@ private fun ScheduleDayItem(
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
-                    color = colorResource(R.color.error),
+                    color = ErrorRed,
                 )
             }
         }
@@ -377,8 +385,8 @@ private fun TimeSlotChip(
     onEndChange: (String) -> Unit,
     onRemove: () -> Unit,
 ) {
-    val primary = colorResource(R.color.primary)
-    val borderColor = if (hasError) colorResource(R.color.error) else primary.copy(alpha = 0.5f)
+    val primary = Primary
+    val borderColor = if (hasError) ErrorRed else primary.copy(alpha = 0.5f)
     // 0 = cerrado, 1 = eligiendo apertura, 2 = eligiendo cierre
     var step by remember { mutableIntStateOf(0) }
 
@@ -401,14 +409,14 @@ private fun TimeSlotChip(
         Text(
             text = "${slot.horaInicio} - ${slot.horaFin}",
             style = MaterialTheme.typography.labelMedium,
-            color = colorResource(R.color.text_primary),
+            color = Ink,
         )
         if (showRemove) {
             Spacer(modifier = Modifier.width(6.dp))
             Icon(
                 Icons.Filled.Close,
                 contentDescription = "Quitar turno",
-                tint = colorResource(R.color.text_secondary),
+                tint = WarmGray,
                 modifier = Modifier.size(14.dp).clickable(onClick = onRemove),
             )
         }

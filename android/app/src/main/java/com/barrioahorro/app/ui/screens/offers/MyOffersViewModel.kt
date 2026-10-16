@@ -7,6 +7,7 @@ import com.barrioahorro.app.data.remote.dto.OfferResponseDto
 import com.barrioahorro.app.domain.repository.IOfferRepository
 import com.barrioahorro.app.domain.repository.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -68,13 +69,14 @@ class MyOffersViewModel @Inject constructor(
     private val esAR = Locale.forLanguageTag("es-AR")
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
-    init {
-        loadData()
-    }
+    private var loadJob: Job? = null
 
     fun loadData() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            if (_uiState.value.allOffers.isEmpty()) {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            }
 
             // 1. Info del comercio
             var bName = _uiState.value.businessName

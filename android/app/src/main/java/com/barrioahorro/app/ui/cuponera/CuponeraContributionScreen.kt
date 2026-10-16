@@ -55,7 +55,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -69,8 +68,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.barrioahorro.app.R
 import com.barrioahorro.app.data.cuponera.CuponeraProductDto
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.ErrorRed
+import com.barrioahorro.app.ui.theme.FieldBackground
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.InkBlack
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.PrimaryContainer
+import com.barrioahorro.app.ui.theme.Secondary
+import com.barrioahorro.app.ui.theme.StepperBorder
+import com.barrioahorro.app.ui.theme.StepperCream
+import com.barrioahorro.app.ui.theme.SurfaceSecondary
+import com.barrioahorro.app.ui.theme.WarmGray
 import java.io.File
 private val CardShape = RoundedCornerShape(20.dp)
 
@@ -132,7 +145,7 @@ private fun CuponeraContributionContent(
 
     Scaffold(
         modifier = Modifier.imePadding(),
-        containerColor = colorResource(R.color.splash_background),
+        containerColor = Cream,
         topBar = { TopBar(actions.onBack) },
         bottomBar = {
             if (state.commitment != null) BottomBar(state, actions)
@@ -147,7 +160,7 @@ private fun CuponeraContributionContent(
                 state.loading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
-                        color = colorResource(R.color.primary),
+                        color = Primary,
                     )
                 }
 
@@ -170,7 +183,7 @@ private fun TopBar(onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(colorResource(R.color.splash_background))
+            .background(Cream)
             .statusBarsPadding(),
     ) {
         // Toldo decorativo: franjas rojas sobre el mismo fondo crema del splash.
@@ -186,8 +199,8 @@ private fun TopBar(onBack: () -> Unit) {
                         .weight(1f)
                         .fillMaxSize()
                         .background(
-                            if (index % 2 == 0) colorResource(R.color.primary)
-                            else colorResource(R.color.splash_background),
+                            if (index % 2 == 0) Primary
+                            else Cream,
                         ),
                 )
             }
@@ -203,7 +216,7 @@ private fun TopBar(onBack: () -> Unit) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Volver",
-                    tint = colorResource(R.color.text_primary),
+                    tint = Ink,
                 )
             }
 
@@ -211,7 +224,7 @@ private fun TopBar(onBack: () -> Unit) {
                 text = "Aporte A La Cuponera",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = colorResource(R.color.text_primary),
+                color = Ink,
             )
         }
     }
@@ -237,13 +250,13 @@ private fun ProductList(
                     text = "¿Qué productos vas a aportar?",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = colorResource(R.color.title_black),
+                    color = InkBlack,
                 )
 
                 Text(
                     text = "Sumá entre ${state.minProductos} y ${state.maxProductos} productos con stock disponible para este período.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = colorResource(R.color.text_secondary),
+                    color = WarmGray,
                 )
             }
         }
@@ -313,7 +326,7 @@ private fun ProgressCard(
     Card(
         shape = CardShape,
         colors = CardDefaults.cardColors(
-            containerColor = colorResource(R.color.surface_card),
+            containerColor = CardWhite,
         ),
     ) {
         Column(
@@ -324,21 +337,21 @@ private fun ProgressCard(
                 Text(
                     text = "$count de $max productos",
                     fontWeight = FontWeight.SemiBold,
-                    color = colorResource(R.color.text_primary),
+                    color = Ink,
                     modifier = Modifier.weight(1f),
                 )
 
                 if (ready) {
                     Pill(
                         text = "Cupo mínimo listo",
-                        container = colorResource(R.color.secondary),
-                        content = colorResource(R.color.on_primary),
+                        container = Secondary,
+                        content = OnPrimary,
                     )
                 } else {
                     Pill(
                         text = "Faltan ${min - count}",
-                        container = colorResource(R.color.primary_container),
-                        content = colorResource(R.color.primary),
+                        container = PrimaryContainer,
+                        content = Primary,
                     )
                 }
             }
@@ -350,11 +363,11 @@ private fun ProgressCard(
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
                 color = if (ready) {
-                    colorResource(R.color.secondary)
+                    Secondary
                 } else {
-                    colorResource(R.color.primary)
+                    Primary
                 },
-                trackColor = colorResource(R.color.surface_secondary),
+                trackColor = SurfaceSecondary,
             )
 
             if (period.isNotBlank()) {
@@ -363,7 +376,7 @@ private fun ProgressCard(
                         Icons.Default.DateRange,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = colorResource(R.color.text_secondary),
+                        tint = WarmGray,
                     )
 
                     Spacer(Modifier.width(8.dp))
@@ -371,7 +384,7 @@ private fun ProgressCard(
                     Text(
                         text = period,
                         style = MaterialTheme.typography.bodySmall,
-                        color = colorResource(R.color.text_secondary),
+                        color = WarmGray,
                     )
                 }
             }
@@ -408,14 +421,14 @@ private fun PhotoPlaceholder(name: String) {
         modifier = Modifier
             .size(64.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(colorResource(R.color.primary_container)),
+            .background(PrimaryContainer),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = name.trim().firstOrNull()?.uppercase() ?: "+",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = colorResource(R.color.primary),
+            color = Primary,
         )
     }
 }
@@ -433,7 +446,7 @@ private fun DraftProductCard(
     Card(
         shape = CardShape,
         colors = CardDefaults.cardColors(
-            containerColor = colorResource(R.color.surface_card),
+            containerColor = CardWhite,
         ),
     ) {
         Column(
@@ -457,20 +470,20 @@ private fun DraftProductCard(
                     placeholder = {
                         Text(
                             "Nombre del producto",
-                            color = colorResource(R.color.text_secondary),
+                            color = WarmGray,
                         )
                     },
                     singleLine = true,
                     textStyle = MaterialTheme.typography.bodyMedium.copy(
-                        color = colorResource(R.color.text_primary),
+                        color = Ink,
                     ),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = colorResource(R.color.field_background),
-                        unfocusedContainerColor = colorResource(R.color.field_background),
-                        focusedTextColor = colorResource(R.color.text_primary),
-                        unfocusedTextColor = colorResource(R.color.text_primary),
-                        focusedIndicatorColor = colorResource(R.color.neutral_inactive),
-                        unfocusedIndicatorColor = colorResource(R.color.neutral_inactive),
+                        focusedContainerColor = FieldBackground,
+                        unfocusedContainerColor = FieldBackground,
+                        focusedTextColor = Ink,
+                        unfocusedTextColor = Ink,
+                        focusedIndicatorColor = MutedLabel,
+                        unfocusedIndicatorColor = MutedLabel,
                     ),
                     modifier = Modifier.weight(1f),
                 )
@@ -479,14 +492,14 @@ private fun DraftProductCard(
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = "Quitar producto",
-                        tint = colorResource(R.color.primary),
+                        tint = Primary,
                     )
                 }
             }
 
             Surface(
                 shape = RoundedCornerShape(14.dp),
-                color = colorResource(R.color.surface_secondary),
+                color = SurfaceSecondary,
             ) {
                 Column(
                     Modifier.padding(12.dp),
@@ -505,13 +518,13 @@ private fun DraftProductCard(
                             placeholder = {
                                 Text(
                                     "0",
-                                    color = colorResource(R.color.text_secondary),
+                                    color = WarmGray,
                                 )
                             },
                             prefix = {
                                 Text(
                                     "$ ",
-                                    color = colorResource(R.color.text_primary),
+                                    color = Ink,
                                 )
                             },
                             singleLine = true,
@@ -520,12 +533,12 @@ private fun DraftProductCard(
                                 textAlign = TextAlign.End,
                             ),
                             colors = TextFieldDefaults.colors(
-                                focusedContainerColor = colorResource(R.color.field_background),
-                                unfocusedContainerColor = colorResource(R.color.field_background),
-                                focusedTextColor = colorResource(R.color.text_primary),
-                                unfocusedTextColor = colorResource(R.color.text_primary),
-                                focusedIndicatorColor = colorResource(R.color.neutral_inactive),
-                                unfocusedIndicatorColor = colorResource(R.color.neutral_inactive),
+                                focusedContainerColor = FieldBackground,
+                                unfocusedContainerColor = FieldBackground,
+                                focusedTextColor = Ink,
+                                unfocusedTextColor = Ink,
+                                focusedIndicatorColor = MutedLabel,
+                                unfocusedIndicatorColor = MutedLabel,
                             ),
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Number,
@@ -558,7 +571,7 @@ private fun DraftProductCard(
                 Text(
                     text = "Los vecinos lo canjean por ${pointsFor(valor, pesosPorPunto)} puntos",
                     style = MaterialTheme.typography.bodySmall,
-                    color = colorResource(R.color.text_secondary),
+                    color = WarmGray,
                 )
             }
         }
@@ -570,7 +583,7 @@ private fun ReadOnlyProductCard(product: CuponeraProductDto) {
     Card(
         shape = CardShape,
         colors = CardDefaults.cardColors(
-            containerColor = colorResource(R.color.surface_card),
+            containerColor = CardWhite,
         ),
     ) {
         Row(
@@ -594,28 +607,28 @@ private fun ReadOnlyProductCard(product: CuponeraProductDto) {
                 Text(
                     product.nombreProducto,
                     fontWeight = FontWeight.SemiBold,
-                    color = colorResource(R.color.title_black),
+                    color = InkBlack,
                 )
 
                 product.valorComercio?.let {
                     Text(
                         text = "Valor en tu comercio: $ ${formatThousands(it.toLong().toString())}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = colorResource(R.color.text_secondary),
+                        color = WarmGray,
                     )
                 }
 
                 Text(
                     text = "Canjeados ${product.unidadesCanjeadas} de ${product.unidadesDisponibles}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = colorResource(R.color.text_secondary),
+                    color = WarmGray,
                 )
             }
 
             Pill(
                 text = "${product.costoPuntos} pts",
-                container = colorResource(R.color.primary_container),
-                content = colorResource(R.color.primary),
+                container = PrimaryContainer,
+                content = Primary,
             )
         }
     }
@@ -632,13 +645,13 @@ private fun LabeledBlock(
             text = title,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = colorResource(R.color.text_secondary),
+            color = WarmGray,
         )
 
         Text(
             text = subtitle,
             style = MaterialTheme.typography.bodySmall,
-            color = colorResource(R.color.text_secondary),
+            color = WarmGray,
         )
     }
 }
@@ -650,8 +663,8 @@ private fun Stepper(
 ) {
     Surface(
         shape = RoundedCornerShape(50),
-        color = colorResource(R.color.field_background),
-        border = BorderStroke(1.dp, colorResource(R.color.stepper_border)),
+        color = FieldBackground,
+        border = BorderStroke(1.dp, StepperBorder),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 5.dp, vertical = 4.dp),
@@ -666,7 +679,7 @@ private fun Stepper(
                 text = value.toString(),
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                color = colorResource(R.color.text_primary),
+                color = Ink,
                 modifier = Modifier.widthIn(min = 18.dp),
             )
 
@@ -687,10 +700,10 @@ private fun StepButton(
         modifier = Modifier
             .size(26.dp)
             .clip(CircleShape)
-            .background(colorResource(R.color.stepper_cream), CircleShape)
+            .background(StepperCream, CircleShape)
             .border(
                 1.dp,
-                colorResource(R.color.stepper_border),
+                StepperBorder,
                 CircleShape,
             )
             .clickable(onClick = onClick)
@@ -702,7 +715,7 @@ private fun StepButton(
         Text(
             text = symbol,
             fontSize = 18.sp,
-            color = colorResource(R.color.primary),
+            color = Primary,
         )
     }
 }
@@ -716,7 +729,7 @@ private fun AddProductButton(
         onClick = onClick,
         enabled = enabled,
         shape = CardShape,
-        color = colorResource(R.color.surface_card),
+        color = CardWhite,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Box(
@@ -727,9 +740,9 @@ private fun AddProductButton(
                 text = "+ Agregar producto",
                 fontWeight = FontWeight.SemiBold,
                 color = if (enabled) {
-                    colorResource(R.color.primary)
+                    Primary
                 } else {
-                    colorResource(R.color.neutral_inactive)
+                    MutedLabel
                 },
             )
         }
@@ -750,7 +763,7 @@ private fun Suggestions(
             text = "SUGERENCIAS RÁPIDAS PARA TU RUBRO",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = colorResource(R.color.text_secondary),
+            color = WarmGray,
         )
 
         FlowRow(
@@ -785,13 +798,13 @@ private fun SuggestionChip(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(50),
-        color = colorResource(R.color.surface_card),
+        color = CardWhite,
         border = BorderStroke(
             1.dp,
             if (enabled) {
-                colorResource(R.color.neutral_inactive)
+                MutedLabel
             } else {
-                colorResource(R.color.surface_secondary)
+                SurfaceSecondary
             },
         ),
     ) {
@@ -800,9 +813,9 @@ private fun SuggestionChip(
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
             color = if (enabled) {
-                colorResource(R.color.text_primary)
+                Ink
             } else {
-                colorResource(R.color.text_secondary)
+                WarmGray
             },
             modifier = Modifier.padding(
                 horizontal = 14.dp,
@@ -821,7 +834,7 @@ private fun InfoNote() {
         Icon(
             Icons.Default.Info,
             contentDescription = null,
-            tint = colorResource(R.color.primary),
+            tint = Primary,
             modifier = Modifier.size(18.dp),
         )
 
@@ -830,7 +843,7 @@ private fun InfoNote() {
         Text(
             text = "Una vez ratificado, no podés reducir el stock hasta que termine el período.",
             style = MaterialTheme.typography.bodySmall,
-            color = colorResource(R.color.text_secondary),
+            color = WarmGray,
         )
     }
 }
@@ -843,7 +856,7 @@ private fun BottomBar(
     val commitment = state.commitment ?: return
 
     Surface(
-        color = colorResource(R.color.splash_background),
+        color = Cream,
         shadowElevation = 8.dp,
     ) {
         Column(
@@ -858,16 +871,16 @@ private fun BottomBar(
                 commitment.estado == "RATIFICADO" -> {
                     StatusBanner(
                         text = "Aporte ratificado",
-                        container = colorResource(R.color.secondary),
-                        content = colorResource(R.color.on_primary),
+                        container = Secondary,
+                        content = OnPrimary,
                     )
                 }
 
                 state.readOnly -> {
                     StatusBanner(
                         text = "El plazo para ratificar este período venció",
-                        container = colorResource(R.color.surface_secondary),
-                        content = colorResource(R.color.error),
+                        container = SurfaceSecondary,
+                        content = ErrorRed,
                     )
                 }
 
@@ -875,7 +888,7 @@ private fun BottomBar(
                     state.submitError?.let {
                         Text(
                             text = it,
-                            color = colorResource(R.color.error),
+                            color = ErrorRed,
                             style = MaterialTheme.typography.bodySmall,
                             textAlign = TextAlign.Center,
                         )
@@ -886,10 +899,10 @@ private fun BottomBar(
                         enabled = state.canSubmit,
                         shape = RoundedCornerShape(27.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = colorResource(R.color.primary),
-                            contentColor = colorResource(R.color.on_primary),
-                            disabledContainerColor = colorResource(R.color.neutral_inactive),
-                            disabledContentColor = colorResource(R.color.on_primary),
+                            containerColor = Primary,
+                            contentColor = OnPrimary,
+                            disabledContainerColor = MutedLabel,
+                            disabledContentColor = OnPrimary,
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -899,7 +912,7 @@ private fun BottomBar(
                             CircularProgressIndicator(
                                 modifier = Modifier.size(22.dp),
                                 strokeWidth = 2.dp,
-                                color = colorResource(R.color.on_primary),
+                                color = OnPrimary,
                             )
                         } else {
                             Text(
@@ -920,7 +933,7 @@ private fun BottomBar(
                     Text(
                         text = "Mínimo ${state.minProductos} productos para continuar.",
                         style = MaterialTheme.typography.labelSmall,
-                        color = colorResource(R.color.text_secondary),
+                        color = WarmGray,
                     )
                 }
             }
@@ -963,14 +976,14 @@ private fun ErrorState(
         Text(
             text = message,
             textAlign = TextAlign.Center,
-            color = colorResource(R.color.text_primary),
+            color = Ink,
         )
 
         Button(
             onClick = onRetry,
             colors = ButtonDefaults.buttonColors(
-                containerColor = colorResource(R.color.primary),
-                contentColor = colorResource(R.color.on_primary),
+                containerColor = Primary,
+                contentColor = OnPrimary,
             ),
         ) {
             Text("Reintentar")

@@ -7,13 +7,10 @@ import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-import com.barrioahorro.app.ui.components.BusinessTab
-
 @Composable
 fun CreateOfferScreen(
     onClose: () -> Unit,
     onPublished: () -> Unit,
-    onTabSelected: (BusinessTab) -> Unit = {},
     viewModel: CreateOfferViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -30,7 +27,6 @@ fun CreateOfferScreen(
         null -> OfferTypeSelectorScreen(
             onSelect = viewModel::selectType,
             onBack = onClose,
-            onTabSelected = onTabSelected,
         )
         else -> {
             BackHandler { viewModel.clearType() }
@@ -55,7 +51,6 @@ fun CreateOfferScreen(
                 onSubmit = viewModel::submit,
                 onPhotoPicked = viewModel::onPhotoPicked,
                 onRemovePhoto = viewModel::removePhoto,
-                onTabSelected = onTabSelected,
             )
         }
     }

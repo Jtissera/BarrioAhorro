@@ -36,10 +36,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.barrioahorro.app.R
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.SurfaceMuted
+import com.barrioahorro.app.ui.theme.SurfaceSecondary
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -72,11 +77,11 @@ fun BusinessAddressMap(
             .height(MAP_HEIGHT)
             .shadow(1.dp, shape)
             .clip(shape)
-            .background(colorResource(R.color.surface_muted)),
+            .background(SurfaceMuted),
     ) {
         if (hasLocation) {
             ReadOnlyMap(latitud = latitud!!, longitud = longitud!!, modifier = Modifier.fillMaxSize())
-            Box(modifier = Modifier.fillMaxSize().background(colorResource(R.color.text_primary).copy(alpha = 0.1f)))
+            Box(modifier = Modifier.fillMaxSize().background(Ink.copy(alpha = 0.1f)))
             MapPin(modifier = Modifier.align(Alignment.Center).offset(y = (-8).dp))
         } else {
             UnrecognizedPointOverlay(modifier = Modifier.fillMaxSize())
@@ -133,13 +138,13 @@ private fun MapPin(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .size(40.dp)
                 .shadow(6.dp, CircleShape)
-                .background(colorResource(R.color.primary), CircleShape),
+                .background(Primary, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 Icons.Filled.LocationOn,
                 contentDescription = "Ubicación del comercio",
-                tint = colorResource(R.color.on_primary),
+                tint = OnPrimary,
                 modifier = Modifier.size(20.dp),
             )
         }
@@ -148,7 +153,7 @@ private fun MapPin(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .width(12.dp)
                 .height(6.dp)
-                .background(colorResource(R.color.text_primary).copy(alpha = 0.4f), CircleShape),
+                .background(Ink.copy(alpha = 0.4f), CircleShape),
         )
     }
 }
@@ -158,7 +163,7 @@ private fun UnrecognizedPointOverlay(modifier: Modifier = Modifier) {
     val alertRed = Color(0xFFAD1800)
     Column(
         modifier = modifier
-            .background(colorResource(R.color.splash_background))
+            .background(Cream)
             .background(alertRed.copy(alpha = 0.1f))
             .padding(bottom = 36.dp),
         verticalArrangement = Arrangement.Center,
@@ -169,13 +174,13 @@ private fun UnrecognizedPointOverlay(modifier: Modifier = Modifier) {
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .background(colorResource(R.color.primary), CircleShape),
+                    .background(Primary, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.Filled.LocationOff,
                     contentDescription = null,
-                    tint = colorResource(R.color.on_primary),
+                    tint = OnPrimary,
                     modifier = Modifier.size(20.dp),
                 )
             }
@@ -184,7 +189,7 @@ private fun UnrecognizedPointOverlay(modifier: Modifier = Modifier) {
         Text(
             text = "Punto no reconocido",
             style = MaterialTheme.typography.labelSmall,
-            color = colorResource(R.color.surface_secondary),
+            color = SurfaceSecondary,
             modifier = Modifier
                 .background(Color(0xE6352F29), CircleShape)
                 .padding(horizontal = 12.dp, vertical = 4.dp),
@@ -196,7 +201,7 @@ private fun UnrecognizedPointOverlay(modifier: Modifier = Modifier) {
 private fun UseLocationPill(isFetching: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         shape = CircleShape,
-        color = Color.White.copy(alpha = 0.95f),
+        color = CardWhite.copy(alpha = 0.95f),
         shadowElevation = 4.dp,
         modifier = modifier.clip(CircleShape).clickable(enabled = !isFetching, onClick = onClick),
     ) {
@@ -206,7 +211,7 @@ private fun UseLocationPill(isFetching: Boolean, onClick: () -> Unit, modifier: 
         ) {
             if (isFetching) {
                 CircularProgressIndicator(
-                    color = colorResource(R.color.primary),
+                    color = Primary,
                     strokeWidth = 2.dp,
                     modifier = Modifier.size(12.dp),
                 )
@@ -214,7 +219,7 @@ private fun UseLocationPill(isFetching: Boolean, onClick: () -> Unit, modifier: 
                 Icon(
                     Icons.Filled.MyLocation,
                     contentDescription = null,
-                    tint = colorResource(R.color.primary),
+                    tint = Primary,
                     modifier = Modifier.size(12.dp),
                 )
             }
@@ -222,7 +227,7 @@ private fun UseLocationPill(isFetching: Boolean, onClick: () -> Unit, modifier: 
             Text(
                 text = "Usar mi ubicación actual",
                 style = MaterialTheme.typography.labelSmall,
-                color = colorResource(R.color.text_primary),
+                color = Ink,
             )
         }
     }

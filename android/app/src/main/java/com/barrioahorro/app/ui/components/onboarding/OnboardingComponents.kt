@@ -26,10 +26,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.barrioahorro.app.R
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.WarmGray
 
 
 const val ONBOARDING_TOTAL_STEPS = 5
@@ -41,8 +45,8 @@ fun OnboardingTopBar(
     modifier: Modifier = Modifier,
     totalSteps: Int = ONBOARDING_TOTAL_STEPS,
 ) {
-    val filled = colorResource(R.color.primary)
-    val empty = colorResource(R.color.neutral_inactive).copy(alpha = 0.35f)
+    val filled = Primary
+    val empty = MutedLabel.copy(alpha = 0.35f)
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -53,7 +57,7 @@ fun OnboardingTopBar(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Volver",
-                    tint = colorResource(R.color.text_primary),
+                    tint = Ink,
                 )
             }
         } else {
@@ -87,16 +91,16 @@ fun OnboardingPrimaryButton(
     enabled: Boolean = true,
     isLoading: Boolean = false,
 ) {
-    val onPrimary = colorResource(R.color.on_primary)
+    val onPrimary = OnPrimary
 
     Button(
         onClick = { if (!isLoading) onClick() },
         enabled = enabled,
         shape = CircleShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = colorResource(R.color.primary),
+            containerColor = Primary,
             contentColor = onPrimary,
-            disabledContainerColor = colorResource(R.color.neutral_inactive),
+            disabledContainerColor = MutedLabel,
             disabledContentColor = onPrimary,
         ),
         modifier = modifier.fillMaxWidth(),
@@ -120,11 +124,11 @@ fun OnboardingPrimaryButton(
 
 @Composable
 fun onboardingFieldColors(): TextFieldColors {
-    val card = colorResource(R.color.surface_card)
-    val primary = colorResource(R.color.primary)
-    val inactive = colorResource(R.color.neutral_inactive)
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
+    val card = CardWhite
+    val primary = Primary
+    val inactive = MutedLabel
+    val textPrimary = Ink
+    val textSecondary = WarmGray
 
     return OutlinedTextFieldDefaults.colors(
         focusedContainerColor = card,

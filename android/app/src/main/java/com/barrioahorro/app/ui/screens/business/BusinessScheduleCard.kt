@@ -38,11 +38,20 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.barrioahorro.app.R
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.Secondary
+import com.barrioahorro.app.ui.theme.SecondaryContainer
+import com.barrioahorro.app.ui.theme.SurfaceDay
+import com.barrioahorro.app.ui.theme.SurfaceDayClosed
+import com.barrioahorro.app.ui.theme.SurfaceMuted
+import com.barrioahorro.app.ui.theme.WarmGray
 import com.barrioahorro.app.ui.components.profile.FormFieldHeader
 import com.barrioahorro.app.ui.components.profile.StatusChip
 import com.barrioahorro.app.ui.screens.onboarding.DayScheduleUi
@@ -60,7 +69,7 @@ fun BusinessScheduleCard(
     onCopyMondayToAll: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val primary = colorResource(R.color.primary)
+    val primary = Primary
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         FormFieldHeader(label = "Horarios de atención") {
@@ -79,7 +88,7 @@ fun BusinessScheduleCard(
 
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = colorResource(R.color.surface_card),
+            color = CardWhite,
             shadowElevation = 1.dp,
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -112,8 +121,8 @@ private fun ScheduleDayCard(
     onUpdateSlotStart: (String, String) -> Unit,
     onUpdateSlotEnd: (String, String) -> Unit,
 ) {
-    val primary = colorResource(R.color.primary)
-    val textPrimary = colorResource(R.color.text_primary)
+    val primary = Primary
+    val textPrimary = Ink
     val shape = RoundedCornerShape(12.dp)
 
     if (!day.enabled) {
@@ -121,7 +130,7 @@ private fun ScheduleDayCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .alpha(0.8f)
-                .background(colorResource(R.color.surface_day_closed).copy(alpha = 0.6f), shape)
+                .background(SurfaceDayClosed.copy(alpha = 0.6f), shape)
                 .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -129,8 +138,8 @@ private fun ScheduleDayCard(
             Spacer(modifier = Modifier.width(8.dp))
             StatusChip(
                 text = "Cerrado",
-                containerColor = colorResource(R.color.surface_muted),
-                contentColor = colorResource(R.color.text_secondary),
+                containerColor = SurfaceMuted,
+                contentColor = WarmGray,
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
@@ -149,7 +158,7 @@ private fun ScheduleDayCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(colorResource(R.color.surface_day).copy(alpha = 0.4f), shape)
+            .background(SurfaceDay.copy(alpha = 0.4f), shape)
             .padding(start = 10.dp, end = 10.dp, top = 10.dp, bottom = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -158,9 +167,9 @@ private fun ScheduleDayCard(
             Spacer(modifier = Modifier.width(8.dp))
             StatusChip(
                 text = "Abierto",
-                containerColor = colorResource(R.color.secondary_container),
-                contentColor = colorResource(R.color.secondary),
-                dotColor = colorResource(R.color.secondary),
+                containerColor = SecondaryContainer,
+                contentColor = Secondary,
+                dotColor = Secondary,
             )
             Spacer(modifier = Modifier.weight(1f))
             Switch(
@@ -168,7 +177,7 @@ private fun ScheduleDayCard(
                 onCheckedChange = { onToggle() },
                 modifier = Modifier.scale(0.7f),
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = colorResource(R.color.on_primary),
+                    checkedThumbColor = OnPrimary,
                     checkedTrackColor = textPrimary,
                     checkedBorderColor = Color.Transparent,
                 ),
@@ -208,7 +217,7 @@ private fun DayTitle(label: String) {
         text = label,
         style = MaterialTheme.typography.bodyLarge,
         fontWeight = FontWeight.SemiBold,
-        color = colorResource(R.color.text_primary),
+        color = Ink,
     )
 }
 
@@ -228,7 +237,7 @@ private fun TimeSlotChip(
     Row(
         modifier = Modifier
             .clip(shape)
-            .background(colorResource(R.color.splash_background))
+            .background(Cream)
             .clickable { step = 1 }
             .padding(horizontal = 10.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -236,14 +245,14 @@ private fun TimeSlotChip(
         Text(
             text = "${slot.horaInicio} – ${slot.horaFin}",
             style = MaterialTheme.typography.labelMedium,
-            color = colorResource(R.color.text_primary),
+            color = Ink,
         )
         if (showRemove) {
             Spacer(modifier = Modifier.width(4.dp))
             Icon(
                 Icons.Filled.Close,
                 contentDescription = "Quitar turno",
-                tint = colorResource(R.color.primary),
+                tint = Primary,
                 modifier = Modifier
                     .size(16.dp)
                     .clip(RoundedCornerShape(8.dp))
@@ -290,19 +299,19 @@ private fun SlotTimePickerDialog(
     onConfirm: (hour: Int, minute: Int) -> Unit,
 ) {
     val state = rememberTimePickerState(initialHour = initialHour, initialMinute = initialMinute, is24Hour = true)
-    val primary = colorResource(R.color.primary)
+    val primary = Primary
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = colorResource(R.color.surface_card),
+        containerColor = CardWhite,
         shape = RoundedCornerShape(16.dp),
         title = {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = colorResource(R.color.text_primary))
+            Text(title, style = MaterialTheme.typography.titleMedium, color = Ink)
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(state.hour, state.minute) }) { Text("Aceptar", color = primary) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar", color = colorResource(R.color.text_secondary)) }
+            TextButton(onClick = onDismiss) { Text("Cancelar", color = WarmGray) }
         },
         text = { TimePicker(state = state) },
     )

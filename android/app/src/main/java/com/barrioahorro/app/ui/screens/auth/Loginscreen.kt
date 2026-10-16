@@ -31,7 +31,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -40,7 +39,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.barrioahorro.app.R
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.OnPrimary
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.WarmGray
 import com.barrioahorro.app.domain.model.UserType
 import com.barrioahorro.app.ui.components.feedback.ErrorCard
 import com.barrioahorro.app.ui.components.inputs.EditorialTextField
@@ -86,12 +90,12 @@ private fun LoginContent(
     onSubmit: () -> Unit,
     onNavigateToRegister: () -> Unit,
 ) {
-    val background = colorResource(R.color.splash_background)
-    val textPrimary = colorResource(R.color.text_primary)
-    val textSecondary = colorResource(R.color.text_secondary)
-    val primary = colorResource(R.color.primary)
-    val onPrimary = colorResource(R.color.on_primary)
-    val inactive = colorResource(R.color.neutral_inactive)
+    val background = Cream
+    val textPrimary = Ink
+    val textSecondary = WarmGray
+    val primary = Primary
+    val onPrimary = OnPrimary
+    val inactive = MutedLabel
 
     Scaffold(containerColor = background) { paddingValues ->
         Column(

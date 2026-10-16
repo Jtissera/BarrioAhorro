@@ -42,10 +42,37 @@ val SuccessGreen = Color(0xFF2F6B55)
 val FieldBackground = Color(0xFFFFFFFF)
 val SurfaceDay = Color(0xFFFDF2E8)
 val SurfaceDayClosed = Color(0xFFF7ECE2)
+val SurfaceFieldAlt = Color(0xFFF3ECE4)
 
 // Onboarding
 val StepperCream = Color(0xFFFBF6E6)
 val StepperBorder = Color(0xFFD9CDBB)
+
+// Badges y Tags (ofertas, estados, tags de comercio)
+val BadgeOrange = Color(0xFFFFE0D2)
+val BadgeOrangeBorder = Color(0xFFFFD9C7)
+val BadgeOrangeLight = Color(0xFFFFF2EB)
+val BadgeYellow = Color(0xFFFFECC4)
+val BadgeYellowText = Color(0xFF8A5300)
+val BadgeGreen = Color(0xFFD2F5DC)
+val BadgeGreenDot = Color(0xFF1E824C)
+val BadgeGreenText = Color(0xFF1B5E39)
+val BadgeGreenSoft = Color(0xFFE8F7F0)
+val BadgeGreenSoftBorder = Color(0xFFBCE8D3)
+val BadgeGreenDark = Color(0xFF2E7D32)
+val HighlightOrange = Color(0xFFFFF0EC)
+val HighlightOrangeBorder = Color(0xFFFFD6CC)
+val ForestGreen = Color(0xFF2C6B4F)
+
+// Aliases semánticos para unificación total
+val SplashBackground = Cream
+val SurfaceCard = CardWhite
+val TextPrimary = Ink
+val TextSecondary = WarmGray
+val NeutralInactive = MutedLabel
+val OutlineVariant = TrackBeige
+val TitleBlack = InkBlack
+val Error = ErrorRed
 
 // Compatibilidad con las referencias existentes
 object AppColors {
