@@ -416,7 +416,7 @@ fun BusinessLocationScreen(
 
 @SuppressLint("ClickableViewAccessibility")
 @Composable
-private fun LocationPickerMap(
+internal fun LocationPickerMap(
     pinLatitud: Double?,
     pinLongitud: Double?,
     onPinMoved: (latitud: Double, longitud: Double) -> Unit,
@@ -485,8 +485,11 @@ private fun LocationPickerMap(
     DisposableEffect(mapView) {
         var lastTouchAt = 0L
 
-        mapView.setOnTouchListener { _, _ ->
+        mapView.setOnTouchListener { view, event ->
             lastTouchAt = SystemClock.uptimeMillis()
+            if (event.actionMasked == android.view.MotionEvent.ACTION_DOWN) {
+                view.parent?.requestDisallowInterceptTouchEvent(true)
+            }
             false
         }
 

@@ -6,42 +6,22 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -60,18 +39,14 @@ import androidx.core.content.FileProvider
 import coil3.compose.AsyncImage
 import com.barrioahorro.app.di.BASE_URL
 import com.barrioahorro.app.ui.theme.CardWhite
-import com.barrioahorro.app.ui.theme.Cream
-import com.barrioahorro.app.ui.theme.Ink
 import com.barrioahorro.app.ui.theme.OnPrimary
 import com.barrioahorro.app.ui.theme.Primary
 import com.barrioahorro.app.ui.theme.PrimaryContainer
-import com.barrioahorro.app.ui.theme.StepperBorder
-import com.barrioahorro.app.ui.theme.StepperCream
-import com.barrioahorro.app.ui.theme.WarmGray
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import com.barrioahorro.app.ui.screens.business.PhotoSourceSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -87,7 +62,6 @@ fun CuponeraProductPhoto(
     val scope = rememberCoroutineScope()
 
     var showSheet by rememberSaveable { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     // Se guarda la ruta como String con rememberSaveable, por si la Activity se recrea mientras está abierta la cámara.
     var pendingPath by rememberSaveable { mutableStateOf<String?>(null) }
@@ -134,13 +108,6 @@ fun CuponeraProductPhoto(
         )
     }
 
-    fun closeSheet(afterClose: () -> Unit = {}) {
-        scope.launch {
-            sheetState.hide()
-            showSheet = false
-            afterClose()
-        }
-    }
 
     val canTakePhoto = editable && !fotoSubiendo
     val hasPhoto = !fotoUrl.isNullOrBlank()
@@ -216,159 +183,18 @@ fun CuponeraProductPhoto(
 
     if (showSheet && editable) {
         PhotoSourceSheet(
-            sheetState = sheetState,
-            onDismissRequest = { showSheet = false },
-            onClose = { closeSheet() },
-            onCamera = { closeSheet { openCamera() } },
-            onGallery = { closeSheet { openGallery() } },
+            title = "Foto del producto",
+            subtitle = "Elegí una opción para agregar la imagen de tu producto",
+            onDismiss = { showSheet = false },
+            onTakePhoto = {
+                showSheet = false
+                openCamera()
+            },
+            onPickFromGallery = {
+                showSheet = false
+                openGallery()
+            },
         )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PhotoSourceSheet(
-    sheetState: SheetState,
-    onDismissRequest: () -> Unit,
-    onClose: () -> Unit,
-    onCamera: () -> Unit,
-    onGallery: () -> Unit,
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
-        sheetState = sheetState,
-        containerColor = Cream,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(verticalAlignment = Alignment.Top) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(
-                        text = "Foto del producto",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Ink,
-                    )
-                    Text(
-                        text = "Elegí una opción para agregar la imagen de tu producto",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = WarmGray,
-                    )
-                }
-
-                IconButton(onClick = onClose) {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Cerrar",
-                        tint = Ink,
-                    )
-                }
-            }
-
-            PhotoSourceOption(
-                icon = Icons.Default.PhotoCamera,
-                title = "Sacar foto",
-                subtitle = "Usá la cámara de tu celular",
-                onClick = onCamera,
-            )
-
-            PhotoSourceOption(
-                icon = Icons.Default.PhotoLibrary,
-                title = "Elegir de la galería",
-                subtitle = "Buscá en tus fotos guardadas",
-                onClick = onGallery,
-            )
-
-            Button(
-                onClick = onClose,
-                shape = RoundedCornerShape(27.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = StepperCream,
-                    contentColor = Ink,
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-            ) {
-                Text("Cancelar", fontWeight = FontWeight.SemiBold)
-            }
-        }
-    }
-}
-
-@Composable
-private fun PhotoSourceOption(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit,
-) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        color = CardWhite,
-        border = BorderStroke(1.dp, StepperBorder),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Primary),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = OnPrimary,
-                )
-            }
-
-            Spacer(Modifier.width(14.dp))
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = title,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Ink,
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = WarmGray,
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .background(StepperCream),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = Ink,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-        }
     }
 }
 

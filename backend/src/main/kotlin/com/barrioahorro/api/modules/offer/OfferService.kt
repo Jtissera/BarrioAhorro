@@ -21,6 +21,9 @@ import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.multipart.MultipartFile
 import java.time.LocalTime
 import java.time.OffsetDateTime
+import com.barrioahorro.api.modules.offer.dto.ActiveOfferItemResponse
+import com.barrioahorro.api.modules.offer.dto.ActiveOffersResponse
+
 
 @Service
 class OfferService(
@@ -31,6 +34,7 @@ class OfferService(
     private val offerPorcentajeRepository: OfferPorcentajeRepository,
     private val businessRepository: BusinessRepository,
     private val photoStorage: PhotoStorage,
+    private val offerConfirmationQueries: OfferConfirmationQueries,
 ) {
 
     @Transactional
@@ -223,6 +227,21 @@ class OfferService(
             .filter { it.vigenteHasta == null || it.vigenteHasta!!.isAfter(now) }
 
         return offers.map { mapOfferToResponse(it) }
+    }
+
+    @Transactional(readOnly = true)
+    fun getMyActiveOffers(userId: Long): ActiveOffersResponse {
+        if (!businessRepository.existsById(userId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Solo los comercios pueden ver sus ofertas")
+        }
+
+        val offers = getOffersByBusiness(userId)
+        val confirmations = offerConfirmationQueries.countByOffer(userId)
+
+        return ActiveOffersResponse(
+            activeCount = offers.size,
+            items = offers.map { ActiveOfferItemResponse(offer = it, confirmationsCount = confirmations[it.id] ?: 0) },
+        )
     }
 
     @Transactional

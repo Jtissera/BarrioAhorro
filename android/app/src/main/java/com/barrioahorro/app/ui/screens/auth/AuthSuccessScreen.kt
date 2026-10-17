@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,7 +22,12 @@ import com.barrioahorro.app.ui.theme.AppColors
 import com.barrioahorro.app.ui.theme.Cream
 
 @Composable
-fun AuthSuccessScreen(userType: UserType, onContinue: () -> Unit) {
+fun AuthSuccessScreen(
+    userType: UserType,
+    onContinue: () -> Unit,
+    onLogout: () -> Unit = {},
+    isLoggingOut: Boolean = false,
+) {
     Scaffold(containerColor = MaterialTheme.colorScheme.surface) { paddingValues ->
         Column(
             modifier = Modifier
@@ -58,6 +64,17 @@ fun AuthSuccessScreen(userType: UserType, onContinue: () -> Unit) {
                     Text("Continuar al inicio")
                 }
             }
+            if (userType == UserType.CLIENTE) {
+                OutlinedButton(
+                    onClick = onLogout,
+                    enabled = !isLoggingOut,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 32.dp),
+                ) {
+                    Text("Cerrar sesión")
+                }
+            }
         }
     }
 }
@@ -70,5 +87,5 @@ private fun userTypeMessage(userType: UserType): String = when (userType) {
 @Preview(showBackground = true)
 @Composable
 private fun AuthSuccessScreenPreview() {
-    AuthSuccessScreen(userType = UserType.COMERCIO, onContinue = {})
+    AuthSuccessScreen(userType = UserType.CLIENTE, onContinue = {}, onLogout = {})
 }

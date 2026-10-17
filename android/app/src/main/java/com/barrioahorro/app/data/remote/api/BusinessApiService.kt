@@ -1,9 +1,11 @@
 package com.barrioahorro.app.data.remote.api
 
+import com.barrioahorro.app.data.remote.dto.ActiveOffersDto
 import com.barrioahorro.app.data.remote.dto.BusinessResponseDto
 import com.barrioahorro.app.data.remote.dto.DashboardResponseDto
 import com.barrioahorro.app.data.remote.dto.PhotoResponseDto
 import com.barrioahorro.app.data.remote.dto.ReorderPhotosRequestDto
+import com.barrioahorro.app.data.remote.dto.ReviewsPageDto
 import com.barrioahorro.app.data.remote.dto.UpdateBusinessRequestDto
 import okhttp3.MultipartBody
 import retrofit2.Response
@@ -16,6 +18,7 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface BusinessApiService {
 
@@ -41,4 +44,13 @@ interface BusinessApiService {
 
     @PUT("api/business/me/photos/order")
     suspend fun reorderPhotos(@Body request: ReorderPhotosRequestDto): Response<List<PhotoResponseDto>>
+
+    @GET("api/business/me/reviews")
+    suspend fun getMyReviews(
+        @Query("page") page: Int,
+        @Query("size") size: Int,
+    ): Response<ReviewsPageDto>
+
+    @GET("api/business/me/offers/active")
+    suspend fun getMyActiveOffers(): Response<ActiveOffersDto>
 }

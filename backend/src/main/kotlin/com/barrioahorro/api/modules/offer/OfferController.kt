@@ -1,5 +1,6 @@
 package com.barrioahorro.api.modules.offer
 
+import com.barrioahorro.api.modules.offer.dto.ActiveOffersResponse
 import com.barrioahorro.api.modules.offer.dto.CreateOffer2x1Request
 import com.barrioahorro.api.modules.offer.dto.CreateOfferPorMayorRequest
 import com.barrioahorro.api.modules.offer.dto.CreateOfferCantidadRequest
@@ -69,6 +70,12 @@ class OfferController(
         val userId = authentication.principal as Long
         val response = offerService.createOfferPorcentaje(userId, request)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
+    }
+
+    @GetMapping("/me/offers/active")
+    fun getMyActiveOffers(authentication: Authentication): ResponseEntity<ActiveOffersResponse> {
+        val userId = authentication.principal as Long
+        return ResponseEntity.ok(offerService.getMyActiveOffers(userId))
     }
 
     @GetMapping("/me/offers")

@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -31,7 +32,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.AddAPhoto
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -39,7 +39,6 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.DateRange
-import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Info
@@ -139,6 +138,7 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.barrioahorro.app.ui.screens.business.PhotoSourceSheet
 
 private val esAR: Locale = Locale.forLanguageTag("es-AR")
 private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
@@ -1310,47 +1310,22 @@ private fun PhotoSection(
     }
 
     if (showSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showSheet = false },
-            containerColor = c.background,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text("Foto del producto", style = MaterialTheme.typography.titleMedium, color = c.textPrimary)
-                PhotoSourceOption(Icons.Filled.PhotoCamera, "Sacar foto") {
-                    showSheet = false
-                    openCamera()
-                }
-                PhotoSourceOption(Icons.Filled.PhotoLibrary, "Elegir de la galería") {
-                    showSheet = false
-                    galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                }
-            }
-        }
+        PhotoSourceSheet(
+            title = "Foto del producto",
+            subtitle = "Elegí una opción para agregar la imagen de tu producto",
+            onDismiss = { showSheet = false },
+            onTakePhoto = {
+                showSheet = false
+                openCamera()
+            },
+            onPickFromGallery = {
+                showSheet = false
+                galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            },
+        )
     }
 }
 
-@Composable
-private fun PhotoSourceOption(icon: ImageVector, text: String, onClick: () -> Unit) {
-    val c = formColors()
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
-        color = c.card,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = c.primary)
-            Spacer(Modifier.width(12.dp))
-            Text(text, style = MaterialTheme.typography.labelLarge, color = c.textPrimary)
-        }
-    }
-}
 
 private fun String.toAbsoluteUrl(): String =
     if (startsWith("http")) this else BASE_URL.trimEnd('/') + "/" + trimStart('/')
@@ -1805,13 +1780,18 @@ private fun BottomActions(
             onClick = onBack,
             enabled = !isSubmitting,
             shape = RoundedCornerShape(14.dp),
+            contentPadding = PaddingValues(0.dp),
             modifier = Modifier.size(56.dp),
             colors = ButtonDefaults.filledTonalButtonColors(
                 containerColor = SurfaceSecondary,
                 contentColor = c.textPrimary,
             ),
         ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Volver",
+                modifier = Modifier.size(32.dp),
+            )
         }
         Button(
             onClick = onSubmit,

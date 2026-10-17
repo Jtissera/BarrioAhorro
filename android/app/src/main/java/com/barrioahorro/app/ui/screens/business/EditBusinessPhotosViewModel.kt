@@ -89,7 +89,7 @@ class EditBusinessPhotosViewModel @Inject constructor(
     }
 
     /** Applies the pending operations in order, reloads the server photos and keeps whatever failed as pending. */
-    fun save() {
+    fun save(onSaved: () -> Unit = {}) {
         val state = _uiState.value
         if (state.isSaving || !state.draft.hasChanges) return
 
@@ -130,8 +130,9 @@ class EditBusinessPhotosViewModel @Inject constructor(
             }
 
             val rebased = draft.rebase(reloaded, uploadedIds)
+            val savedEverything = failure == null && !rebased.hasChanges
             _uiState.update {
-                if (failure == null && !rebased.hasChanges) {
+                if (savedEverything) {
                     it.copy(isSaving = false, draft = rebased, showSavedMessage = true)
                 } else {
                     it.copy(
@@ -141,6 +142,7 @@ class EditBusinessPhotosViewModel @Inject constructor(
                     )
                 }
             }
+            if (savedEverything) onSaved()
         }
     }
 

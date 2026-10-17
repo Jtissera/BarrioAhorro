@@ -77,8 +77,20 @@ import com.barrioahorro.app.ui.components.profile.PrimaryPillButton
 import com.barrioahorro.app.ui.components.profile.ProfileTopBar
 import com.barrioahorro.app.ui.components.profile.StatusChip
 import com.barrioahorro.app.ui.screens.onboarding.CategoryUi
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import com.barrioahorro.app.ui.screens.onboarding.LocationPickerMap
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
-/** Soft limit shown in the description counter (display only, it is not enforced). */
 private const val DESCRIPTION_MAX_CHARS = 200
 private val fieldShape = RoundedCornerShape(12.dp)
 
@@ -88,6 +100,10 @@ fun EditBusinessInfoScreen(
     onBusinessNameChange: (String) -> Unit,
     onSelectCategory: (Int) -> Unit,
     onDireccionChange: (String) -> Unit,
+    onLocalidadChange: (String) -> Unit,
+    onValidateAddress: () -> Unit,
+    onLocationPermissionDenied: () -> Unit,
+    onPinMoved: (Double, Double) -> Unit,
     onRequestCurrentLocation: () -> Unit,
     onDescripcionChange: (String) -> Unit,
     onToggleDay: (Int) -> Unit,
@@ -109,7 +125,7 @@ fun EditBusinessInfoScreen(
     ) { permissions ->
         val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
                 permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        if (granted) onRequestCurrentLocation()
+        if (granted) onRequestCurrentLocation() else onLocationPermissionDenied()
     }
 
     fun requestLocation() {
@@ -141,7 +157,7 @@ fun EditBusinessInfoScreen(
                         text = "Guardar cambios",
                         onClick = onSave,
                         icon = Icons.Outlined.CheckCircle,
-                        enabled = !state.isSaving,
+                        enabled = !state.isSaving && validateSchedule(state.schedule) == null,
                         isLoading = state.isSaving,
                     )
                 }
@@ -172,6 +188,9 @@ fun EditBusinessInfoScreen(
                 onBusinessNameChange = onBusinessNameChange,
                 onOpenCategoryPicker = { showCategoryPicker = true },
                 onDireccionChange = onDireccionChange,
+                onLocalidadChange = onLocalidadChange,
+                onValidateAddress = onValidateAddress,
+                onPinMoved = onPinMoved,
                 onUseCurrentLocation = ::requestLocation,
                 onDescripcionChange = onDescripcionChange,
                 onToggleDay = onToggleDay,
@@ -204,7 +223,10 @@ private fun EditProfileForm(
     onBusinessNameChange: (String) -> Unit,
     onOpenCategoryPicker: () -> Unit,
     onDireccionChange: (String) -> Unit,
+    onLocalidadChange: (String) -> Unit,
+    onValidateAddress: () -> Unit,
     onUseCurrentLocation: () -> Unit,
+    onPinMoved: (Double, Double) -> Unit,
     onDescripcionChange: (String) -> Unit,
     onToggleDay: (Int) -> Unit,
     onAddSlot: (Int) -> Unit,
@@ -214,80 +236,72 @@ private fun EditProfileForm(
     onCopyMondayToAll: () -> Unit,
 ) {
     val textSecondary = WarmGray
-    // Error state from the Figma "Error" frame: the save attempt failed and the address is still missing.
-    val addressNeedsAttention = state.error != null && state.direccion.isBlank()
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(contentPadding),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 32.dp),
+    // Non-lazy on purpose: a lazy list would dispose the map when it scrolls off screen and rebuild it on return.
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding)
+            .verticalScroll(rememberScrollState())
+            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        item { MerchantBanner(businessName = state.businessName) }
+        MerchantBanner(businessName = state.businessName)
 
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                FormFieldHeader(label = "Nombre del comercio")
-                OutlinedTextField(
-                    value = state.businessName,
-                    onValueChange = onBusinessNameChange,
-                    singleLine = true,
-                    shape = fieldShape,
-                    colors = profileFieldColors(),
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
-
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                FormFieldHeader(label = "Rubro principal") {
-                    Text("Obligatorio", style = MaterialTheme.typography.bodySmall, color = textSecondary)
-                }
-                CategorySelector(
-                    categoryName = state.categories.firstOrNull { it.id == state.selectedCategoryId }?.name,
-                    onClick = onOpenCategoryPicker,
-                )
-            }
-        }
-
-        item {
-            AddressField(
-                direccion = state.direccion,
-                hasLocation = state.latitud != null && state.longitud != null,
-                needsAttention = addressNeedsAttention,
-                latitud = state.latitud,
-                longitud = state.longitud,
-                isFetchingLocation = state.isFetchingLocation,
-                onDireccionChange = onDireccionChange,
-                onUseCurrentLocation = onUseCurrentLocation,
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FormFieldHeader(label = "Nombre del comercio")
+            OutlinedTextField(
+                value = state.businessName,
+                onValueChange = onBusinessNameChange,
+                singleLine = true,
+                shape = fieldShape,
+                colors = profileFieldColors(),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                modifier = Modifier.fillMaxWidth(),
             )
         }
 
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                val length = state.descripcion.length
-                FormFieldHeader(label = "Descripción del comercio") {
-                    Text(
-                        text = "$length/$DESCRIPTION_MAX_CHARS",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (length > DESCRIPTION_MAX_CHARS) ErrorRed else textSecondary,
-                    )
-                }
-                OutlinedTextField(
-                    value = state.descripcion,
-                    onValueChange = onDescripcionChange,
-                    placeholder = { Text("Contales a tus vecinos qué los hace especial...") },
-                    minLines = 3,
-                    shape = fieldShape,
-                    colors = profileFieldColors(),
-                    textStyle = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FormFieldHeader(label = "Rubro principal") {
+                Text("Obligatorio", style = MaterialTheme.typography.bodySmall, color = textSecondary)
             }
+            CategorySelector(
+                categoryName = state.categories.firstOrNull { it.id == state.selectedCategoryId }?.name,
+                onClick = onOpenCategoryPicker,
+            )
         }
 
-        item {
+        AddressField(
+            state = state,
+            onDireccionChange = onDireccionChange,
+            onLocalidadChange = onLocalidadChange,
+            onValidateAddress = onValidateAddress,
+            onUseCurrentLocation = onUseCurrentLocation,
+            onPinMoved = onPinMoved,
+        )
+
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            val length = state.descripcion.length
+            FormFieldHeader(label = "Descripción del comercio") {
+                Text(
+                    text = "$length/$DESCRIPTION_MAX_CHARS",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (length > DESCRIPTION_MAX_CHARS) ErrorRed else textSecondary,
+                )
+            }
+            OutlinedTextField(
+                value = state.descripcion,
+                onValueChange = onDescripcionChange,
+                placeholder = { Text("Contales a tus vecinos qué los hace especial...") },
+                minLines = 3,
+                shape = fieldShape,
+                colors = profileFieldColors(),
+                textStyle = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             BusinessScheduleCard(
                 schedule = state.schedule,
                 onToggleDay = onToggleDay,
@@ -297,6 +311,9 @@ private fun EditProfileForm(
                 onUpdateSlotEnd = onUpdateSlotEnd,
                 onCopyMondayToAll = onCopyMondayToAll,
             )
+            if (state.schedule.none { it.enabled && it.slots.isNotEmpty() }) {
+                ErrorHint(text = "Abrí al menos un día de atención")
+            }
         }
     }
 }
@@ -378,19 +395,21 @@ private fun CategorySelector(categoryName: String?, onClick: () -> Unit) {
 
 @Composable
 private fun AddressField(
-    direccion: String,
-    hasLocation: Boolean,
-    needsAttention: Boolean,
-    latitud: Double?,
-    longitud: Double?,
-    isFetchingLocation: Boolean,
+    state: EditBusinessProfileUiState,
     onDireccionChange: (String) -> Unit,
+    onLocalidadChange: (String) -> Unit,
+    onValidateAddress: () -> Unit,
     onUseCurrentLocation: () -> Unit,
+    onPinMoved: (Double, Double) -> Unit,
 ) {
-    val primary = Primary
-    val secondary = Secondary
+    val focusManager = LocalFocusManager.current
+    val hasLocation = state.latitud != null && state.longitud != null
+    val needsAttention = state.error != null && state.direccion.isBlank()
+    val isBusy = state.isFetchingLocation || state.isValidatingAddress
+    val outlineBorder = BorderStroke(1.5.dp, if (isBusy) MutedLabel else Primary)
+    val outlineColors = ButtonDefaults.outlinedButtonColors(contentColor = Primary, disabledContentColor = MutedLabel)
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         FormFieldHeader(label = "Dirección física") {
             when {
                 needsAttention -> StatusChip(
@@ -399,42 +418,29 @@ private fun AddressField(
                     contentColor = ErrorRed,
                 )
 
-                hasLocation -> Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = secondary, modifier = Modifier.size(13.dp))
+                hasLocation && !state.addressNeedsSearch -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = Secondary, modifier = Modifier.size(13.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Ubicación visible", style = MaterialTheme.typography.bodySmall, color = secondary)
+                    Text("Ubicación visible", style = MaterialTheme.typography.bodySmall, color = Secondary)
                 }
             }
         }
 
-        OutlinedTextField(
-            value = direccion,
-            onValueChange = onDireccionChange,
-            placeholder = { Text("Av. Rivadavia 4520, Caballito") },
-            singleLine = true,
-            isError = needsAttention,
-            shape = fieldShape,
-            colors = profileFieldColors(),
-            textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-            leadingIcon = {
-                if (needsAttention) {
-                    Box(
-                        modifier = Modifier.size(28.dp).background(ErrorContainer, CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(Icons.Filled.LocationOn, contentDescription = null, tint = primary, modifier = Modifier.size(16.dp))
-                    }
-                } else {
-                    Icon(Icons.Filled.LocationOn, contentDescription = null, tint = primary)
-                }
-            },
-            trailingIcon = when {
-                needsAttention -> {
-                    { Icon(Icons.Filled.Error, contentDescription = "Dirección incompleta", tint = ErrorRed) }
-                }
-
-                direccion.isNotEmpty() -> {
-                    {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = state.direccion,
+                onValueChange = onDireccionChange,
+                label = { Text("Calle y altura") },
+                singleLine = true,
+                enabled = !isBusy,
+                isError = needsAttention,
+                shape = fieldShape,
+                colors = profileFieldColors(),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                trailingIcon = {
+                    if (state.isValidatingAddress || state.isResolvingPinAddress) {
+                        CircularProgressIndicator(color = Primary, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else if (state.direccion.isNotEmpty()) {
                         Box(
                             modifier = Modifier
                                 .size(28.dp)
@@ -451,26 +457,93 @@ private fun AddressField(
                             )
                         }
                     }
-                }
-
-                else -> null
-            },
-            modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
-        )
-
-        if (needsAttention) {
-            ErrorHint(
-                text = "Ingresá la calle y altura de tu comercio o ubicalo con tu ubicación actual.",
-                modifier = Modifier.padding(top = 4.dp),
+                },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Next) }),
+                modifier = Modifier.weight(3f),
+            )
+            OutlinedTextField(
+                value = state.localidad,
+                onValueChange = onLocalidadChange,
+                label = { Text("Localidad") },
+                singleLine = true,
+                enabled = !isBusy,
+                shape = fieldShape,
+                colors = profileFieldColors(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(
+                    onSearch = {
+                        focusManager.clearFocus()
+                        onValidateAddress()
+                    },
+                ),
+                modifier = Modifier.weight(2f),
             )
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
-        BusinessAddressMap(
-            latitud = latitud,
-            longitud = longitud,
-            isFetchingLocation = isFetchingLocation,
-            onUseCurrentLocation = onUseCurrentLocation,
+        if (needsAttention) {
+            ErrorHint(text = "Ingresá la calle y altura de tu comercio o ubicalo con tu ubicación actual.")
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = {
+                    focusManager.clearFocus()
+                    onValidateAddress()
+                },
+                enabled = !isBusy,
+                shape = CircleShape,
+                border = outlineBorder,
+                colors = outlineColors,
+                modifier = Modifier.weight(1f).height(48.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp)
+            ) {
+                Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Buscar", style = MaterialTheme.typography.labelLarge)
+            }
+            OutlinedButton(
+                onClick = onUseCurrentLocation,
+                enabled = !isBusy,
+                shape = CircleShape,
+                border = outlineBorder,
+                colors = outlineColors,
+                contentPadding = PaddingValues(horizontal = 8.dp),
+                modifier = Modifier.weight(1f).height(48.dp),
+            ) {
+                if (state.isFetchingLocation) {
+                    CircularProgressIndicator(color = Primary, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                } else {
+                    Icon(Icons.Filled.MyLocation, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Mi ubicación", style = MaterialTheme.typography.labelLarge, maxLines = 1)
+                }
+            }
+        }
+
+        if (state.alturaEncontrada == false && !state.mensajeValidacion.isNullOrBlank()) {
+            Surface(shape = RoundedCornerShape(10.dp), color = ErrorContainer, modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                    Text(
+                        text = "Ubicación aproximada",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = ErrorRed,
+                    )
+                    Text(
+                        text = state.mensajeValidacion,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = ErrorRed,
+                    )
+                }
+            }
+        }
+
+        LocationPickerMap(
+            pinLatitud = state.latitud,
+            pinLongitud = state.longitud,
+            onPinMoved = onPinMoved,
+            modifier = Modifier.fillMaxWidth().height(280.dp),
         )
     }
 }

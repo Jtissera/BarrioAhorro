@@ -56,6 +56,9 @@ import com.barrioahorro.app.ui.components.profile.FormFieldHeader
 import com.barrioahorro.app.ui.components.profile.StatusChip
 import com.barrioahorro.app.ui.screens.onboarding.DayScheduleUi
 import com.barrioahorro.app.ui.screens.onboarding.TimeSlotUi
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import com.barrioahorro.app.ui.theme.ErrorRed
 
 /** "Horarios de atención" field: header with "Copiar a todos" plus the white card listing every day. */
 @Composable
@@ -70,6 +73,7 @@ fun BusinessScheduleCard(
     modifier: Modifier = Modifier,
 ) {
     val primary = Primary
+    val errors = scheduleErrors(schedule)
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         FormFieldHeader(label = "Horarios de atención") {
@@ -99,6 +103,7 @@ fun BusinessScheduleCard(
                 schedule.forEach { day ->
                     ScheduleDayCard(
                         day = day,
+                        error = errors[day.diaSemana],
                         onToggle = { onToggleDay(day.diaSemana) },
                         onAddSlot = { onAddSlot(day.diaSemana) },
                         onRemoveSlot = { slotId -> onRemoveSlot(day.diaSemana, slotId) },
@@ -115,6 +120,7 @@ fun BusinessScheduleCard(
 @Composable
 private fun ScheduleDayCard(
     day: DayScheduleUi,
+    error: String?,
     onToggle: () -> Unit,
     onAddSlot: () -> Unit,
     onRemoveSlot: (String) -> Unit,
@@ -193,6 +199,7 @@ private fun ScheduleDayCard(
                 TimeSlotChip(
                     slot = slot,
                     showRemove = day.slots.size > 1,
+                    hasError = error != null,
                     onStartChange = { onUpdateSlotStart(slot.id, it) },
                     onEndChange = { onUpdateSlotEnd(slot.id, it) },
                     onRemove = { onRemoveSlot(slot.id) },
@@ -207,6 +214,9 @@ private fun ScheduleDayCard(
                     .clickable(onClick = onAddSlot)
                     .padding(horizontal = 8.dp, vertical = 4.dp),
             )
+        }
+        error?.let {
+            Text(text = it, style = MaterialTheme.typography.bodySmall, color = ErrorRed)
         }
     }
 }
@@ -226,6 +236,7 @@ private fun DayTitle(label: String) {
 private fun TimeSlotChip(
     slot: TimeSlotUi,
     showRemove: Boolean,
+    hasError: Boolean,
     onStartChange: (String) -> Unit,
     onEndChange: (String) -> Unit,
     onRemove: () -> Unit,
@@ -238,6 +249,7 @@ private fun TimeSlotChip(
         modifier = Modifier
             .clip(shape)
             .background(Cream)
+            .border(BorderStroke(1.dp, if (hasError) ErrorRed else Color.Transparent), shape)
             .clickable { step = 1 }
             .padding(horizontal = 10.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,

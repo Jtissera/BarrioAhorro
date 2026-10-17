@@ -67,6 +67,8 @@ import com.barrioahorro.app.ui.theme.PrimaryContainer
 import com.barrioahorro.app.ui.theme.WarmGray
 import java.text.NumberFormat
 import java.util.Locale
+import androidx.compose.material.icons.outlined.Storefront
+import com.barrioahorro.app.ui.theme.BadgeYellowText
 
 @Composable
 fun DashboardScreen(
@@ -77,8 +79,10 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val categoryName by viewModel.categoryName.collectAsStateWithLifecycle()
     DashboardContent(
         state = state,
+        categoryName = categoryName,
         onAddOffer = onAddOffer,
         onSeeAllOffers = onSeeAllOffers,
         onSeeAllReviews = onSeeAllReviews,
@@ -90,6 +94,7 @@ fun DashboardScreen(
 @Composable
 internal fun DashboardContent(
     state: DashboardUiState,
+    categoryName: String = "",
     onAddOffer: () -> Unit,
     onSeeAllOffers: () -> Unit,
     onSeeAllReviews: () -> Unit,
@@ -138,6 +143,7 @@ internal fun DashboardContent(
             is DashboardUiState.Success -> {
                 DashboardBody(
                     data = state.data,
+                    categoryName = categoryName,
                     onAddOffer = onAddOffer,
                     onSeeAllOffers = onSeeAllOffers,
                     onSeeAllReviews = onSeeAllReviews
@@ -150,6 +156,7 @@ internal fun DashboardContent(
 @Composable
 private fun DashboardBody(
     data: BusinessDashboard,
+    categoryName: String = "",
     onAddOffer: () -> Unit,
     onSeeAllOffers: () -> Unit,
     onSeeAllReviews: () -> Unit
@@ -161,19 +168,40 @@ private fun DashboardBody(
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = "Hola,",
-                fontSize = 13.sp,
-                color = WarmGray
+                fontSize = 20.sp,
+                color = Ink
             )
 
             Text(
                 text = data.businessName,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.ExtraBold,
                 color = Ink
             )
+
+            if (categoryName.isNotBlank()) {
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Storefront,
+                        contentDescription = null,
+                        tint = BadgeYellowText,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = categoryName,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Ink
+                    )
+                }
+            }
         }
 
         Button(

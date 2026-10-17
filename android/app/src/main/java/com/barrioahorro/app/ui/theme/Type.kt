@@ -14,25 +14,16 @@ import com.barrioahorro.app.R
 @OptIn(ExperimentalTextApi::class)
 val NunitoSans = FontFamily(
     Font(
-        R.font.nunito_sans,
-        weight = FontWeight.Normal,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(400)
-        )
+        R.font.nunito_sans_regular,
+        weight = FontWeight.Normal
     ),
     Font(
-        R.font.nunito_sans,
-        weight = FontWeight.Bold,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(700)
-        )
+        R.font.nunito_sans_bold,
+        weight = FontWeight.Bold
     ),
     Font(
-        R.font.nunito_sans,
-        weight = FontWeight.ExtraBold,
-        variationSettings = FontVariation.Settings(
-            FontVariation.weight(800)
-        )
+        R.font.nunito_sans_extrabold,
+        weight = FontWeight.ExtraBold
     )
 )
 @OptIn(ExperimentalTextApi::class)

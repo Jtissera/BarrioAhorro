@@ -146,3 +146,13 @@ data class OfferResponse(
 data class OfferPhotoUploadResponse(
     val url: String,
 )
+
+data class ActiveOfferItemResponse(
+    val offer: OfferResponse,
+    val confirmationsCount: Int,
+)
+
+data class ActiveOffersResponse(
+    val activeCount: Int,
+    val items: List<ActiveOfferItemResponse>,
+)

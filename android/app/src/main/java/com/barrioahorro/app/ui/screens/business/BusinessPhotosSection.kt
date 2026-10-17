@@ -615,11 +615,12 @@ private fun Context.declaresPermission(permission: String): Boolean = runCatchin
 /** Bottom sheet from the "Agregar foto" frame: take a photo with the camera (when available) or pick one from the gallery. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PhotoSourceSheet(
+internal fun PhotoSourceSheet(
     title: String,
     onDismiss: () -> Unit,
     onTakePhoto: (() -> Unit)?,
     onPickFromGallery: () -> Unit,
+    subtitle: String = "Elegí una opción para actualizar la imagen de tu negocio",
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
@@ -639,6 +640,7 @@ private fun PhotoSourceSheet(
     ) {
         PhotoSourceSheetContent(
             title = title,
+            subtitle = subtitle,
             onDismiss = onDismiss,
             onTakePhoto = onTakePhoto,
             onPickFromGallery = onPickFromGallery,
@@ -649,6 +651,7 @@ private fun PhotoSourceSheet(
 @Composable
 private fun PhotoSourceSheetContent(
     title: String,
+    subtitle: String,
     onDismiss: () -> Unit,
     onTakePhoto: (() -> Unit)?,
     onPickFromGallery: () -> Unit,
@@ -675,7 +678,7 @@ private fun PhotoSourceSheetContent(
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Elegí una opción para actualizar la imagen de tu negocio",
+            text = subtitle,
             style = MaterialTheme.typography.bodyMedium,
             color = WarmGray,
             textAlign = TextAlign.Center,
@@ -815,5 +818,5 @@ private fun RemovePhotoDialogPreview() {
 @Preview(showBackground = true)
 @Composable
 private fun PhotoSourceSheetPreview() {
-    PhotoSourceSheetContent(title = "Cambiar foto del comercio", onDismiss = {}, onTakePhoto = {}, onPickFromGallery = {})
+    PhotoSourceSheetContent(title = "Cambiar foto del comercio", subtitle = "Elegí una opción para actualizar la imagen de tu negocio", onDismiss = {}, onTakePhoto = {}, onPickFromGallery = {})
 }

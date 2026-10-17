@@ -18,6 +18,8 @@ interface IAuthRepository {
     suspend fun hasActiveSession(): Boolean
 
     suspend fun refreshSession(): SessionRefreshResult
+
+    suspend fun logout()
 }
 
 sealed class Result<out T, out E> {

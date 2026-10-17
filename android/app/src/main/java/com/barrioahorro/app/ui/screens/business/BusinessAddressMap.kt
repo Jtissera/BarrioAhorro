@@ -66,6 +66,7 @@ fun BusinessAddressMap(
     longitud: Double?,
     isFetchingLocation: Boolean,
     onUseCurrentLocation: () -> Unit,
+    showLocationPill: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val shape = RoundedCornerShape(12.dp)
@@ -86,12 +87,13 @@ fun BusinessAddressMap(
         } else {
             UnrecognizedPointOverlay(modifier = Modifier.fillMaxSize())
         }
-
-        UseLocationPill(
-            isFetching = isFetchingLocation,
-            onClick = onUseCurrentLocation,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp),
-        )
+        if (showLocationPill) {
+            UseLocationPill(
+                isFetching = isFetchingLocation,
+                onClick = onUseCurrentLocation,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp),
+            )
+        }
     }
 }
 

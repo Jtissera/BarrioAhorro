@@ -48,6 +48,11 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun hasActiveSession(): Boolean =
         authTokenDataStore.currentToken() != null
 
+
+    override suspend fun logout() {
+        authTokenDataStore.clearSession()
+    }
+
     private suspend fun Response<AuthResponseDto>.toSessionResult(): Result<AuthSession, AuthError> {
         val body = body()
         if (!isSuccessful || body == null) {
@@ -95,4 +100,3 @@ class AuthRepositoryImpl @Inject constructor(
             onFailure = { SessionRefreshResult.UNREACHABLE },
         )
 }
-

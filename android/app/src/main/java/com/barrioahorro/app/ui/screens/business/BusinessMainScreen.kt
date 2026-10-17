@@ -27,6 +27,8 @@ fun BusinessMainScreen(
     onNavigateToCreateOffer: () -> Unit,
     onNavigateToEditProfile: () -> Unit,
     onNavigateToEditPhotos: () -> Unit,
+    onLogout: () -> Unit,
+    isLoggingOut: Boolean,
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(initialTab) }
@@ -75,6 +77,12 @@ fun BusinessMainScreen(
                 BusinessTab.PERFIL -> BusinessProfileScreen(
                     onEditData = onNavigateToEditProfile,
                     onEditPhotos = onNavigateToEditPhotos,
+                    onManageOffers = { selectedTab = BusinessTab.OFERTAS },
+                    onEditOffer = {
+                        Toast.makeText(context, "Próximamente: edición de ofertas", Toast.LENGTH_SHORT).show()
+                    },
+                    onLogout = onLogout,
+                    isLoggingOut = isLoggingOut,
                 )
             }
         }

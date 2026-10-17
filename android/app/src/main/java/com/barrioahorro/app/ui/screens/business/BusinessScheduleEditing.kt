@@ -37,20 +37,27 @@ fun List<DayScheduleUi>.toScheduleRequest(): List<ScheduleSlotRequestDto> =
         }
     }
 
-/** Devuelve un mensaje de error si algún turno es inválido, o null si la semana es válida. */
-fun validateSchedule(schedule: List<DayScheduleUi>): String? {
-    for (day in schedule.filter { it.enabled }) {
-        // Las horas vienen como "HH:mm" con ceros a la izquierda, así que se pueden comparar como texto.
+/** Error por día (si lo tiene). Las horas son "HH:mm", así que se comparan bien como texto. */
+fun scheduleErrors(schedule: List<DayScheduleUi>): Map<Int, String> {
+    val errors = mutableMapOf<Int, String>()
+    schedule.filter { it.enabled }.forEach { day ->
         if (day.slots.any { it.horaFin <= it.horaInicio }) {
-            return "${day.label}: la hora de cierre debe ser posterior a la de apertura"
+            errors[day.diaSemana] = "La hora de cierre debe ser posterior a la de apertura"
+            return@forEach
         }
-        val overlaps = day.slots.sortedBy { it.horaInicio }
-            .zipWithNext()
-            .any { (previous, next) -> next.horaInicio < previous.horaFin }
-        if (overlaps) {
-            return "${day.label}: los turnos no pueden superponerse"
+        val sorted = day.slots.sortedBy { it.horaInicio }
+        if (sorted.zipWithNext().any { (a, b) -> b.horaInicio < a.horaFin }) {
+            errors[day.diaSemana] = "Los turnos de este día no pueden superponerse"
         }
     }
+    return errors
+}
+
+/** Mensaje de error de la semana completa, o null si es válida. Lo usa el guardado. */
+fun validateSchedule(schedule: List<DayScheduleUi>): String? {
+    val errors = scheduleErrors(schedule)
+    schedule.firstOrNull { it.diaSemana in errors }?.let { return "${it.label}: ${errors.getValue(it.diaSemana)}" }
+    if (schedule.none { it.enabled && it.slots.isNotEmpty() }) return "Abrí al menos un día de atención"
     return null
 }
 
@@ -64,7 +71,10 @@ fun List<DayScheduleUi>.toggleDay(diaSemana: Int): List<DayScheduleUi> = map { d
 }
 
 fun List<DayScheduleUi>.addSlot(diaSemana: Int): List<DayScheduleUi> = map { day ->
-    if (day.diaSemana == diaSemana) day.copy(slots = day.slots + TimeSlotUi()) else day
+    if (day.diaSemana != diaSemana) return@map day
+    val start = day.slots.maxOfOrNull { it.horaFin } ?: "09:00"
+    val end = if (start < "20:00") "20:00" else "23:59"
+    day.copy(slots = day.slots + TimeSlotUi(horaInicio = start, horaFin = end))
 }
 
 fun List<DayScheduleUi>.removeSlot(diaSemana: Int, slotId: String): List<DayScheduleUi> = map { day ->

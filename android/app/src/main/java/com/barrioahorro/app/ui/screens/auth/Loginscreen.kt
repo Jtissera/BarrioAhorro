@@ -54,7 +54,6 @@ fun LoginScreen(
     onBack: () -> Unit,
     onNavigateToRegister: () -> Unit,
     onLoginSuccess: (UserType) -> Unit,
-    onForgotPassword: () -> Unit = {}, // TODO: todavía no existe la pantalla de recuperar contraseña
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val state by viewModel.loginState.collectAsStateWithLifecycle()
@@ -73,7 +72,6 @@ fun LoginScreen(
         onEmailChanged = viewModel::onLoginEmailChanged,
         onPasswordChanged = viewModel::onLoginPasswordChanged,
         onTogglePasswordVisibility = viewModel::onLoginPasswordVisibilityToggled,
-        onForgotPassword = onForgotPassword,
         onSubmit = viewModel::submitLogin,
         onNavigateToRegister = onNavigateToRegister,
     )
@@ -86,7 +84,6 @@ private fun LoginContent(
     onEmailChanged: (String) -> Unit,
     onPasswordChanged: (String) -> Unit,
     onTogglePasswordVisibility: () -> Unit,
-    onForgotPassword: () -> Unit,
     onSubmit: () -> Unit,
     onNavigateToRegister: () -> Unit,
 ) {
@@ -156,17 +153,6 @@ private fun LoginContent(
                     modifier = Modifier.padding(top = 18.dp),
                 )
 
-                Text(
-                    text = "¿Olvidaste tu contraseña? →",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = textSecondary,
-                    textDecoration = TextDecoration.Underline,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp)
-                        .clickable(onClick = onForgotPassword),
-                )
 
                 ErrorCard(
                     title = state.errorMessage,
@@ -258,7 +244,6 @@ private fun LoginScreenPreview() {
         onEmailChanged = {},
         onPasswordChanged = {},
         onTogglePasswordVisibility = {},
-        onForgotPassword = {},
         onSubmit = {},
         onNavigateToRegister = {},
     )

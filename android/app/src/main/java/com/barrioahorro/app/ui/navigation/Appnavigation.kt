@@ -25,6 +25,7 @@ import com.barrioahorro.app.ui.screens.auth.AuthSuccessScreen
 import com.barrioahorro.app.ui.screens.auth.LoginScreen
 import com.barrioahorro.app.ui.screens.auth.RegisterScreen
 import com.barrioahorro.app.ui.screens.auth.RoleSelectionScreen
+import com.barrioahorro.app.ui.screens.auth.SessionViewModel
 import com.barrioahorro.app.ui.screens.business.EditBusinessInfoScreen
 import com.barrioahorro.app.ui.screens.business.EditBusinessPhotosScreen
 import com.barrioahorro.app.ui.screens.business.EditBusinessPhotosViewModel
@@ -69,7 +70,6 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
             isReady = destination != null,
             onFinished = {
                 val target = when (val d = destination) {
-                    // Un comercio nunca va directo al inicio: primero pasa por la compuerta.
                     is SplashDestination.Home ->
                         if (d.userType == UserType.COMERCIO) GateRoutes.GATE
                         else AuthRoutes.success(d.userType.name)
@@ -135,6 +135,9 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
     ) { backStackEntry ->
         val userType = backStackEntry.arguments?.getString("userType")
             ?.let { UserType.valueOf(it) } ?: UserType.CLIENTE
+        val sessionViewModel: SessionViewModel = hiltViewModel()
+        val isLoggingOut by sessionViewModel.isLoggingOut.collectAsStateWithLifecycle()
+
         AuthSuccessScreen(
             userType = userType,
             onContinue = {
@@ -143,6 +146,10 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
                     popUpTo(AuthRoutes.SUCCESS_PATTERN) { inclusive = true }
                 }
             },
+            onLogout = {
+                sessionViewModel.logout(onLoggedOut = { navController.navigateAfterLogout() })
+            },
+            isLoggingOut = isLoggingOut,
         )
     }
 
@@ -287,10 +294,17 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
     }
 
     composable(BusinessRoutes.DASHBOARD) {
+        val sessionViewModel: SessionViewModel = hiltViewModel()
+        val isLoggingOut by sessionViewModel.isLoggingOut.collectAsStateWithLifecycle()
+
         BusinessMainScreen(
             onNavigateToCreateOffer = { navController.navigate(BusinessRoutes.CREATE_OFFER) },
             onNavigateToEditProfile = { navController.navigate(BusinessRoutes.EDIT_PROFILE) },
             onNavigateToEditPhotos = { navController.navigate(BusinessRoutes.EDIT_PHOTOS) },
+            onLogout = {
+                sessionViewModel.logout(onLoggedOut = { navController.navigateAfterLogout() })
+            },
+            isLoggingOut = isLoggingOut,
         )
     }
 
@@ -315,6 +329,10 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
             onBusinessNameChange = viewModel::setBusinessName,
             onSelectCategory = viewModel::selectCategory,
             onDireccionChange = viewModel::setDireccion,
+            onLocalidadChange = viewModel::setLocalidad,
+            onValidateAddress = viewModel::validateAddress,
+            onLocationPermissionDenied = viewModel::onLocationPermissionDenied,
+            onPinMoved = viewModel::onPinMoved,
             onRequestCurrentLocation = viewModel::fetchCurrentLocation,
             onDescripcionChange = viewModel::setDescripcion,
             onToggleDay = viewModel::toggleDay,
@@ -339,16 +357,16 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
             onReplacePhoto = viewModel::replacePhoto,
             onRemovePhoto = viewModel::removePhoto,
             onSetCover = viewModel::setAsCover,
-            onSave = viewModel::save,
+            onSave = { viewModel.save(onSaved = { navController.popBackStack() }) },
             onSavedMessageShown = viewModel::onSavedMessageShown,
             onRetryLoad = viewModel::loadPhotos,
             onBack = { navController.popBackStack() },
         )
+
     }
 }
 
 fun NavHostController.navigateAfterAuth(userType: UserType) {
-    //  limpia toda la pila de autenticación.
     val target = if (userType == UserType.COMERCIO) {
         GateRoutes.GATE
     } else {
@@ -356,5 +374,13 @@ fun NavHostController.navigateAfterAuth(userType: UserType) {
     }
     navigate(target) {
         popUpTo(AuthRoutes.ROLE_SELECTION) { inclusive = true }
+    }
+}
+
+
+fun NavHostController.navigateAfterLogout() {
+    navigate(AuthRoutes.ROLE_SELECTION) {
+        popUpTo(graph.id) { inclusive = true }
+        launchSingleTop = true
     }
 }
