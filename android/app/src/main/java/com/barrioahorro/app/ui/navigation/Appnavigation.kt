@@ -43,6 +43,7 @@ import com.barrioahorro.app.ui.screens.splash.SplashScreen
 import com.barrioahorro.app.ui.screens.splash.SplashViewModel
 import com.barrioahorro.app.ui.components.BusinessTab
 import com.barrioahorro.app.ui.screens.business.BusinessMainScreen
+import com.barrioahorro.app.ui.sorteo.SorteoRatificationScreen
 
 @Composable
 fun AppNavigation(
@@ -88,6 +89,7 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
                 val target = when (destination) {
                     GateDestination.ONBOARDING -> OnboardingRoutes.BUSINESS_NAME
                     GateDestination.CUPONERA -> CuponeraRoutes.CONTRIBUTION
+                    GateDestination.SORTEO -> SorteoRoutes.RATIFICATION
                     GateDestination.HOME -> BusinessRoutes.DASHBOARD
                     GateDestination.SESSION_EXPIRED -> AuthRoutes.ROLE_SELECTION
                 }
@@ -276,10 +278,24 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
                 }
             },
             onRatified = {
+                navController.navigate(GateRoutes.GATE) {
+                    popUpTo(navController.graph.id) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+        )
+    }
+
+    composable(SorteoRoutes.RATIFICATION) {
+        val activity = LocalContext.current as? Activity
+        SorteoRatificationScreen(
+            onBack = {
+                if (navController.previousBackStackEntry != null) navController.popBackStack()
+                else activity?.finish()
+            },
+            onContinue = {
                 navController.navigate(BusinessRoutes.DASHBOARD) {
-                    popUpTo(navController.graph.id) {
-                        inclusive = true
-                    }
+                    popUpTo(navController.graph.id) { inclusive = true }
                     launchSingleTop = true
                 }
             },

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barrioahorro.app.data.cuponera.CuponeraRepository
 import com.barrioahorro.app.data.remote.api.BusinessApiService
+import com.barrioahorro.app.data.sorteo.SorteoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +14,7 @@ import java.io.IOException
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
-enum class GateDestination { ONBOARDING, CUPONERA, HOME, SESSION_EXPIRED }
+enum class GateDestination { ONBOARDING, CUPONERA, SORTEO, HOME, SESSION_EXPIRED }
 
 sealed interface GateUiState {
     data object Checking : GateUiState
@@ -26,6 +27,7 @@ sealed interface GateUiState {
 class GateViewModel @Inject constructor(
     private val businessApi: BusinessApiService,
     private val cuponeraRepository: CuponeraRepository,
+    private val sorteoRepository: SorteoRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<GateUiState>(GateUiState.Checking)
@@ -66,8 +68,15 @@ class GateViewModel @Inject constructor(
             return GateUiState.Failed(error.message ?: "No pudimos verificar tu aporte a la cuponera.")
         }
 
+        if (commitment.estado != "RATIFICADO") return GateUiState.Resolved(GateDestination.CUPONERA)
+
+        // 3) Con la cuponera ratificada, falta el premio del sorteo del ciclo.
+        val sorteo = sorteoRepository.getCurrent().getOrElse { error ->
+            return GateUiState.Failed(error.message ?: "No pudimos verificar tu premio del sorteo.")
+        }
+
         return GateUiState.Resolved(
-            if (commitment.estado == "RATIFICADO") GateDestination.HOME else GateDestination.CUPONERA,
+            if (sorteo.estado == "RATIFICADO") GateDestination.HOME else GateDestination.SORTEO,
         )
     }
 }

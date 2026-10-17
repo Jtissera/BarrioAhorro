@@ -44,6 +44,10 @@ object CuponeraRoutes {
     const val CONTRIBUTION = "cuponera/contribution"
 }
 
+object SorteoRoutes {
+    const val RATIFICATION = "sorteo/ratificacion"
+}
+
 object GateRoutes {
     const val GATE = "gate"
 }
