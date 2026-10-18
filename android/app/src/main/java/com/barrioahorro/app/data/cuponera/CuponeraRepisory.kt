@@ -24,6 +24,14 @@ class CuponeraRepository @Inject constructor(
     suspend fun ratify(body: RatifyCuponeraRequestDto): Result<CuponeraCommitmentDto> =
         call { api.ratify(body) }
 
+    suspend fun getOverview(): Result<CommitmentOverviewDto> = call { api.getOverview() }
+
+    suspend fun ratifyRaffle(name: String, description: String, value: Double): Result<RaffleCycleDto> =
+        call { api.ratifyRaffle(RatifyRaffleRequestDto(name, description, value)) }
+
+    suspend fun validateRedemption(code: String): Result<ScanRedemptionDto> =
+        call { api.validateRedemption(ScanRedemptionRequestDto(code)) }
+
     suspend fun uploadPhoto(file: File): Result<CuponeraPhotoUploadResponse> = call {
         val requestBody = file.asRequestBody("image/jpeg".toMediaType())
         val part = MultipartBody.Part.createFormData("file", file.name, requestBody)
@@ -44,18 +52,19 @@ class CuponeraRepository @Inject constructor(
         }
 
     private fun httpMessage(e: HttpException): String {
-        // Solo llega si el backend tiene server.error.include-message=always.
+        // El backend devuelve { status, error, timestamp }: el texto está en "error".
         val serverMessage = runCatching {
-            e.response()?.errorBody()?.string()
-                ?.let { JSONObject(it).optString("message") }
-                ?.takeIf { it.isNotBlank() }
+            e.response()?.errorBody()?.string()?.let { body ->
+                val json = JSONObject(body)
+                json.optString("error").ifBlank { json.optString("message") }
+            }?.takeIf { it.isNotBlank() }
         }.getOrNull()
 
         return when (e.code()) {
-            400 -> "Revisá los datos e intentá de nuevo."
+            400 -> serverMessage ?: "Revisá los datos e intentá de nuevo."
             401 -> "Tu sesión venció. Volvé a iniciar sesión."
             403 -> serverMessage ?: "No tenés permiso para hacer esta acción."
-            409 -> serverMessage ?: "No se pudo ratificar: el aporte ya fue ratificado o el plazo venció."
+            409 -> serverMessage ?: "No se pudo ratificar: ya fue ratificado o el plazo venció."
             413 -> "La foto es demasiado pesada."
             415 -> "La foto debe ser JPEG, PNG o WebP."
             else -> "Error del servidor (${e.code()}). Intentá de nuevo."

@@ -44,6 +44,9 @@ import com.barrioahorro.app.ui.screens.splash.SplashScreen
 import com.barrioahorro.app.ui.screens.splash.SplashViewModel
 import com.barrioahorro.app.ui.components.BusinessTab
 import com.barrioahorro.app.ui.screens.business.BusinessMainScreen
+import com.barrioahorro.app.ui.cuponera.RaffleRatifyScreen
+import com.barrioahorro.app.ui.cuponera.RestrictedAccessScreen
+import com.barrioahorro.app.ui.cuponera.scanner.QrScannerScreen
 
 @Composable
 fun AppNavigation(
@@ -90,6 +93,7 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
                     GateDestination.CUPONERA -> CuponeraRoutes.CONTRIBUTION
                     GateDestination.HOME -> BusinessRoutes.DASHBOARD
                     GateDestination.SESSION_EXPIRED -> AuthRoutes.ROLE_SELECTION
+                    GateDestination.RESTRICTED -> BusinessRoutes.DASHBOARD
                 }
                 navController.navigate(target) {
                     popUpTo(GateRoutes.GATE) { inclusive = true }
@@ -282,14 +286,7 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
                     activity?.finish()
                 }
             },
-            onRatified = {
-                navController.navigate(BusinessRoutes.DASHBOARD) {
-                    popUpTo(navController.graph.id) {
-                        inclusive = true
-                    }
-                    launchSingleTop = true
-                }
-            },
+            onRatified = { navController.finishRatification() },
         )
     }
 
@@ -301,6 +298,9 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
             onNavigateToCreateOffer = { navController.navigate(BusinessRoutes.CREATE_OFFER) },
             onNavigateToEditProfile = { navController.navigate(BusinessRoutes.EDIT_PROFILE) },
             onNavigateToEditPhotos = { navController.navigate(BusinessRoutes.EDIT_PHOTOS) },
+            onNavigateToScanner = { navController.navigate(CuponeraRoutes.SCANNER) },
+            onNavigateToRatifyCuponera = { navController.navigate(CuponeraRoutes.CONTRIBUTION) },
+            onNavigateToRatifyRaffle = { navController.navigate(CuponeraRoutes.RAFFLE) },
             onLogout = {
                 sessionViewModel.logout(onLoggedOut = { navController.navigateAfterLogout() })
             },
@@ -364,6 +364,19 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
         )
 
     }
+
+    composable(CuponeraRoutes.RAFFLE) {
+        RaffleRatifyScreen(
+            onBack = { navController.popBackStack() },
+            onRatified = { navController.finishRatification() },
+        )
+    }
+
+    composable(CuponeraRoutes.SCANNER) {
+        QrScannerScreen(onBack = { navController.popBackStack() })
+    }
+
+
 }
 
 fun NavHostController.navigateAfterAuth(userType: UserType) {
@@ -374,6 +387,17 @@ fun NavHostController.navigateAfterAuth(userType: UserType) {
     }
     navigate(target) {
         popUpTo(AuthRoutes.ROLE_SELECTION) { inclusive = true }
+    }
+}
+
+fun NavHostController.finishRatification() {
+    if (previousBackStackEntry?.destination?.route == BusinessRoutes.DASHBOARD) {
+        popBackStack()
+    } else {
+        navigate(GateRoutes.GATE) {
+            popUpTo(graph.id) { inclusive = true }
+            launchSingleTop = true
+        }
     }
 }
 

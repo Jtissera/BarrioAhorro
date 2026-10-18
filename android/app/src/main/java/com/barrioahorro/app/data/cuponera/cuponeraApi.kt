@@ -72,4 +72,13 @@ interface CuponeraApi {
         @Part file: MultipartBody.Part,
     ): CuponeraPhotoUploadResponse
 
+    @GET("aportes/resumen")
+    suspend fun getOverview(): CommitmentOverviewDto
+
+    @POST("aportes/sorteo/ratificar")
+    suspend fun ratifyRaffle(@Body body: RatifyRaffleRequestDto): RaffleCycleDto
+
+    @POST("cuponera/canjes/validar")
+    suspend fun validateRedemption(@Body body: ScanRedemptionRequestDto): ScanRedemptionDto
+
 }

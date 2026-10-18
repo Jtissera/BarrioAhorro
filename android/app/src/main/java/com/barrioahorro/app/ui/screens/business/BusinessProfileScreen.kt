@@ -74,6 +74,7 @@ fun BusinessProfileScreen(
     onEditOffer: (Long) -> Unit,
     onLogout: () -> Unit,
     isLoggingOut: Boolean,
+    readOnly: Boolean = false,
     viewModel: BusinessProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -116,6 +117,7 @@ fun BusinessProfileScreen(
             onRetry = viewModel::load,
             onLogout = onLogout,
             isLoggingOut = isLoggingOut,
+            readOnly = readOnly,
             modifier = modifier,
         )
     }
@@ -133,6 +135,7 @@ private fun ProfileBody(
     onRetry: () -> Unit,
     onLogout: () -> Unit,
     isLoggingOut: Boolean,
+    readOnly: Boolean,
     modifier: Modifier,
 ) {
     // Non-lazy column: each tab holds at most one page of reviews or the active offers, so it stays small.
@@ -143,6 +146,7 @@ private fun ProfileBody(
             Column(modifier = Modifier.padding(top = COVER_HEIGHT - SHEET_OVERLAP)) {
                 ProfileSheet(
                     state = state,
+                    readOnly = readOnly,
                     onEditData = onEditData,
                     onEditPhotos = onEditPhotos,
                     onSelectTab = onSelectTab,
@@ -166,6 +170,7 @@ private fun ProfileBody(
 @Composable
 private fun ProfileSheet(
     state: BusinessProfileUiState,
+    readOnly: Boolean,
     onEditData: () -> Unit,
     onEditPhotos: () -> Unit,
     onSelectTab: (ProfileTab) -> Unit,
@@ -209,6 +214,7 @@ private fun ProfileSheet(
                     icon = Icons.Outlined.Edit,
                     containerColor = Cream,
                     contentColor = Primary,
+                    enabled = !readOnly,
                     onClick = onEditData,
                     modifier = Modifier.weight(1f),
                 )
@@ -217,8 +223,17 @@ private fun ProfileSheet(
                     icon = Icons.Outlined.CameraAlt,
                     containerColor = Primary,
                     contentColor = OnPrimary,
+                    enabled = !readOnly,
                     onClick = onEditPhotos,
                     modifier = Modifier.weight(1f),
+                )
+            }
+
+            if (readOnly) {
+                Text(
+                    text = "Tu perfil está en modo lectura hasta que ratifiques tu aporte.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = WarmGray,
                 )
             }
 
@@ -306,11 +321,18 @@ private fun ActionButton(
     contentColor: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         shape = CircleShape,
-        colors = ButtonDefaults.buttonColors(containerColor = containerColor, contentColor = contentColor),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = containerColor,
+            contentColor = contentColor,
+            disabledContainerColor = SurfaceMuted,
+            disabledContentColor = MutedLabel,
+        ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
         modifier = modifier.height(56.dp),
     ) {

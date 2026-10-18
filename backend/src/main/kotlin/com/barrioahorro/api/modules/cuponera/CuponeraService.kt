@@ -1,35 +1,32 @@
 package com.barrioahorro.api.modules.cuponera
 
+import com.barrioahorro.api.modules.business.PhotoStorage
 import com.barrioahorro.api.modules.cuponera.dto.CuponeraCommitmentResponse
+import com.barrioahorro.api.modules.cuponera.dto.CuponeraCycleResponse
+import com.barrioahorro.api.modules.cuponera.dto.CuponeraPhotoUploadResponse
 import com.barrioahorro.api.modules.cuponera.dto.CuponeraProductResponse
 import com.barrioahorro.api.modules.cuponera.dto.RatifyCuponeraRequest
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.server.ResponseStatusException
 import java.math.BigDecimal
 import java.math.RoundingMode
-import java.time.LocalDate
 import java.time.OffsetDateTime
-import java.time.ZoneId
-import com.barrioahorro.api.modules.business.PhotoStorage
-import com.barrioahorro.api.modules.cuponera.dto.CuponeraPhotoUploadResponse
-import org.springframework.web.multipart.MultipartFile
+
 @Service
 class CuponeraService(
     private val commitments: CuponeraCommitmentRepository,
     private val rewards: CuponeraRewardRepository,
     private val photoStorage: PhotoStorage,
+    private val cycles: CommitmentCycleService,
 ) {
 
     companion object {
         const val MIN_PRODUCTS = 2
         const val MAX_PRODUCTS = 4
         const val PESOS_PER_POINT = 500
-        const val PERIOD_DAYS = 15L
-        const val RATIFICATION_GRACE_DAYS = 3L
-
-        private val ZONE: ZoneId = ZoneId.of("America/Argentina/Buenos_Aires")
 
         /** 1 punto cada 500 pesos, redondeando hacia arriba y con mínimo 1 (costo_puntos > 0). */
         fun pointsFor(valor: BigDecimal): Int =
@@ -51,13 +48,31 @@ class CuponeraService(
     }
 
     /**
-     * Devuelve el compromiso vigente del comercio. Si todavía no existe uno
-     * para el período actual, lo crea en estado PENDIENTE.
+     * Compromiso sobre el que hay que actuar: el pendiente de ratificar
+     * (anticipado o tardío) y, si no hay, el vigente.
      */
     @Transactional
     fun getCurrent(userId: Long): CuponeraCommitmentResponse {
         val info = requireBusiness(userId)
-        return toResponse(currentOrCreate(userId), info.rubroNombre)
+        val state = cycles.ensure(userId, CycleKind.CUPONERA)
+        val target = state.next?.takeIf { it.status == "PENDIENTE" }
+            ?: state.current
+            ?: state.next
+            ?: throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo crear el compromiso")
+        return toResponse(target.id, info.rubroNombre)
+    }
+
+    /** Vigente + próximo, con las banderas que necesita la pestaña "Mi aporte". */
+    @Transactional
+    fun cycle(userId: Long): CuponeraCycleResponse {
+        val info = requireBusiness(userId)
+        val state = cycles.ensure(userId, CycleKind.CUPONERA)
+        return CuponeraCycleResponse(
+            current = state.current?.let { toResponse(it.id, info.rubroNombre) },
+            next = state.next?.let { toResponse(it.id, info.rubroNombre) },
+            canRatify = state.canRatify,
+            ratificationType = state.ratificationType,
+        )
     }
 
     /**
@@ -78,19 +93,25 @@ class CuponeraService(
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Completá el onboarding antes de ratificar tu aporte")
         }
 
-        val commitment = currentOrCreate(userId)
-        when {
-            commitment.estado == "RATIFICADO" ->
-                throw ResponseStatusException(HttpStatus.CONFLICT, "Ya ratificaste tu aporte de este período")
-            commitment.estado == "VENCIDO" || !OffsetDateTime.now().isBefore(commitment.fechaLimiteRatificacion) ->
-                throw ResponseStatusException(HttpStatus.CONFLICT, "El plazo para ratificar este período ya venció")
+        val state = cycles.ensure(userId, CycleKind.CUPONERA)
+        val target = state.next?.takeIf { it.status == "PENDIENTE" }
+            ?: throw ResponseStatusException(
+                HttpStatus.CONFLICT,
+                if (state.next?.status == "RATIFICADO") {
+                    "Ya ratificaste tu aporte del próximo período"
+                } else {
+                    "Todavía no es momento de ratificar el próximo período"
+                },
+            )
+        if (!OffsetDateTime.now().isBefore(target.deadline)) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "El plazo para ratificar este período ya venció")
         }
 
-        rewards.purgeByCompromisoId(commitment.id)
+        rewards.purgeByCompromisoId(target.id)
         rewards.saveAll(
             request.productos.map { p ->
                 CuponeraRewardEntity(
-                    compromisoId = commitment.id,
+                    compromisoId = target.id,
                     nombreProducto = p.nombreProducto.trim(),
                     descripcion = p.descripcion?.trim(),
                     fotoUrl = p.fotoUrl?.trim()?.takeIf { it.isNotEmpty() },
@@ -102,14 +123,11 @@ class CuponeraService(
         )
         rewards.flush()
 
-        if (commitments.markRatified(commitment.id) != 1) {
+        if (commitments.markRatified(target.id) != 1) {
             throw ResponseStatusException(HttpStatus.CONFLICT, "No se pudo ratificar el aporte, intentá de nuevo")
         }
 
-        val updated = commitments.findById(commitment.id).orElseThrow {
-            ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se encontró el compromiso")
-        }
-        return toResponse(updated, info.rubroNombre)
+        return toResponse(target.id, info.rubroNombre)
     }
 
     @Transactional(readOnly = true)
@@ -128,26 +146,15 @@ class CuponeraService(
 
         return CuponeraPhotoUploadResponse(url)
     }
+
     private fun requireBusiness(userId: Long): BusinessCommitmentInfo =
         commitments.findBusinessInfo(userId)
             ?: throw ResponseStatusException(HttpStatus.FORBIDDEN, "Solo los comercios pueden aportar a la cuponera")
 
-    private fun currentOrCreate(userId: Long): CuponeraCommitmentEntity {
-        val today = LocalDate.now(ZONE)
-        val latest = commitments.findFirstByComercioIdOrderByPeriodoInicioDesc(userId)
-        if (latest != null && !today.isAfter(latest.periodoFin)) return latest
-
-        // Nuevo período: arranca hoy (siempre posterior al anterior, que ya terminó).
-        val inicio = today
-        val fin = inicio.plusDays(PERIOD_DAYS - 1)
-        val limite = inicio.plusDays(RATIFICATION_GRACE_DAYS).atStartOfDay(ZONE).toOffsetDateTime()
-        commitments.createPending(userId, inicio, fin, limite)
-
-        return commitments.findFirstByComercioIdOrderByPeriodoInicioDesc(userId)
-            ?: throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo crear el compromiso")
-    }
-
-    private fun toResponse(c: CuponeraCommitmentEntity, rubro: String?): CuponeraCommitmentResponse {
+    private fun toResponse(commitmentId: Long, rubro: String?): CuponeraCommitmentResponse {
+        val c = commitments.findById(commitmentId).orElseThrow {
+            ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se encontró el compromiso")
+        }
         val products = rewards.findByCompromisoIdOrderByIdAsc(c.id).map {
             CuponeraProductResponse(
                 id = it.id,

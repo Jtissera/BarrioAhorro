@@ -13,7 +13,8 @@ import java.io.IOException
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
-enum class GateDestination { ONBOARDING, CUPONERA, HOME, SESSION_EXPIRED }
+/** CUPONERA ya no se usa: la ratificación pendiente se resuelve desde RESTRICTED. */
+enum class GateDestination { ONBOARDING, CUPONERA, HOME, RESTRICTED, SESSION_EXPIRED }
 
 sealed interface GateUiState {
     data object Checking : GateUiState
@@ -21,7 +22,7 @@ sealed interface GateUiState {
     data class Resolved(val destination: GateDestination) : GateUiState
 }
 
-/** Decide a dónde va un comercio al entrar: nunca llega al inicio con el onboarding o el aporte pendientes. */
+/** Decide a dónde va un comercio al entrar: sin onboarding o con aportes sin ratificar queda limitado. */
 @HiltViewModel
 class GateViewModel @Inject constructor(
     private val businessApi: BusinessApiService,
@@ -61,13 +62,13 @@ class GateViewModel @Inject constructor(
         // 1) Sin onboarding completo no se entra a la app.
         if (!business.onboardingCompleted) return GateUiState.Resolved(GateDestination.ONBOARDING)
 
-        // 2) Solo con el aporte ratificado se entra al inicio; pendiente o vencido se queda en la cuponera.
-        val commitment = cuponeraRepository.getCurrent().getOrElse { error ->
-            return GateUiState.Failed(error.message ?: "No pudimos verificar tu aporte a la cuponera.")
+        // 2) Cuponera y sorteo ratificados (con margen de gracia): inicio. Si no, acceso limitado.
+        val overview = cuponeraRepository.getOverview().getOrElse { error ->
+            return GateUiState.Failed(error.message ?: "No pudimos verificar tu aporte.")
         }
 
         return GateUiState.Resolved(
-            if (commitment.estado == "RATIFICADO") GateDestination.HOME else GateDestination.CUPONERA,
+            if (overview.restrictedAccess) GateDestination.RESTRICTED else GateDestination.HOME,
         )
     }
 }

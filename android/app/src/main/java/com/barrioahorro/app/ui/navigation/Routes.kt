@@ -42,6 +42,9 @@ object SplashRoutes {
 
 object CuponeraRoutes {
     const val CONTRIBUTION = "cuponera/contribution"
+    const val RAFFLE = "cuponera/raffle"
+    const val SCANNER = "cuponera/scanner"
+    const val RESTRICTED = "cuponera/restricted"
 }
 
 object GateRoutes {
