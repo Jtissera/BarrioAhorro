@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.OffsetDateTime
+import java.sql.ResultSet
 
 data class TopOfferRow(val id: Long, val title: String, val views: Int)
 
@@ -17,7 +18,18 @@ data class ActiveOfferRow(
     val vigenciaTipo: String,
     val vigenteHasta: OffsetDateTime?,
     val unitPrice: BigDecimal?,
+    val tipo: String,
+    val porcentaje: Int?,
+    val llevar: Int?,
+    val pagar: Int?,
+    val cantidadRequerida: Int?,
+    val descuentoUltima: Int?,
 )
+
+private fun ResultSet.intOrNull(column: String): Int? {
+    val value = getInt(column)
+    return if (wasNull()) null else value
+}
 
 /**
  *
@@ -70,12 +82,18 @@ class DashboardQueries(private val jdbc: JdbcTemplate) {
             comercioId, limit,
         )
 
-    /** Ofertas vigentes. El precio es el unitario que exista según el tipo de oferta. */
+    /** Ofertas vigentes, las más recientes primero. */
     fun activeOffers(comercioId: Long, limit: Int): List<ActiveOfferRow> =
         jdbc.query(
             """
             SELECT o.id, o.nombre_producto, o.vigencia_tipo::text AS vigencia_tipo, o.vigente_hasta,
-                   COALESCE(op.precio_final, d.precio_unitario, oc.precio_unitario, om.precio_unitario_mayorista) AS precio
+                   o.tipo_oferta::text AS tipo,
+                   COALESCE(op.precio_final, d.precio_unitario, oc.precio_unitario, om.precio_unitario_mayorista) AS precio,
+                   op.porcentaje_descuento AS porcentaje,
+                   d.unidades_a_llevar AS llevar,
+                   d.unidades_a_pagar AS pagar,
+                   oc.cantidad_requerida AS cantidad_requerida,
+                   oc.porcentaje_descuento_ultima_unidad AS descuento_ultima
             FROM ofertas o
             LEFT JOIN ofertas_porcentaje op ON op.oferta_id = o.id
             LEFT JOIN ofertas_2x1 d ON d.oferta_id = o.id
@@ -92,6 +110,12 @@ class DashboardQueries(private val jdbc: JdbcTemplate) {
                     vigenciaTipo = rs.getString("vigencia_tipo"),
                     vigenteHasta = rs.getObject("vigente_hasta", OffsetDateTime::class.java),
                     unitPrice = rs.getBigDecimal("precio"),
+                    tipo = rs.getString("tipo"),
+                    porcentaje = rs.intOrNull("porcentaje"),
+                    llevar = rs.intOrNull("llevar"),
+                    pagar = rs.intOrNull("pagar"),
+                    cantidadRequerida = rs.intOrNull("cantidad_requerida"),
+                    descuentoUltima = rs.intOrNull("descuento_ultima"),
                 )
             },
             comercioId, limit,

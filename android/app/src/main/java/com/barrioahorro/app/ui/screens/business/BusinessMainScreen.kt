@@ -31,6 +31,7 @@ import com.barrioahorro.app.ui.screens.dashboard.DashboardScreen
 import com.barrioahorro.app.ui.screens.offers.MyOffersScreen
 import com.barrioahorro.app.ui.theme.Cream
 import com.barrioahorro.app.ui.theme.Primary
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun BusinessMainScreen(
@@ -41,12 +42,22 @@ fun BusinessMainScreen(
     onNavigateToScanner: () -> Unit,
     onNavigateToRatifyCuponera: () -> Unit,
     onNavigateToRatifyRaffle: () -> Unit,
+    onNavigateToEditOffer: (Long) -> Unit,
     onLogout: () -> Unit,
     isLoggingOut: Boolean,
     modifier: Modifier = Modifier,
+    requestedTab: String? = null,
+    onRequestedTabConsumed: () -> Unit = {},
     accessViewModel: MyContributionViewModel = hiltViewModel(),
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(initialTab) }
+
+    LaunchedEffect(requestedTab) {
+        val tab = requestedTab?.let { name -> BusinessTab.entries.firstOrNull { it.name == name } }
+        if (tab != null) selectedTab = tab
+        if (requestedTab != null) onRequestedTabConsumed()
+    }
+
     val context = LocalContext.current
 
     val access by accessViewModel.uiState.collectAsStateWithLifecycle()
@@ -114,7 +125,10 @@ fun BusinessMainScreen(
                     onRetry = accessViewModel::load,
                     restrictedContent = restrictedContent,
                 ) {
-                    MyOffersScreen(onCreateOffer = onNavigateToCreateOffer)
+                    MyOffersScreen(
+                        onCreateOffer = onNavigateToCreateOffer,
+                        onEditOffer = onNavigateToEditOffer,
+                    )
                 }
 
                 BusinessTab.CUPONERA -> MyContributionScreen(
@@ -129,12 +143,9 @@ fun BusinessMainScreen(
                     onEditPhotos = onNavigateToEditPhotos,
                     // Si está bloqueado, Ofertas muestra el aviso de acceso limitado.
                     onManageOffers = { selectedTab = BusinessTab.OFERTAS },
-                    onEditOffer = { _ ->
-                        if (canEdit) {
-                            Toast.makeText(context, "Próximamente: edición de ofertas", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, readOnlyMessage, Toast.LENGTH_SHORT).show()
-                        }
+                    onEditOffer = { id ->
+                        if (canEdit) onNavigateToEditOffer(id)
+                        else Toast.makeText(context, readOnlyMessage, Toast.LENGTH_SHORT).show()
                     },
                     onLogout = onLogout,
                     isLoggingOut = isLoggingOut,

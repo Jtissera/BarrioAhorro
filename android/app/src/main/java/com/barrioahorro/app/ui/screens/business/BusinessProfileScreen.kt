@@ -159,7 +159,7 @@ private fun ProfileBody(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             when (state.selectedTab) {
-                ProfileTab.OFFERS -> ProfileOffersTab(state, onManageOffers, onEditOffer, onRetry)
+                ProfileTab.OFFERS -> ProfileOffersTab(state, onManageOffers, onEditOffer, onRetry, readOnly)
                 ProfileTab.REVIEWS -> ProfileReviewsTab(state, onLoadMoreReviews, onRetry)
                 ProfileTab.INFO -> ProfileInfoTab(state, onLogout, isLoggingOut)
             }

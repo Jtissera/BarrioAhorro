@@ -46,6 +46,13 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch { loadCategoryName() }
     }
 
+    fun refresh() {
+        if (_uiState.value !is DashboardUiState.Success) return
+        viewModelScope.launch {
+            repository.getDashboard().onSuccess { _uiState.value = DashboardUiState.Success(it) }
+        }
+    }
+
     private suspend fun loadCategoryName() {
         try {
             val response = businessApiService.getMyBusiness()

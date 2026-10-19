@@ -63,6 +63,7 @@ internal fun ProfileOffersTab(
     onManageOffers: () -> Unit,
     onEditOffer: (Long) -> Unit,
     onRetry: () -> Unit,
+    readOnly: Boolean = false,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -106,7 +107,7 @@ internal fun ProfileOffersTab(
             ) { CircularProgressIndicator(color = Primary) }
             state.offers.isEmpty() -> EmptyOffersCard()
             else -> state.offers.forEach { offer ->
-                ProfileOfferCard(offer = offer, onEdit = { onEditOffer(offer.id) })
+                ProfileOfferCard(offer = offer, enabled = !readOnly, onEdit = { onEditOffer(offer.id) })
             }
         }
     }
@@ -137,7 +138,7 @@ private fun EmptyOffersCard() {
 }
 
 @Composable
-private fun ProfileOfferCard(offer: MyOfferItemUi, onEdit: () -> Unit) {
+private fun ProfileOfferCard(offer: MyOfferItemUi, enabled: Boolean, onEdit: () -> Unit) {
     Card(
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = CardWhite),
@@ -253,17 +254,17 @@ private fun ProfileOfferCard(offer: MyOfferItemUi, onEdit: () -> Unit) {
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .clickable(onClick = onEdit)
+                            .clickable(enabled = enabled, onClick = onEdit)
                             .padding(horizontal = 6.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Outlined.Edit, contentDescription = "Editar", tint = Primary, modifier = Modifier.size(15.dp))
+                        Icon(Icons.Outlined.Edit, contentDescription = "Editar", tint = if (enabled) Primary else MutedLabel, modifier = Modifier.size(15.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(
                             text = "Editar",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Primary,
+                            color = if (enabled) Primary else MutedLabel,
                         )
                     }
                 }

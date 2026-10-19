@@ -21,9 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -33,7 +30,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,7 +37,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,9 +51,6 @@ import com.barrioahorro.app.domain.model.BusinessReview
 import com.barrioahorro.app.domain.model.DayViews
 import com.barrioahorro.app.domain.model.TopOffer
 import com.barrioahorro.app.domain.repository.sampleDashboard
-import com.barrioahorro.app.ui.components.BusinessBottomBar
-import com.barrioahorro.app.ui.components.BusinessTab
-import com.barrioahorro.app.ui.theme.AppColors
 import com.barrioahorro.app.ui.theme.CardWhite
 import com.barrioahorro.app.ui.theme.Cream
 import com.barrioahorro.app.ui.theme.Ink
@@ -68,6 +60,10 @@ import com.barrioahorro.app.ui.theme.WarmGray
 import java.text.NumberFormat
 import java.util.Locale
 import androidx.compose.material.icons.outlined.Storefront
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import com.barrioahorro.app.ui.theme.BadgeGreen
+import com.barrioahorro.app.ui.theme.BadgeGreenText
 import com.barrioahorro.app.ui.theme.BadgeYellowText
 
 @Composable
@@ -80,6 +76,7 @@ fun DashboardScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val categoryName by viewModel.categoryName.collectAsStateWithLifecycle()
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
     DashboardContent(
         state = state,
         categoryName = categoryName,
@@ -524,33 +521,43 @@ private fun RatingStars(rating: Int) {
 
 @Composable
 private fun ActiveOfferRow(offer: ActiveOffer) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = offer.title,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = Ink
-            )
-
-            offer.expiresLabel?.let {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        offer.badge?.let { badge ->
+            androidx.compose.material3.Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = PrimaryContainer,
+            ) {
                 Text(
-                    text = it,
+                    text = badge,
                     fontSize = 12.sp,
-                    color = WarmGray
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Primary,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                 )
             }
+            Spacer(Modifier.width(12.dp))
         }
 
-        offer.priceLabel?.let { price ->
-            Spacer(Modifier.width(8.dp))
+        Text(
+            text = offer.title,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = Ink,
+        )
 
+        Spacer(Modifier.width(8.dp))
+
+        androidx.compose.material3.Surface(
+            shape = RoundedCornerShape(50),
+            color = BadgeGreen,
+        ) {
             Text(
-                text = price,
+                text = "Vigente",
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = Primary
+                color = BadgeGreenText,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
             )
         }
     }
@@ -591,3 +598,5 @@ private fun DashboardPreview() {
         )
     }
 }
+
+

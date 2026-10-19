@@ -1,7 +1,6 @@
 package com.barrioahorro.app.ui.navigation
 
 import android.app.Activity
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,7 +32,6 @@ import com.barrioahorro.app.ui.screens.business.EditBusinessProfileViewModel
 import com.barrioahorro.app.ui.screens.gate.GateDestination
 import com.barrioahorro.app.ui.screens.gate.GateScreen
 import com.barrioahorro.app.ui.screens.offers.CreateOfferScreen
-import com.barrioahorro.app.ui.screens.offers.MyOffersScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessCategoryScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessLocationScreen
 import com.barrioahorro.app.ui.screens.onboarding.BusinessNameScreen
@@ -42,11 +40,10 @@ import com.barrioahorro.app.ui.screens.onboarding.OnboardingViewModel
 import com.barrioahorro.app.ui.screens.splash.SplashDestination
 import com.barrioahorro.app.ui.screens.splash.SplashScreen
 import com.barrioahorro.app.ui.screens.splash.SplashViewModel
-import com.barrioahorro.app.ui.components.BusinessTab
 import com.barrioahorro.app.ui.screens.business.BusinessMainScreen
 import com.barrioahorro.app.ui.cuponera.RaffleRatifyScreen
-import com.barrioahorro.app.ui.cuponera.RestrictedAccessScreen
 import com.barrioahorro.app.ui.cuponera.scanner.QrScannerScreen
+import com.barrioahorro.app.ui.screens.offers.EditOfferScreen
 
 @Composable
 fun AppNavigation(
@@ -290,12 +287,18 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
         )
     }
 
-    composable(BusinessRoutes.DASHBOARD) {
+    composable(BusinessRoutes.DASHBOARD) { entry ->
         val sessionViewModel: SessionViewModel = hiltViewModel()
         val isLoggingOut by sessionViewModel.isLoggingOut.collectAsStateWithLifecycle()
+        val requestedTab by entry.savedStateHandle
+            .getStateFlow<String?>("tab", null)
+            .collectAsStateWithLifecycle()
 
         BusinessMainScreen(
+            requestedTab = requestedTab,
+            onRequestedTabConsumed = { entry.savedStateHandle["tab"] = null },
             onNavigateToCreateOffer = { navController.navigate(BusinessRoutes.CREATE_OFFER) },
+            onNavigateToEditOffer = { id -> navController.navigate(BusinessRoutes.editOffer(id)) },
             onNavigateToEditProfile = { navController.navigate(BusinessRoutes.EDIT_PROFILE) },
             onNavigateToEditPhotos = { navController.navigate(BusinessRoutes.EDIT_PHOTOS) },
             onNavigateToScanner = { navController.navigate(CuponeraRoutes.SCANNER) },
@@ -309,11 +312,24 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
     }
 
     composable(BusinessRoutes.CREATE_OFFER) {
-        val context = LocalContext.current
         CreateOfferScreen(
             onClose = { navController.popBackStack() },
-            onPublished = {
-                Toast.makeText(context, "¡Oferta publicada!", Toast.LENGTH_SHORT).show()
+            // "Ver mis ofertas": vuelve al dashboard y selecciona la pestaña Ofertas.
+            onBackToOffers = {
+                navController.previousBackStackEntry?.savedStateHandle?.set("tab", "OFERTAS")
+                navController.popBackStack()
+            },
+        )
+    }
+
+    composable(
+        route = BusinessRoutes.EDIT_OFFER,
+        arguments = listOf(navArgument("offerId") { type = NavType.LongType }),
+    ) {
+        EditOfferScreen(
+            onClose = { navController.popBackStack() },
+            onBackToOffers = {
+                navController.previousBackStackEntry?.savedStateHandle?.set("tab", "OFERTAS")
                 navController.popBackStack()
             },
         )

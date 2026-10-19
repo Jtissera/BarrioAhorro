@@ -1,12 +1,15 @@
 package com.barrioahorro.app.ui.screens.offers
 
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barrioahorro.app.data.local.image.PhotoCompressor
 import com.barrioahorro.app.data.remote.api.BusinessApiService
+import com.barrioahorro.app.data.remote.dto.OfferResponseDto
 import com.barrioahorro.app.domain.model.NewOffer
 import com.barrioahorro.app.domain.model.OfferError
+import com.barrioahorro.app.domain.repository.IOfferRepository
 import com.barrioahorro.app.domain.repository.Result
 import com.barrioahorro.app.domain.usecase.offer.CreateOfferUseCase
 import com.barrioahorro.app.domain.usecase.offer.UploadOfferPhotoUseCase
@@ -21,6 +24,8 @@ import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneId
 import javax.inject.Inject
 
 enum class OfferType { PORCENTUAL, DOS_POR_UNO, POR_CANTIDAD, POR_MAYOR }
@@ -50,6 +55,13 @@ data class CreateOfferUiState(
     val isUploadingPhoto: Boolean = false,
     val businessName: String = "",
     val categoryName: String = "",
+    /** Distinto de null: se está editando esa oferta. */
+    val editingId: Long? = null,
+    val isLoadingOffer: Boolean = false,
+    val loadError: String? = null,
+    val isDeleting: Boolean = false,
+    /** Distinto de null: la oferta recién creada, para mostrar la pantalla de "publicada". */
+    val publishedOfferId: Long? = null,
 ) {
     val priceValue: BigDecimal? get() = price.replace(",", ".").toBigDecimalOrNull()
     val wholesalePriceValue: BigDecimal? get() = wholesalePrice.replace(",", ".").toBigDecimalOrNull()
@@ -62,7 +74,6 @@ data class CreateOfferUiState(
             return p.multiply(BigDecimal(100 - d)).divide(BigDecimal(100), 2, RoundingMode.HALF_UP)
         }
 
-    /** Porcentaje de ahorro directo para promociones 2x1 o equivalente */
     val preview2x1SavingsPercent: Int
         get() = if (unitsToTake > unitsToPay && unitsToTake > 0) {
             ((unitsToTake - unitsToPay).toDouble() / unitsToTake * 100).toInt()
@@ -70,11 +81,9 @@ data class CreateOfferUiState(
             0
         }
 
-    /** Precio total del paquete promocional (lo que paga el cliente) */
     val preview2x1TotalPromo: BigDecimal?
         get() = priceValue?.multiply(BigDecimal(unitsToPay))
 
-    /** Precio unitario equivalente por unidad en 2x1 */
     val preview2x1UnitPrice: BigDecimal?
         get() = if (unitsToTake > 0) {
             preview2x1TotalPromo?.divide(BigDecimal(unitsToTake), 2, RoundingMode.HALF_UP)
@@ -82,7 +91,6 @@ data class CreateOfferUiState(
             null
         }
 
-    /** Porcentaje de ahorro en venta por mayor */
     val previewWholesaleSavingsPercent: Int?
         get() {
             val reg = priceValue ?: return null
@@ -93,7 +101,7 @@ data class CreateOfferUiState(
 
     val canSubmit: Boolean
         get() {
-            if (isSubmitting || isUploadingPhoto || productName.isBlank()) return false
+            if (isSubmitting || isDeleting || isUploadingPhoto || productName.isBlank()) return false
             val p = priceValue ?: return false
             if (p <= BigDecimal.ZERO) return false
             val vigenciaOk = vigenciaTipo != VigenciaTipo.FECHA_ESPECIFICA || validUntil != null
@@ -112,19 +120,28 @@ data class CreateOfferUiState(
         }
 }
 
+/** Eventos de una sola vez; la publicación se refleja en el estado (publishedOfferId). */
 sealed class CreateOfferEvent {
-    data object Published : CreateOfferEvent()
+    data object Saved : CreateOfferEvent()
+    data object Deleted : CreateOfferEvent()
 }
 
 @HiltViewModel
 class CreateOfferViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val createOfferUseCase: CreateOfferUseCase,
     private val uploadOfferPhotoUseCase: UploadOfferPhotoUseCase,
     private val photoCompressor: PhotoCompressor,
     private val businessApiService: BusinessApiService,
+    private val offerRepository: IOfferRepository,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(CreateOfferUiState())
+    /** Argumento "offerId" de la ruta de edición; null al crear. */
+    private val editingId: Long? = savedStateHandle.get<Long>("offerId")
+
+    private val _uiState = MutableStateFlow(
+        CreateOfferUiState(editingId = editingId, isLoadingOffer = editingId != null),
+    )
     val uiState: StateFlow<CreateOfferUiState> = _uiState.asStateFlow()
 
     private val _events = Channel<CreateOfferEvent>()
@@ -132,6 +149,7 @@ class CreateOfferViewModel @Inject constructor(
 
     init {
         loadBusinessInfo()
+        editingId?.let(::loadOffer)
     }
 
     private fun loadBusinessInfo() {
@@ -153,20 +171,37 @@ class CreateOfferViewModel @Inject constructor(
         }
     }
 
+    fun retryLoad() {
+        editingId?.let(::loadOffer)
+    }
+
+    private fun loadOffer(id: Long) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingOffer = true, loadError = null) }
+            when (val result = offerRepository.getOffer(id)) {
+                is Result.Success -> _uiState.update { result.value.toFormState(it) }
+                is Result.Failure -> _uiState.update {
+                    it.copy(isLoadingOffer = false, loadError = result.error.toMessage())
+                }
+            }
+        }
+    }
+
     fun selectType(type: OfferType) = _uiState.update {
         it.copy(
             selectedType = type,
             error = null,
-            // 2x1 y por mayor arrancan por defecto con hasta agotar stock (como en los mockups), porcentual con fecha específica
             vigenciaTipo = if (type == OfferType.DOS_POR_UNO || type == OfferType.POR_MAYOR) VigenciaTipo.HASTA_AGOTAR_STOCK else it.vigenciaTipo,
         )
     }
+
     fun clearType() = _uiState.update { current ->
         CreateOfferUiState(
             businessName = current.businessName,
             categoryName = current.categoryName,
         )
     }
+
     fun setProductName(value: String) = _uiState.update { it.copy(productName = value, error = null) }
     fun setPrice(value: String) = _uiState.update { it.copy(price = value, error = null) }
     fun setDiscount(value: Int?) = _uiState.update { it.copy(discountPercent = value, error = null) }
@@ -200,6 +235,7 @@ class CreateOfferViewModel @Inject constructor(
 
     fun submit() {
         val state = _uiState.value
+        if (state.isSubmitting) return
         val offer = state.toNewOffer() ?: run {
             _uiState.update { it.copy(error = "Completá todos los campos obligatorios") }
             return
@@ -207,13 +243,41 @@ class CreateOfferViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, error = null) }
-            when (val result = createOfferUseCase(offer)) {
+            val id = state.editingId
+            if (id != null) {
+                when (val result = offerRepository.updateOffer(id, offer)) {
+                    is Result.Success -> _uiState.update {
+                        it.copy(isSubmitting = false, publishedOfferId = id)
+                    }
+                    is Result.Failure -> _uiState.update {
+                        it.copy(isSubmitting = false, error = result.error.toMessage())
+                    }
+                }
+            } else {
+                when (val result = createOfferUseCase(offer)) {
+                    is Result.Success -> _uiState.update {
+                        it.copy(isSubmitting = false, publishedOfferId = result.value)
+                    }
+                    is Result.Failure -> _uiState.update {
+                        it.copy(isSubmitting = false, error = result.error.toMessage())
+                    }
+                }
+            }
+        }
+    }
+
+    fun delete() {
+        val id = _uiState.value.editingId ?: return
+        if (_uiState.value.isDeleting) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDeleting = true, error = null) }
+            when (val result = offerRepository.deleteOffer(id)) {
                 is Result.Success -> {
-                    _uiState.update { it.copy(isSubmitting = false) }
-                    _events.send(CreateOfferEvent.Published)
+                    _uiState.update { it.copy(isDeleting = false) }
+                    _events.send(CreateOfferEvent.Deleted)
                 }
                 is Result.Failure -> _uiState.update {
-                    it.copy(isSubmitting = false, error = result.error.toMessage())
+                    it.copy(isDeleting = false, error = result.error.toMessage())
                 }
             }
         }
@@ -299,6 +363,67 @@ class CreateOfferViewModel @Inject constructor(
         }
     }
 
+    /** Carga en el formulario los datos de una oferta existente. */
+    private fun OfferResponseDto.toFormState(base: CreateOfferUiState): CreateOfferUiState {
+        val vigencia = VigenciaTipo.entries.firstOrNull { it.apiValue == vigenciaTipo }
+            ?: VigenciaTipo.HASTA_AGOTAR_STOCK
+        val until = if (vigencia == VigenciaTipo.FECHA_ESPECIFICA) {
+            vigenteHasta?.let {
+                runCatching {
+                    OffsetDateTime.parse(it).atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime()
+                }.getOrNull()
+            }
+        } else {
+            null
+        }
+        val common = base.copy(
+            productName = nombreProducto,
+            photoUrl = fotoUrl,
+            vigenciaTipo = vigencia,
+            validUntil = until,
+            isLoadingOffer = false,
+            loadError = null,
+        )
+
+        val loaded = when (tipoOferta) {
+            "PORCENTAJE" -> detallePorcentaje?.let {
+                common.copy(
+                    selectedType = OfferType.PORCENTUAL,
+                    price = it.precioOriginal.plain(),
+                    discountPercent = it.porcentajeDescuento.toInt(),
+                )
+            }
+            "DOS_POR_UNO" -> detalle2x1?.let {
+                common.copy(
+                    selectedType = OfferType.DOS_POR_UNO,
+                    price = it.precioUnitario?.plain().orEmpty(),
+                    unitsToTake = it.unidadesALlevar.toInt(),
+                    unitsToPay = it.unidadesAPagar.toInt(),
+                )
+            }
+            "CANTIDAD_ULTIMA_UNIDAD" -> detalleCantidad?.let {
+                common.copy(
+                    selectedType = OfferType.POR_CANTIDAD,
+                    price = it.precioUnitario.plain(),
+                    requiredQuantity = it.cantidadRequerida.toInt(),
+                    discountPercent = it.porcentajeDescuentoUltimaUnidad.toInt(),
+                )
+            }
+            "POR_MAYOR" -> detallePorMayor?.let {
+                common.copy(
+                    selectedType = OfferType.POR_MAYOR,
+                    price = it.precioUnitarioRegular?.plain().orEmpty(),
+                    wholesalePrice = it.precioUnitarioMayorista.plain(),
+                    minQuantity = it.cantidadMinima.toInt(),
+                )
+            }
+            else -> null
+        }
+        return loaded ?: base.copy(isLoadingOffer = false, loadError = "No pudimos leer esta oferta")
+    }
+
+    private fun BigDecimal.plain(): String = stripTrailingZeros().toPlainString()
+
     private fun OfferError.toMessage(): String = when (this) {
         OfferError.EmptyProductName -> "Ingresá el nombre del producto"
         OfferError.InvalidPrice -> "El precio tiene que ser mayor a $0"
@@ -311,4 +436,3 @@ class CreateOfferViewModel @Inject constructor(
         is OfferError.Unknown -> "Ocurrió un error inesperado"
     }
 }
-

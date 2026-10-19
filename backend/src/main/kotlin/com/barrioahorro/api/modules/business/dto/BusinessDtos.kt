@@ -92,4 +92,6 @@ data class DashboardActiveOffer(
     val title: String,
     val unitPrice: BigDecimal?,
     val expiresLabel: String?,
+    /** "-25%", "2×1", "2ª al 50%", "X mayor". */
+    val badge: String?,
 )

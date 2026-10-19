@@ -35,7 +35,8 @@ data class ActiveOfferDto(
     val id: Long,
     val title: String,
     val unitPrice: Double?,
-    val expiresLabel: String?
+    val expiresLabel: String?,
+    val badge: String? = null,
 )
 
 fun DashboardResponseDto.toDomain() = BusinessDashboard(
@@ -45,7 +46,7 @@ fun DashboardResponseDto.toDomain() = BusinessDashboard(
     topOffers = topOffers.map { TopOffer(it.id.toString(), it.title, it.views) },
     recentReviews = recentReviews.map { BusinessReview(it.id.toString(), it.authorName, it.rating, it.comment) },
     activeOffers = activeOffers.map {
-        ActiveOffer(it.id.toString(), it.title, it.unitPrice?.let(::formatPrice), it.expiresLabel)
+        ActiveOffer(it.id.toString(), it.title, it.unitPrice?.let(::formatPrice), it.expiresLabel, it.badge)
     }
 )
 

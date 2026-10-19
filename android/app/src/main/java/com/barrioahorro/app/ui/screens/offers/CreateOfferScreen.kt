@@ -2,7 +2,6 @@ package com.barrioahorro.app.ui.screens.offers
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -10,17 +9,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun CreateOfferScreen(
     onClose: () -> Unit,
-    onPublished: () -> Unit,
+    onBackToOffers: () -> Unit,
     viewModel: CreateOfferViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
-        viewModel.events.collect { event ->
-            when (event) {
-                CreateOfferEvent.Published -> onPublished()
-            }
-        }
+    if (state.publishedOfferId != null) {
+        BackHandler { onBackToOffers() }
+        OfferPublishedScreen(
+            state = state,
+            onBackToOffers = onBackToOffers,
+        )
+        return
     }
 
     when (state.selectedType) {
@@ -55,4 +55,3 @@ fun CreateOfferScreen(
         }
     }
 }
-

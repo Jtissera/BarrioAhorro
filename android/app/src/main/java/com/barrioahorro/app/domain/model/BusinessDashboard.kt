@@ -24,5 +24,6 @@ data class ActiveOffer(
     val id: String,
     val title: String,
     val priceLabel: String?,
-    val expiresLabel: String?
+    val expiresLabel: String?,
+    val badge: String? = null,
 )

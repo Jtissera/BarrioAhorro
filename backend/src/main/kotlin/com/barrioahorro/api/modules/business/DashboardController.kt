@@ -69,6 +69,7 @@ class DashboardController(
                         title = it.title,
                         unitPrice = it.unitPrice,
                         expiresLabel = expiresLabel(it.vigenciaTipo, it.vigenteHasta, today),
+                        badge = badgeFor(it),
                     )
                 },
             ),
@@ -90,5 +91,14 @@ class DashboardController(
             "SOLO_HOY" -> "Solo hoy"
             else -> null
         }
+    }
+
+    private fun badgeFor(r: ActiveOfferRow): String? = when (r.tipo) {
+        "PORCENTAJE" -> r.porcentaje?.let { "-$it%" }
+        "DOS_POR_UNO" -> if (r.llevar != null && r.pagar != null) "${r.llevar}×${r.pagar}" else null
+        "CANTIDAD_ULTIMA_UNIDAD" ->
+            if (r.cantidadRequerida != null && r.descuentoUltima != null) "${r.cantidadRequerida}ª al ${r.descuentoUltima}%" else null
+        "POR_MAYOR" -> "X mayor"
+        else -> null
     }
 }

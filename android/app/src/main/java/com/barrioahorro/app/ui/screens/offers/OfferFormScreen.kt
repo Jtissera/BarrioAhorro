@@ -139,6 +139,7 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.barrioahorro.app.ui.screens.business.PhotoSourceSheet
+import androidx.compose.material.icons.outlined.DeleteOutline
 
 private val esAR: Locale = Locale.forLanguageTag("es-AR")
 private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
@@ -198,6 +199,8 @@ fun OfferFormScreen(
     onRemovePhoto: () -> Unit,
     onBack: () -> Unit,
     onSubmit: () -> Unit,
+    isEditing: Boolean = false,
+    onDelete: (() -> Unit)? = null,
 ) {
     val c = formColors()
     val isTwoForOne = state.selectedType == OfferType.DOS_POR_UNO
@@ -207,6 +210,7 @@ fun OfferFormScreen(
     var showDatePicker by remember { mutableStateOf(false) }
     var pickedDate by remember { mutableStateOf<LocalDate?>(null) }
     var showVigenciaSheet by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = c.background,
@@ -223,6 +227,7 @@ fun OfferFormScreen(
                 canSubmit = state.canSubmit,
                 onBack = onBack,
                 onSubmit = onSubmit,
+                isEditing = isEditing,
             )
         },
     ) { padding ->
@@ -235,15 +240,9 @@ fun OfferFormScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                when {
-                    isTwoForOne -> "Crear oferta 2×1"
-                    isWholesale -> "Crear oferta por mayor"
-                    isLastUnit -> "Crear oferta por cantidad"
-                    else -> "Crear oferta porcentual"
-                },
-                style = MaterialTheme.typography.headlineMedium,
+                if (isEditing) "Guardar y publicar" else "Publicar oferta",
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = c.textPrimary,
             )
             Pill(
                 text = when {
@@ -378,6 +377,22 @@ fun OfferFormScreen(
                     color = c.textSecondary,
                 )
             }
+
+            if (isEditing && onDelete != null) {
+                TextButton(
+                    onClick = { showDeleteDialog = true },
+                    enabled = !state.isDeleting && !state.isSubmitting,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                ) {
+                    if (state.isDeleting) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = c.error)
+                    } else {
+                        Icon(Icons.Outlined.DeleteOutline, contentDescription = null, tint = c.error, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Eliminar oferta", color = c.error, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
         }
     }
 
@@ -424,6 +439,35 @@ fun OfferFormScreen(
         }
     }
 
+    if (showDeleteDialog && onDelete != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            containerColor = c.card,
+            title = { Text("¿Eliminar esta oferta?", color = c.textPrimary) },
+            text = {
+                Text(
+                    "Se borra para siempre y deja de verse en el barrio. No se puede deshacer.",
+                    color = c.textSecondary,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        onDelete()
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = c.error),
+                ) { Text("Eliminar", fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteDialog = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = c.primary),
+                ) { Text("Cancelar") }
+            },
+        )
+    }
+
     pickedDate?.let { date ->
         val timePickerState = rememberTimePickerState(initialHour = 20, initialMinute = 0, is24Hour = true)
         AlertDialog(
@@ -461,6 +505,7 @@ fun OfferFormScreen(
             },
         )
     }
+
 
     if (showVigenciaSheet) {
         ModalBottomSheet(
@@ -1476,7 +1521,7 @@ private fun ValidityBox(
 }
 
 @Composable
-private fun OfferPreview(
+internal fun OfferPreview(
     state: CreateOfferUiState,
     price: BigDecimal?,
     isLastUnit: Boolean,
@@ -1766,6 +1811,7 @@ private fun BottomActions(
     canSubmit: Boolean,
     onBack: () -> Unit,
     onSubmit: () -> Unit,
+    isEditing: Boolean,
 ) {
     val c = formColors()
     Row(
