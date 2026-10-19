@@ -1,5 +1,6 @@
 package com.barrioahorro.api.modules.location
 
+import com.barrioahorro.api.modules.location.dto.AddressCandidateResponse
 import com.barrioahorro.api.modules.location.dto.AddressErrorCode
 import com.barrioahorro.api.modules.location.dto.ValidateAddressRequest
 import com.barrioahorro.api.modules.location.dto.ValidateAddressResponse
@@ -202,6 +203,61 @@ class LocationService(
             Regex("\\p{InCombiningDiacriticalMarks}+"),
             "",
         )
+
+    /**
+     * Hasta 3 candidatos para que el vecino elija. Se llama solo al tocar "buscar",
+     * nunca mientras escribe (la política de uso de Nominatim no permite autocompletar).
+     * Si Nominatim no responde, la excepción llega al GlobalExceptionHandler (503).
+     */
+    fun buscarCandidatos(request: ValidateAddressRequest): List<AddressCandidateResponse> {
+        val texto = request.direccion.trim()
+        val localidad = request.localidad?.trim()?.takeIf { it.isNotBlank() }
+        val provincia = request.provincia?.trim()?.takeIf { it.isNotBlank() }
+        if (texto.length < 3) return emptyList()
+
+        val separado = separarCalleYAltura(texto)
+
+        val resultados: List<Pair<NominatimResult, Boolean>>
+        val alturaPedida: String?
+        if (separado != null) {
+            val (calle, altura) = separado
+            alturaPedida = altura
+            val exactos = nominatimClient
+                .buscarDireccion(calle = calle, altura = altura, localidad = localidad, provincia = provincia)
+                .filter { coincide(it, altura, localidad) }
+            resultados = if (exactos.isNotEmpty()) {
+                exactos.map { it to true }
+            } else {
+                nominatimClient
+                    .buscarCalle(calle = calle, localidad = localidad, provincia = provincia)
+                    .filter { coincideCalleYLocalidad(it, calle, localidad) }
+                    .map { it to false }
+            }
+        } else {
+            alturaPedida = null
+            resultados = nominatimClient
+                .buscarCalle(calle = texto, localidad = localidad, provincia = provincia)
+                .filter { coincideCalleYLocalidad(it, texto, localidad) }
+                .map { it to false }
+        }
+
+        return resultados
+            .mapNotNull { (r, exacto) ->
+                val lat = r.lat?.toDoubleOrNull() ?: return@mapNotNull null
+                val lon = r.lon?.toDoubleOrNull() ?: return@mapNotNull null
+                val calle = r.address?.road?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                AddressCandidateResponse(
+                    label = if (exacto && alturaPedida != null) "$calle $alturaPedida" else calle,
+                    locality = r.address?.localidadPrincipal(),
+                    latitude = lat,
+                    longitude = lon,
+                    exact = exacto,
+                )
+            }
+            .distinctBy { it.label to it.locality }
+            .take(3)
+    }
+
 }
 
 sealed class AddressValidationResult {

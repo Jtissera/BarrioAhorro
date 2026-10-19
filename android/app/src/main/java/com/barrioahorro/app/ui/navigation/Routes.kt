@@ -53,3 +53,12 @@ object CuponeraRoutes {
 object GateRoutes {
     const val GATE = "gate"
 }
+
+object ClientRoutes {
+    const val ENTRY = "client/entry"
+    const val LOCATION = "client/location"
+    const val LOCATION_PATTERN = "client/location?edit={edit}"
+    const val HOME = "client/home"
+
+    fun editLocation(): String = "client/location?edit=true"
+}

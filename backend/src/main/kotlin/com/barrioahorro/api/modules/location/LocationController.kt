@@ -1,5 +1,6 @@
 package com.barrioahorro.api.modules.location
 
+import com.barrioahorro.api.modules.location.dto.AddressCandidateResponse
 import com.barrioahorro.api.modules.location.dto.AddressErrorCode
 import com.barrioahorro.api.modules.location.dto.AddressErrorResponse
 import com.barrioahorro.api.modules.location.dto.ValidateAddressRequest
@@ -31,4 +32,8 @@ class LocationController(
                 ResponseEntity.status(status).body(AddressErrorResponse(result.code))
             }
         }
+
+    @PostMapping("/candidates")
+    fun candidates(@Valid @RequestBody request: ValidateAddressRequest): List<AddressCandidateResponse> =
+        locationService.buscarCandidatos(request)
 }

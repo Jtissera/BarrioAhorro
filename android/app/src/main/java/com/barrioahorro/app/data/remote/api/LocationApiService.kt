@@ -1,5 +1,6 @@
 package com.barrioahorro.app.data.remote.api
 
+import com.barrioahorro.app.data.remote.dto.AddressCandidateDto
 import com.barrioahorro.app.data.remote.dto.ValidateAddressRequestDto
 import com.barrioahorro.app.data.remote.dto.ValidateAddressResponseDto
 import retrofit2.Response
@@ -10,4 +11,7 @@ interface LocationApiService {
 
     @POST("api/location/validate")
     suspend fun validateAddress(@Body request: ValidateAddressRequestDto): Response<ValidateAddressResponseDto>
+
+    @POST("api/location/candidates")
+    suspend fun candidates(@Body request: ValidateAddressRequestDto): Response<List<AddressCandidateDto>>
 }

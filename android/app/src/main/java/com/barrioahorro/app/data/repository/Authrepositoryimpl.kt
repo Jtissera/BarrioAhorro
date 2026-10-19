@@ -1,6 +1,7 @@
 package com.barrioahorro.app.data.repository
 
 import com.barrioahorro.app.data.local.datastore.AuthTokenDataStore
+import com.barrioahorro.app.data.local.datastore.ClientLocationDataStore
 import com.barrioahorro.app.data.remote.api.AuthApiService
 import com.barrioahorro.app.data.remote.dto.AuthResponseDto
 import com.barrioahorro.app.data.remote.dto.LoginRequestDto
@@ -21,6 +22,7 @@ private const val HTTP_CONFLICT = 409
 class AuthRepositoryImpl @Inject constructor(
     private val authApiService: AuthApiService,
     private val authTokenDataStore: AuthTokenDataStore,
+    private val clientLocationDataStore: ClientLocationDataStore,
 ) : IAuthRepository {
 
     override suspend fun register(
@@ -51,6 +53,7 @@ class AuthRepositoryImpl @Inject constructor(
 
     override suspend fun logout() {
         authTokenDataStore.clearSession()
+        clientLocationDataStore.clear()
     }
 
     private suspend fun Response<AuthResponseDto>.toSessionResult(): Result<AuthSession, AuthError> {

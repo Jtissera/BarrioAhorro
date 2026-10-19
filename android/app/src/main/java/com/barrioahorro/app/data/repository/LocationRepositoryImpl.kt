@@ -1,9 +1,11 @@
 package com.barrioahorro.app.data.repository
 
 import com.barrioahorro.app.data.remote.api.LocationApiService
+import com.barrioahorro.app.data.remote.dto.AddressCandidateDto
 import com.barrioahorro.app.data.remote.dto.AddressErrorDto
 import com.barrioahorro.app.data.remote.dto.ValidateAddressRequestDto
 import com.barrioahorro.app.data.remote.dto.ValidateAddressResponseDto
+import com.barrioahorro.app.domain.model.AddressCandidate
 import com.barrioahorro.app.domain.model.AddressError
 import com.barrioahorro.app.domain.model.ValidatedAddress
 import com.barrioahorro.app.domain.repository.ILocationRepository
@@ -77,5 +79,40 @@ class LocationRepositoryImpl @Inject constructor(
                 else -> AddressError.Unknown(message = message)
             },
         )
+
+
+    override suspend fun searchCandidates(
+        address: String,
+        locality: String?,
+    ): Result<List<AddressCandidate>, AddressError> {
+        val request = ValidateAddressRequestDto(
+            direccion = address,
+            localidad = locality,
+            provincia = null,
+        )
+        return runCatching { locationApiService.candidates(request) }.fold(
+            onSuccess = { response ->
+                val body = response.body()
+                if (response.isSuccessful && body != null) {
+                    Result.Success(body.map { it.toDomain() })
+                } else {
+                    Result.Failure(mapHttpError(response.code(), response.errorBody()?.string()))
+                }
+            },
+            onFailure = {
+                Result.Failure(
+                    if (it is IOException) AddressError.NoConnection else AddressError.Unknown(message = it.message),
+                )
+            },
+        )
+    }
+
+    private fun AddressCandidateDto.toDomain() = AddressCandidate(
+        label = label,
+        locality = locality,
+        latitude = latitude,
+        longitude = longitude,
+        exact = exact,
+    )
 }
 

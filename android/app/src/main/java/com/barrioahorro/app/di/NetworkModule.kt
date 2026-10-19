@@ -1,6 +1,7 @@
 package com.barrioahorro.app.di
 
 import com.barrioahorro.app.data.cuponera.CuponeraApi
+import com.barrioahorro.app.data.explore.ExploreApi
 import com.barrioahorro.app.data.remote.api.AuthApiService
 import com.barrioahorro.app.data.remote.api.BusinessApiService
 import com.barrioahorro.app.data.remote.api.CategoryApiService
@@ -62,5 +63,10 @@ object NetworkModule {
     @Singleton
     fun provideCuponeraApi(retrofit: Retrofit): CuponeraApi =
         retrofit.create(CuponeraApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideExploreApi(retrofit: Retrofit): ExploreApi =
+        retrofit.create(ExploreApi::class.java)
 
 }

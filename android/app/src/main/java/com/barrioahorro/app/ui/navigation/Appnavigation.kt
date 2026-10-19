@@ -44,6 +44,9 @@ import com.barrioahorro.app.ui.screens.business.BusinessMainScreen
 import com.barrioahorro.app.ui.cuponera.RaffleRatifyScreen
 import com.barrioahorro.app.ui.cuponera.scanner.QrScannerScreen
 import com.barrioahorro.app.ui.screens.offers.EditOfferScreen
+import com.barrioahorro.app.ui.screens.client.ClientEntryScreen
+import com.barrioahorro.app.ui.screens.client.ClientMainScreen
+import com.barrioahorro.app.ui.screens.client.location.ClientLocationScreen
 
 @Composable
 fun AppNavigation(
@@ -58,6 +61,7 @@ fun AppNavigation(
         authGraph(navController = navController)
         onboardingGraph(navController = navController)
         businessGraph(navController = navController)
+        clientGraph(navController = navController)
     }
 }
 
@@ -72,7 +76,7 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
                 val target = when (val d = destination) {
                     is SplashDestination.Home ->
                         if (d.userType == UserType.COMERCIO) GateRoutes.GATE
-                        else AuthRoutes.success(d.userType.name)
+                        else ClientRoutes.ENTRY
                     else -> AuthRoutes.ROLE_SELECTION
                 }
                 navController.navigate(target) {
@@ -395,11 +399,55 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
 
 }
 
+fun NavGraphBuilder.clientGraph(navController: NavHostController) {
+    composable(ClientRoutes.ENTRY) {
+        ClientEntryScreen(
+            onResolved = { hasDecided ->
+                val target = if (hasDecided) ClientRoutes.HOME else ClientRoutes.LOCATION
+                navController.navigate(target) {
+                    popUpTo(ClientRoutes.ENTRY) { inclusive = true }
+                }
+            },
+        )
+    }
+
+    composable(
+        route = ClientRoutes.LOCATION_PATTERN,
+        arguments = listOf(navArgument("edit") { type = NavType.BoolType; defaultValue = false }),
+    ) { entry ->
+        val editing = entry.arguments?.getBoolean("edit") ?: false
+        ClientLocationScreen(
+            onFinished = {
+                if (editing) {
+                    navController.popBackStack()
+                } else {
+                    navController.navigate(ClientRoutes.HOME) {
+                        popUpTo(ClientRoutes.LOCATION_PATTERN) { inclusive = true }
+                    }
+                }
+            },
+            onClose = { navController.popBackStack() },
+        )
+    }
+
+    // Provisorio: se reemplaza por el contenedor de Explorar en la próxima tanda.
+    composable(ClientRoutes.HOME) {
+        val sessionViewModel: SessionViewModel = hiltViewModel()
+        val isLoggingOut by sessionViewModel.isLoggingOut.collectAsStateWithLifecycle()
+
+        ClientMainScreen(
+            onEditLocation = { navController.navigate(ClientRoutes.editLocation()) },
+            onLogout = { sessionViewModel.logout(onLoggedOut = { navController.navigateAfterLogout() }) },
+            isLoggingOut = isLoggingOut,
+        )
+    }
+}
+
 fun NavHostController.navigateAfterAuth(userType: UserType) {
     val target = if (userType == UserType.COMERCIO) {
         GateRoutes.GATE
     } else {
-        AuthRoutes.success(userType.name)
+        ClientRoutes.ENTRY
     }
     navigate(target) {
         popUpTo(AuthRoutes.ROLE_SELECTION) { inclusive = true }
