@@ -1,11 +1,15 @@
 package com.barrioahorro.app.ui.cuponera
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -90,16 +94,44 @@ fun CuponeraProductPhoto(
         }
     }
 
+    fun launchCamera() {
+        try {
+            val directory = File(context.cacheDir, "cuponera_photos").apply { mkdirs() }
+            val file = File.createTempFile("producto_", ".jpg", directory)
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file,
+            )
+            pendingPath = file.absolutePath
+            cameraLauncher.launch(uri)
+        } catch (e: Exception) {
+            Log.e("CuponeraPhoto", "No se pudo abrir la cámara", e)
+            Toast.makeText(context, "No se pudo abrir la cámara", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            launchCamera()
+        } else {
+            Toast.makeText(context, "Se necesita permiso de cámara para tomar fotos", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     fun openCamera() {
-        val directory = File(context.cacheDir, "cuponera_photos").apply { mkdirs() }
-        val file = File.createTempFile("producto_", ".jpg", directory)
-        val uri = FileProvider.getUriForFile(
+        val hasPermission = ContextCompat.checkSelfPermission(
             context,
-            "${context.packageName}.fileprovider",
-            file,
-        )
-        pendingPath = file.absolutePath
-        cameraLauncher.launch(uri)
+            Manifest.permission.CAMERA,
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (hasPermission) {
+            launchCamera()
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
     }
 
     fun openGallery() {

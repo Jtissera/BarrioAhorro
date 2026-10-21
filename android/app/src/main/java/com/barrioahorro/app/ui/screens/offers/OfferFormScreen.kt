@@ -1,9 +1,13 @@
 package com.barrioahorro.app.ui.screens.offers
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -1198,12 +1202,37 @@ private fun PhotoSection(
         if (uri != null) onPhotoPicked(uri)
     }
 
+    fun launchCamera() {
+        try {
+            val dir = File(context.cacheDir, "camera").apply { mkdirs() }
+            val file = File.createTempFile("oferta_", ".jpg", dir)
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            pendingCameraUri = uri.toString()
+            cameraLauncher.launch(uri)
+        } catch (e: Exception) {
+            Toast.makeText(context, "No se pudo abrir la cámara", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            launchCamera()
+        } else {
+            Toast.makeText(context, "Se necesita permiso de cámara para tomar fotos", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     fun openCamera() {
-        val dir = File(context.cacheDir, "camera").apply { mkdirs() }
-        val file = File.createTempFile("oferta_", ".jpg", dir)
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-        pendingCameraUri = uri.toString()
-        cameraLauncher.launch(uri)
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.CAMERA,
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (hasPermission) {
+            launchCamera()
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
