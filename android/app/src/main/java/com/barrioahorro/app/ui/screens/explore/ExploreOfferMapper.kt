@@ -78,7 +78,7 @@ object ExploreOfferMapper {
         else -> "$count vecinos confirman"
     }
 
-    private fun formatDistance(meters: Int?): String = when {
+    fun formatDistance(meters: Int?): String = when {
         meters == null -> ""
         meters < 1000 -> "a ${maxOf(10, (meters + 5) / 10 * 10)} m"
         else -> String.format(esAR, "a %.1f km", meters / 1000.0)

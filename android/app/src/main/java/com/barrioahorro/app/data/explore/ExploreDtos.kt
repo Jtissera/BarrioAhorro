@@ -39,3 +39,15 @@ data class ExploreOffersPageDto(
 data class ClientSummaryDto(val points: Int)
 
 data class ExploreCategory(val id: Int, val name: String)
+
+data class ExploreBusinessDto(
+    val id: Long,
+    val name: String?,
+    val category: String?,
+    val latitude: Double,
+    val longitude: Double,
+    val distanceMeters: Int,
+    val open: Boolean,
+    val activeOffers: Int,
+    val photoUrl: String?,
+)

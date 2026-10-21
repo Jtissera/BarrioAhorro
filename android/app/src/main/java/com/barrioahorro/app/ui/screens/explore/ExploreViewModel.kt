@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.barrioahorro.app.data.explore.ExploreBusinessDto
 
 enum class ExploreMode { MAP, LIST }
 
@@ -60,6 +61,10 @@ data class ExploreUiState(
     val isLoadingMore: Boolean = false,
     val error: String? = null,
     val message: String? = null,
+    val businesses: List<ExploreBusinessDto> = emptyList(),
+    val selectedBusinessId: Long? = null,
+    val isLoadingMap: Boolean = false,
+    val mapError: String? = null,
 ) {
     val hasLocation: Boolean get() = location != null
 
@@ -90,6 +95,8 @@ class ExploreViewModel @Inject constructor(
 
     private var loadJob: Job? = null
     private var searchJob: Job? = null
+    private var mapJob: Job? = null
+    private var mapStale = true
     private val favoritesInFlight = mutableSetOf<Long>()
 
     init {
@@ -129,6 +136,7 @@ class ExploreViewModel @Inject constructor(
     }
 
     private fun reload(refreshing: Boolean = false) {
+        mapStale = true
         loadJob?.cancel()
         _state.update {
             it.copy(
@@ -166,6 +174,7 @@ class ExploreViewModel @Inject constructor(
                     }
                 }
         }
+        if (_state.value.mode == ExploreMode.MAP) loadMap()
     }
 
     fun loadMore() {
@@ -245,6 +254,47 @@ class ExploreViewModel @Inject constructor(
 
     fun onModeChange(mode: ExploreMode) {
         _state.update { it.copy(mode = mode) }
+        if (mode == ExploreMode.MAP && mapStale) loadMap()
+    }
+
+    fun selectBusiness(id: Long?) {
+        _state.update { it.copy(selectedBusinessId = id) }
+    }
+
+    fun retryMap() = loadMap()
+
+    private fun loadMap() {
+        mapJob?.cancel()
+        val current = _state.value
+
+        if (!current.hasLocation) {
+            mapStale = false
+            _state.update {
+                it.copy(businesses = emptyList(), selectedBusinessId = null, isLoadingMap = false, mapError = null)
+            }
+            return
+        }
+
+        _state.update { it.copy(isLoadingMap = true, mapError = null) }
+        val query = current.toQuery()
+
+        mapJob = viewModelScope.launch {
+            repository.getBusinesses(query)
+                .onSuccess { list ->
+                    mapStale = false
+                    _state.update { s ->
+                        s.copy(
+                            isLoadingMap = false,
+                            businesses = list,
+                            // Si el comercio seleccionado sigue en el resultado, se conserva.
+                            selectedBusinessId = s.selectedBusinessId?.takeIf { id -> list.any { it.id == id } },
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    _state.update { it.copy(isLoadingMap = false, mapError = e.message) }
+                }
+        }
     }
 
     // ---- Favoritos ------------------------------------------------------------------

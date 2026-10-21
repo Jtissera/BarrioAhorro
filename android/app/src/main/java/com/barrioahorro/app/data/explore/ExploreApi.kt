@@ -30,4 +30,14 @@ interface ExploreApi {
 
     @DELETE("api/favoritos/{id}")
     suspend fun removeFavorite(@Path("id") offerId: Long): Response<Unit>
+
+    @GET("api/explorar/comercios")
+    suspend fun getBusinesses(
+        @Query("lat") latitude: Double,
+        @Query("lng") longitude: Double,
+        @Query("radioKm") radiusKm: Double?,
+        @Query("rubros") categoryIds: List<Int>?,
+        @Query("tipos") types: List<String>?,
+        @Query("q") text: String?,
+    ): List<ExploreBusinessDto>
 }

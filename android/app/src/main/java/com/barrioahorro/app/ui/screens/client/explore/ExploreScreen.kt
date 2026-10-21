@@ -141,17 +141,16 @@ fun ExploreScreen(
                 modifier = Modifier.weight(1f),
             )
 
-            ExploreMode.MAP -> Box(
-                modifier = Modifier.weight(1f).fillMaxWidth().padding(24.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "El mapa de comercios llega en la próxima actualización. Mientras tanto, usá la lista.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = WarmGray,
-                    textAlign = TextAlign.Center,
-                )
-            }
+            ExploreMode.MAP -> ExploreMapContent(
+                state = state,
+                onSelect = viewModel::selectBusiness,
+                onRetry = viewModel::retryMap,
+                onViewBusiness = {
+                    Toast.makeText(context, "La pantalla del comercio llega muy pronto", Toast.LENGTH_SHORT).show()
+                },
+                onEditLocation = onEditLocation,
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 

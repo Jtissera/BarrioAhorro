@@ -84,4 +84,22 @@ class ExploreRepository @Inject constructor(
             else -> "Error del servidor (${e.code()}). Intentá de nuevo."
         }
     }
+
+    suspend fun getBusinesses(query: ExploreQuery): Result<List<ExploreBusinessDto>> {
+        val lat = query.latitude
+        val lng = query.longitude
+        if (lat == null || lng == null) {
+            return Result.failure(ExploreException("Necesitamos tu ubicación para mostrar el mapa."))
+        }
+        return call {
+            api.getBusinesses(
+                latitude = lat,
+                longitude = lng,
+                radiusKm = query.radiusKm,
+                categoryIds = query.categoryIds.takeIf { it.isNotEmpty() },
+                types = query.types.takeIf { it.isNotEmpty() },
+                text = query.text,
+            )
+        }
+    }
 }
