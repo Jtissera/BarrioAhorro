@@ -19,6 +19,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -163,7 +165,21 @@ private fun ContributionContent(
             item { CuponeraPeriodCard(overview.cuponera) }
 
             if (products.isNotEmpty()) {
-                item { SectionLabel("PRODUCTOS COMPROMETIDOS") }
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SectionLabel("PRODUCTOS COMPROMETIDOS")
+                        Text(
+                            text = "${products.size} activas",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = BadgeYellowText,
+                        )
+                    }
+                }
                 items(products, key = { it.id }) { product -> ProductStockCard(product) }
             }
 
@@ -357,8 +373,11 @@ private fun ProductStockCard(product: CuponeraProductDto) {
     val left = (product.unidadesDisponibles - product.unidadesCanjeadas).coerceAtLeast(0)
 
     Card(shape = SectionShape, colors = CardDefaults.cardColors(containerColor = CardWhite)) {
-        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.Top) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(
+                verticalAlignment = Alignment.Top,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 CuponeraProductPhoto(
                     nombre = product.nombreProducto,
                     fotoUrl = product.fotoUrl,
@@ -368,34 +387,85 @@ private fun ProductStockCard(product: CuponeraProductDto) {
                 )
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(product.nombreProducto, fontWeight = FontWeight.SemiBold, color = InkBlack)
+                    Text(
+                        text = product.nombreProducto,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = InkBlack,
+                    )
                     product.descripcion?.takeIf { it.isNotBlank() }?.let { desc ->
                         Text(
                             text = desc,
                             style = MaterialTheme.typography.bodySmall,
                             color = WarmGray,
-                            maxLines = 2,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    Text(
-                        text = "Canjeados ${product.unidadesCanjeadas} · Disponibles $left",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = WarmGray,
-                    )
                 }
                 Spacer(Modifier.width(8.dp))
-                StatusPill("${product.costoPuntos} pts", PrimaryContainer, Primary)
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = BadgeYellow,
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFE89A15),
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Text(
+                            text = "${product.costoPuntos} pts",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = BadgeYellowText,
+                        )
+                    }
+                }
             }
-            LinearProgressIndicator(
-                progress = { (product.unidadesCanjeadas.toFloat() / total).coerceIn(0f, 1f) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = Primary,
-                trackColor = SurfaceSecondary,
-            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Canjeados ${product.unidadesCanjeadas}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Primary,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Disponibles ",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = WarmGray,
+                        )
+                        Text(
+                            text = "$left",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = InkBlack,
+                        )
+                    }
+                }
+
+                LinearProgressIndicator(
+                    progress = { (product.unidadesCanjeadas.toFloat() / total).coerceIn(0f, 1f) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = Primary,
+                    trackColor = Color(0xFFF7ECE2),
+                )
+            }
         }
     }
 }
