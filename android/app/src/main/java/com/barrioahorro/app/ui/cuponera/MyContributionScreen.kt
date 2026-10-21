@@ -24,12 +24,14 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -55,6 +57,7 @@ import com.barrioahorro.app.ui.theme.OnPrimary
 import com.barrioahorro.app.ui.theme.Primary
 import com.barrioahorro.app.ui.theme.PrimaryContainer
 import com.barrioahorro.app.ui.theme.Secondary
+import com.barrioahorro.app.ui.theme.SecondaryContainer
 import com.barrioahorro.app.ui.theme.SurfaceSecondary
 import com.barrioahorro.app.ui.theme.WarmGray
 import java.time.temporal.ChronoUnit
@@ -206,6 +209,7 @@ private fun ratifyAlerts(overview: CommitmentOverviewDto): List<String> = buildL
 private fun alertFor(what: String, currentEnd: String?, deadline: String?, restricted: Boolean): String {
     val goal = if (restricted) "para recuperar el acceso" else "para no perder el acceso"
     val end = parseIsoDate(currentEnd)
+    val limit = formatLongDate(deadline).takeIf { it.isNotEmpty() }?.let { " antes del $it" }.orEmpty()
 
     if (end != null) {
         val days = ChronoUnit.DAYS.between(todayInBusinessZone(), end)
@@ -214,10 +218,9 @@ private fun alertFor(what: String, currentEnd: String?, deadline: String?, restr
             days == 1L -> "mañana"
             else -> "en $days días"
         }
-        return "El período vigente termina $whenText. Ratificá $what $goal."
+        return "El período vigente termina $whenText. Ratificá $what$limit $goal."
     }
 
-    val limit = formatLongDate(deadline).takeIf { it.isNotEmpty() }?.let { " antes del $it" }.orEmpty()
     return "Ratificá $what$limit $goal."
 }
 
@@ -268,7 +271,8 @@ private fun cycleProgress(startIso: String, endIso: String): Triple<Long, Long, 
 @Composable
 private fun CuponeraPeriodCard(cycle: CuponeraCycleDto) {
     val current = cycle.current
-    val nextRatified = cycle.next?.takeIf { it.estado == "RATIFICADO" }
+    val next = cycle.next
+    val nextRatified = next?.takeIf { it.estado == "RATIFICADO" }
 
     Card(shape = SectionShape, colors = CardDefaults.cardColors(containerColor = CardWhite)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -282,18 +286,21 @@ private fun CuponeraPeriodCard(cycle: CuponeraCycleDto) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Período vigente",
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium,
                         color = Ink,
                         modifier = Modifier.weight(1f),
                     )
                     StatusPill("Vigente", Secondary, OnPrimary)
                 }
-                Text(
-                    text = "${formatLongDate(current.periodoInicio)} al ${formatLongDate(current.periodoFin)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = WarmGray,
-                )
+
                 cycleProgress(current.periodoInicio, current.periodoFin)?.let { (day, total, fraction) ->
+                    Text(
+                        text = "Día $day de $total del ciclo",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = Ink,
+                    )
                     LinearProgressIndicator(
                         progress = { fraction },
                         modifier = Modifier
@@ -303,22 +310,42 @@ private fun CuponeraPeriodCard(cycle: CuponeraCycleDto) {
                         color = Primary,
                         trackColor = SurfaceSecondary,
                     )
+                }
+
+                Spacer(Modifier.height(2.dp))
+                HorizontalDivider(color = SurfaceSecondary, thickness = 1.dp)
+                Spacer(Modifier.height(2.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "Día $day de $total del ciclo",
+                        text = "📅  Vence el:",
                         style = MaterialTheme.typography.bodySmall,
                         color = WarmGray,
+                        modifier = Modifier.width(135.dp),
+                    )
+                    Text(
+                        text = formatLongDate(current.periodoFin),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink,
                     )
                 }
             }
 
             if (nextRatified != null) {
-                Text(
-                    text = "Próximo período ratificado: ${formatLongDate(nextRatified.periodoInicio)} " +
-                            "al ${formatLongDate(nextRatified.periodoFin)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Secondary,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = SecondaryContainer,
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                ) {
+                    Text(
+                        text = "✓ Próximo período ratificado (${formatLongDate(nextRatified.periodoInicio)} al ${formatLongDate(nextRatified.periodoFin)})",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Secondary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    )
+                }
             }
         }
     }
@@ -331,7 +358,7 @@ private fun ProductStockCard(product: CuponeraProductDto) {
 
     Card(shape = SectionShape, colors = CardDefaults.cardColors(containerColor = CardWhite)) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.Top) {
                 CuponeraProductPhoto(
                     nombre = product.nombreProducto,
                     fotoUrl = product.fotoUrl,
@@ -342,12 +369,22 @@ private fun ProductStockCard(product: CuponeraProductDto) {
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(product.nombreProducto, fontWeight = FontWeight.SemiBold, color = InkBlack)
+                    product.descripcion?.takeIf { it.isNotBlank() }?.let { desc ->
+                        Text(
+                            text = desc,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = WarmGray,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                     Text(
                         text = "Canjeados ${product.unidadesCanjeadas} · Disponibles $left",
                         style = MaterialTheme.typography.bodySmall,
                         color = WarmGray,
                     )
                 }
+                Spacer(Modifier.width(8.dp))
                 StatusPill("${product.costoPuntos} pts", PrimaryContainer, Primary)
             }
             LinearProgressIndicator(
