@@ -3,6 +3,8 @@ package com.barrioahorro.app.ui.cuponera
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barrioahorro.app.data.cuponera.CuponeraRepository
+import com.barrioahorro.app.data.cuponera.RaffleCommitmentDto
+import com.barrioahorro.app.data.cuponera.RaffleCycleDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,8 +18,17 @@ import javax.inject.Inject
 const val RAFFLE_NAME_MAX_LENGTH = 120
 const val RAFFLE_DESCRIPTION_MAX_LENGTH = 255
 private const val VALUE_MAX_LENGTH = 12
+private const val STATUS_RATIFIED = "RATIFICADO"
 
 data class RaffleRatifyUiState(
+    val loading: Boolean = true,
+    val loadError: String? = null,
+    /** Ciclo que se va a ratificar (el próximo, o el actual si no hay próximo). */
+    val target: RaffleCommitmentDto? = null,
+    val canRatify: Boolean = false,
+    /** Compromiso ya ratificado: si no es null se muestra el estado "¡Todo listo!". */
+    val ratified: RaffleCommitmentDto? = null,
+    val showConfirm: Boolean = false,
     val name: String = "",
     val description: String = "",
     val valueText: String = "",
@@ -27,7 +38,8 @@ data class RaffleRatifyUiState(
     val value: Double? get() = valueText.toDoubleOrNull()?.takeIf { it > 0 }
 
     val canSubmit: Boolean
-        get() = name.isNotBlank() && description.isNotBlank() && value != null && !submitting
+        get() = canRatify && name.isNotBlank() && description.isNotBlank() &&
+                value != null && !submitting && !loading
 }
 
 @HiltViewModel
@@ -40,6 +52,33 @@ class RaffleRatifyViewModel @Inject constructor(
 
     private val _events = Channel<Unit>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
+
+    init {
+        load()
+    }
+
+    fun load() {
+        _uiState.update { it.copy(loading = true, loadError = null) }
+        viewModelScope.launch {
+            repository.getOverview()
+                .onSuccess { overview -> applyCycle(overview.raffle) }
+                .onFailure { e ->
+                    _uiState.update { it.copy(loading = false, loadError = e.message ?: "No pudimos cargar el sorteo") }
+                }
+        }
+    }
+
+    private fun applyCycle(cycle: RaffleCycleDto) {
+        val ratified = if (cycle.canRatify) null else cycle.ratifiedCommitment()
+        _uiState.update {
+            it.copy(
+                loading = false,
+                target = cycle.next ?: cycle.current,
+                canRatify = cycle.canRatify,
+                ratified = ratified,
+            )
+        }
+    }
 
     fun onNameChange(value: String) {
         _uiState.update { it.copy(name = value.take(RAFFLE_NAME_MAX_LENGTH), error = null) }
@@ -59,21 +98,42 @@ class RaffleRatifyViewModel @Inject constructor(
         _uiState.update { it.copy(valueText = cleaned, error = null) }
     }
 
+    fun onRequestConfirm() {
+        if (_uiState.value.canSubmit) _uiState.update { it.copy(showConfirm = true) }
+    }
+
+    fun onDismissConfirm() {
+        _uiState.update { it.copy(showConfirm = false) }
+    }
+
     fun submit() {
         val state = _uiState.value
         val value = state.value
         if (!state.canSubmit || value == null) return
 
-        _uiState.update { it.copy(submitting = true, error = null) }
+        _uiState.update { it.copy(showConfirm = false, submitting = true, error = null) }
         viewModelScope.launch {
             repository.ratifyRaffle(state.name.trim(), state.description.trim(), value)
-                .onSuccess {
-                    _uiState.update { it.copy(submitting = false) }
-                    _events.trySend(Unit)
+                .onSuccess { cycle ->
+                    _uiState.update {
+                        it.copy(
+                            submitting = false,
+                            canRatify = false,
+                            ratified = cycle.ratifiedCommitment() ?: it.target,
+                        )
+                    }
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(submitting = false, error = e.message) }
                 }
         }
     }
+
+    /** Desde el estado "¡Todo listo!": sigue el flujo (dashboard u onboarding). */
+    fun onContinue() {
+        _events.trySend(Unit)
+    }
+
+    private fun RaffleCycleDto.ratifiedCommitment(): RaffleCommitmentDto? =
+        next?.takeIf { it.status == STATUS_RATIFIED } ?: current?.takeIf { it.status == STATUS_RATIFIED }
 }

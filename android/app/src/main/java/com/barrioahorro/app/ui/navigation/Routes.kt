@@ -27,6 +27,8 @@ object OnboardingRoutes {
     const val BUSINESS_SCHEDULE = "onboarding/business-schedule"
 
     const val BUSINESS_COMMITMENT = "onboarding/business-commitment"
+    const val CUPONERA = "onboarding/cuponera"
+    const val SORTEO = "onboarding/sorteo"
 }
 
 object BusinessRoutes {

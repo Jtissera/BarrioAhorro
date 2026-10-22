@@ -264,7 +264,8 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 onAccept = {
                     viewModel.submitFull(
                         onSuccess = {
-                            navController.navigate(CuponeraRoutes.CONTRIBUTION) {
+                            navController.navigate(OnboardingRoutes.CUPONERA) {
+                                popUpTo(OnboardingRoutes.GRAPH) { inclusive = true }
                                 launchSingleTop = true
                             }
                         },
@@ -272,6 +273,26 @@ fun NavGraphBuilder.onboardingGraph(navController: NavHostController) {
                 },
             )
         }
+    }
+    composable(OnboardingRoutes.CUPONERA) {
+        val activity = LocalContext.current as? Activity
+        CuponeraContributionScreen(
+            onBack = { activity?.finish() },
+            onRatified = {
+                navController.navigate(OnboardingRoutes.SORTEO) {
+                    popUpTo(OnboardingRoutes.CUPONERA) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+        )
+    }
+
+    composable(OnboardingRoutes.SORTEO) {
+        val activity = LocalContext.current as? Activity
+        RaffleRatifyScreen(
+            onBack = { activity?.finish() },
+            onRatified = { navController.finishRatification() },
+        )
     }
 }
 
