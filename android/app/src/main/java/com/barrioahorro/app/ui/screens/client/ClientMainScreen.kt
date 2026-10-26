@@ -44,6 +44,7 @@ fun ClientMainScreen(
     isLoggingOut: Boolean,
     onCreatePost: () -> Unit = {},
     onPostClick: (Long) -> Unit = {},
+    onMyPosts: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ClientTab.EXPLORAR) }
@@ -71,6 +72,7 @@ fun ClientMainScreen(
                 )
                 ClientTab.CUPONES -> ComingSoon("Cupones")
                 ClientTab.PERFIL -> ClientProfileTab(
+                    onMyPosts = onMyPosts,
                     onEditLocation = onEditLocation,
                     onLogout = onLogout,
                     isLoggingOut = isLoggingOut,
@@ -101,6 +103,7 @@ private fun ComingSoon(title: String) {
 /** Provisorio: la pantalla definitiva de perfil del vecino reutiliza este mismo onLogout. */
 @Composable
 private fun ClientProfileTab(
+    onMyPosts: () -> Unit,
     onEditLocation: () -> Unit,
     onLogout: () -> Unit,
     isLoggingOut: Boolean,
@@ -112,10 +115,18 @@ private fun ClientProfileTab(
         Text("Mi perfil", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = InkBlack)
 
         Button(
+            onClick = onMyPosts,
+            shape = RoundedCornerShape(27.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = OnPrimary),
+            modifier = Modifier.fillMaxWidth().height(54.dp),
+        ) {
+            Text("Mis publicaciones", fontWeight = FontWeight.Bold)
+        }
+        Button(
             onClick = onEditLocation,
             shape = RoundedCornerShape(27.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = OnPrimary),
-            modifier = Modifier.fillMaxWidth().height(54.dp).padding(top = 0.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp).height(54.dp),
         ) {
             Text("Cambiar ubicación", fontWeight = FontWeight.Bold)
         }

@@ -13,6 +13,9 @@ interface ForumApi {
     @GET("api/foro/publicaciones")
     suspend fun getFeed(): List<ForumPostDto>
 
+    @GET("api/foro/mis-publicaciones")
+    suspend fun getMyActivity(): MyForumActivityDto
+
     @GET("api/foro/publicaciones/{id}")
     suspend fun getPostById(@Path("id") id: Long): ForumPostDto
 

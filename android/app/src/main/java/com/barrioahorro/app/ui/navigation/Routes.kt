@@ -63,6 +63,7 @@ object ClientRoutes {
     const val HOME = "client/home"
     const val CREATE_POST = "client/forum/create"
     const val POST_DETAIL = "client/forum/post/{postId}"
+    const val MY_POSTS = "client/forum/mine"
 
     fun editLocation(): String = "client/location?edit=true"
     fun postDetail(postId: Long): String = "client/forum/post/$postId"

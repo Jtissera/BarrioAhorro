@@ -61,8 +61,6 @@ import com.barrioahorro.app.ui.theme.Ink
 import com.barrioahorro.app.ui.theme.Primary
 import com.barrioahorro.app.ui.theme.WarmGray
 import java.text.NumberFormat
-import java.time.Duration
-import java.time.OffsetDateTime
 import java.util.Locale
 
 private val YellowAccent = Color(0xFFF2B134)
@@ -468,25 +466,5 @@ private fun getInitials(name: String): String {
         parts.isEmpty() -> "V"
         parts.size == 1 -> parts[0].take(2).uppercase()
         else -> "${parts[0].first().uppercaseChar()}${parts[1].first().uppercaseChar()}"
-    }
-}
-
-private fun formatRelativeTime(dateString: String): String {
-    return try {
-        val parsed = OffsetDateTime.parse(dateString)
-        val now = OffsetDateTime.now()
-        val duration = Duration.between(parsed, now)
-        val minutes = duration.toMinutes()
-        val hours = duration.toHours()
-        val days = duration.toDays()
-        when {
-            duration.isNegative || minutes < 1 -> "recién"
-            minutes < 60 -> "hace $minutes min"
-            hours < 24 -> "hace $hours h"
-            days < 7 -> "hace $days d"
-            else -> "hace ${days / 7} sem"
-        }
-    } catch (e: Exception) {
-        "reciente"
     }
 }

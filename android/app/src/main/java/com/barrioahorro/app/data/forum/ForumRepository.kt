@@ -22,6 +22,10 @@ class ForumRepository @Inject constructor(
         forumApi.getFeed()
     }
 
+    suspend fun getMyActivity(): Result<MyForumActivityDto> = call {
+        forumApi.getMyActivity()
+    }
+
     suspend fun getPostById(id: Long): Result<ForumPostDto> = call {
         forumApi.getPostById(id)
     }

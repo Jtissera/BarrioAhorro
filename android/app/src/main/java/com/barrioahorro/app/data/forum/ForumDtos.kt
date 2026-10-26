@@ -42,3 +42,20 @@ data class ForumCommentDto(
     val esUsuarioActual: Boolean,
     val createdAt: String,
 )
+
+data class MyForumCommentDto(
+    val id: Long,
+    val publicacionId: Long,
+    val comentarioPadreId: Long?,
+    val texto: String,
+    val upvotesCount: Int,
+    val publicacionTexto: String,
+    val comercioNombre: String,
+    val createdAt: String,
+)
+
+data class MyForumActivityDto(
+    val puntos: Int = 0,
+    val publicaciones: List<ForumPostDto>,
+    val comentarios: List<MyForumCommentDto>,
+)
