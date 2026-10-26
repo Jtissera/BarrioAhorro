@@ -144,6 +144,10 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.barrioahorro.app.ui.screens.business.PhotoSourceSheet
 import androidx.compose.material.icons.outlined.DeleteOutline
+import com.barrioahorro.app.ui.components.OfferPriceBlock
+import com.barrioahorro.app.ui.components.OfferPriceInfo
+import com.barrioahorro.app.ui.components.formatMoney
+import com.barrioahorro.app.ui.components.ordinal
 
 private val esAR: Locale = Locale.forLanguageTag("es-AR")
 private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
@@ -617,13 +621,6 @@ private fun TwoForOneConditions(
                 shape = RoundedCornerShape(12.dp),
                 color = BadgeOrange,
             ) {
-                Text(
-                    "Promoción por volumen",
-                    color = c.primary,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                )
             }
         }
 
@@ -969,15 +966,18 @@ private fun PercentageConditions(
         mutableStateOf(state.discountPercent.let { it != null && it !in presetDiscounts })
     }
 
-    Surface(shape = RoundedCornerShape(16.dp), color = c.primaryContainer.copy(alpha = 0.5f)) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = c.field,
+    ) {
         Column(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                FieldLabel("Porcentaje de rebaja", required = true, color = c.primary, modifier = Modifier.weight(1f))
+                FieldLabel("Porcentaje de rebaja", required = true, color = c.textPrimary, modifier = Modifier.weight(1f))
                 state.discountPercent?.let {
-                    Text("-$it%", style = MaterialTheme.typography.titleLarge, color = c.primary)
+                    Text("$it%", style = MaterialTheme.typography.titleLarge, color = c.primary)
                 }
             }
 
@@ -994,7 +994,7 @@ private fun PercentageConditions(
                             .height(40.dp),
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text("-$p%", style = MaterialTheme.typography.labelLarge)
+                            Text("$p%", style = MaterialTheme.typography.labelLarge)
                         }
                     }
                 }
@@ -1018,12 +1018,6 @@ private fun PercentageConditions(
                     modifier = Modifier.clickable { customMode = true; onDiscountChange(null) },
                 )
             }
-
-            Text(
-                "El vecino verá el descuento directo sobre el precio regular del mostrador.",
-                style = MaterialTheme.typography.bodySmall,
-                color = c.textSecondary,
-            )
 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1647,7 +1641,9 @@ internal fun OfferPreview(
                                     color = BadgeOrange,
                                 ) {
                                     Text(
-                                        "X MAYOR",
+                                        state.previewWholesaleSavingsPercent
+                                            ?.let { "LLEVANDO ${state.minQuantity}U\nPRECIO AL $it%" }
+                                            ?: "LLEVANDO ${state.minQuantity}U",
                                         color = c.primary,
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.ExtraBold,
@@ -1658,14 +1654,7 @@ internal fun OfferPreview(
                                 Pill(if (isLastUnit) "${ordinal(state.requiredQuantity)} al $discount%".uppercase() else "-$discount%")
                             }
                             Spacer(Modifier.weight(1f))
-                            PreviewPrice(
-                                state = state,
-                                price = price,
-                                discounted = discounted,
-                                isLastUnit = isLastUnit,
-                                isTwoForOne = isTwoForOne,
-                                isWholesale = isWholesale,
-                            )
+                            OfferPriceBlock(info = state.toPriceInfo(isTwoForOne, isWholesale, isLastUnit))
                         }
 
                         Text(
@@ -1738,97 +1727,6 @@ internal fun OfferPreview(
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PreviewPrice(
-    state: CreateOfferUiState,
-    price: BigDecimal?,
-    discounted: BigDecimal?,
-    isLastUnit: Boolean,
-    isTwoForOne: Boolean = false,
-    isWholesale: Boolean = false,
-) {
-    val c = formColors()
-    Column(horizontalAlignment = Alignment.End) {
-        when {
-            isTwoForOne -> {
-                val unit = state.preview2x1UnitPrice
-                if (unit != null) {
-                    Text(
-                        "${formatMoney(unit)} c/u",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = c.textPrimary,
-                    )
-                } else {
-                    Text("$ —", style = MaterialTheme.typography.titleLarge, color = c.textSecondary)
-                }
-            }
-            isWholesale -> {
-                val wh = state.wholesalePriceValue
-                val reg = state.priceValue
-                if (wh != null) {
-                    Text(
-                        "${formatMoney(wh)} c/u",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = c.textPrimary,
-                    )
-                    if (reg != null && reg > wh) {
-                        Text(
-                            buildAnnotatedString {
-                                append("antes ")
-                                withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
-                                    append(formatMoney(reg))
-                                }
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = c.textSecondary,
-                        )
-                    }
-                } else {
-                    Text("$ —", style = MaterialTheme.typography.titleLarge, color = c.textSecondary)
-                }
-            }
-            price == null || discounted == null -> {
-                Text("$ —", style = MaterialTheme.typography.titleLarge, color = c.textSecondary)
-            }
-            isLastUnit -> {
-                val n = state.requiredQuantity
-                val average = price.multiply(BigDecimal(n - 1)).add(discounted)
-                    .divide(BigDecimal(n), 0, RoundingMode.HALF_UP)
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        formatMoney(price),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = c.textSecondary,
-                        textDecoration = TextDecoration.LineThrough,
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(formatMoney(average), style = MaterialTheme.typography.titleLarge, color = c.primary)
-                }
-                Text(
-                    "prom. c/u (${ordinal(n)} ${formatMoney(discounted)})",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = c.textSecondary,
-                )
-            }
-            else -> {
-                Text(formatMoney(discounted), style = MaterialTheme.typography.titleLarge, color = c.textPrimary)
-                Text(
-                    buildAnnotatedString {
-                        append("antes ")
-                        withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
-                            append(formatMoney(price))
-                        }
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = c.textSecondary,
-                )
             }
         }
     }
@@ -1984,14 +1882,6 @@ private fun String.toPriceOrNull(): BigDecimal? = replace(",", ".").toBigDecimal
 
 private fun String.sanitizePrice(): String = filter { it.isDigit() || it == ',' || it == '.' }
 
-private fun formatMoney(value: BigDecimal): String {
-    val nf = NumberFormat.getNumberInstance(esAR).apply {
-        minimumFractionDigits = 0
-        maximumFractionDigits = 2
-    }
-    return "$" + nf.format(value)
-}
-
 private fun formatRelative(dateTime: LocalDateTime): String {
     val today = LocalDate.now()
     val date = dateTime.toLocalDate()
@@ -2006,12 +1896,23 @@ private fun formatRelative(dateTime: LocalDateTime): String {
     return "$day ${dateTime.format(timeFormatter)}"
 }
 
-private fun ordinal(n: Int): String = when (n) {
-    1, 3 -> "${n}ra"
-    2 -> "2da"
-    4, 5, 6 -> "${n}ta"
-    7, 10 -> "${n}ma"
-    8 -> "8va"
-    9 -> "9na"
-    else -> "${n}ª"
+
+private fun CreateOfferUiState.toPriceInfo(
+    isTwoForOne: Boolean,
+    isWholesale: Boolean,
+    isLastUnit: Boolean,
+): OfferPriceInfo {
+    val regular = priceValue
+    val discounted = previewDiscountedPrice
+    return when {
+        isTwoForOne -> {
+            val unit = preview2x1UnitPrice
+            if (unit != null && regular != null) OfferPriceInfo.TwoForOne(unit, regular, unitsToTake, unitsToPay)
+            else OfferPriceInfo.Empty
+        }
+        isWholesale -> wholesalePriceValue?.let { OfferPriceInfo.Wholesale(it, regular) } ?: OfferPriceInfo.Empty
+        regular == null || discounted == null -> OfferPriceInfo.Empty
+        isLastUnit -> OfferPriceInfo.Quantity(regular, discounted, requiredQuantity)
+        else -> OfferPriceInfo.Percentage(regular, discounted)
+    }
 }

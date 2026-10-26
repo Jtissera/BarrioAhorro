@@ -1,6 +1,8 @@
 package com.barrioahorro.app.ui.screens.offers
 
 import com.barrioahorro.app.data.remote.dto.OfferResponseDto
+import com.barrioahorro.app.ui.components.OfferPriceInfo
+import com.barrioahorro.app.ui.components.OfferPricing
 import java.math.BigDecimal
 import java.text.NumberFormat
 import java.time.Instant
@@ -28,42 +30,26 @@ object OfferUiMapper {
 
         var badge = "PROMO"
         var isYellow = false
-        var price = "$ —"
-        var unit: String? = null
-        var original: String? = null
 
         when {
             tipo.contains("PORCENTA") -> {
                 val p = dto.detallePorcentaje
                 badge = if (p != null) "-${p.porcentajeDescuento}%" else "-%"
-                val finalP = p?.precioFinal ?: p?.precioOriginal
-                if (finalP != null) price = formatMoney(finalP)
-                if (p?.precioFinal != null) original = formatMoney(p.precioOriginal)
             }
             tipo.contains("2X1") || tipo.contains("DOS") -> {
                 val d = dto.detalle2x1
                 badge = if (d != null) "${d.unidadesALlevar}X${d.unidadesAPagar}" else "2X1"
-                if (d?.precioUnitario != null) {
-                    price = formatMoney(d.precioUnitario)
-                    unit = "c/u"
-                }
             }
             tipo.contains("MAYOR") -> {
                 val m = dto.detallePorMayor
-                badge = if (m != null) "Desde ${m.cantidadMinima} u." else "X MAYOR"
-                isYellow = true
-                if (m?.precioUnitarioMayorista != null) {
-                    price = formatMoney(m.precioUnitarioMayorista)
-                    unit = "c/u"
-                }
-                if (m?.precioUnitarioRegular != null) original = formatMoney(m.precioUnitarioRegular)
+                badge = if (m != null) {
+                    val pct = m.precioUnitarioRegular?.let { OfferPricing.wholesalePercent(it, m.precioUnitarioMayorista) }
+                    if (pct != null) "LLEVANDO ${m.cantidadMinima}U\nPRECIO AL $pct%" else "LLEVANDO ${m.cantidadMinima}U"
+                } else "X MAYOR"
             }
             tipo.contains("CANTIDAD") -> {
                 val c = dto.detalleCantidad
                 badge = if (c != null) "${ordinal(c.cantidadRequerida)} AL ${c.porcentajeDescuentoUltimaUnidad}%" else "PROMO"
-                if (c?.precioUnitario != null) {
-                    price = formatMoney(c.precioUnitario)
-                }
             }
         }
 
@@ -73,9 +59,7 @@ object OfferUiMapper {
             photoUrl = dto.fotoUrl,
             badgeText = badge,
             isYellowBadge = isYellow,
-            priceMain = price,
-            priceUnit = unit,
-            priceOriginal = original,
+            priceInfo = priceInfo(dto),
             businessName = businessName.ifBlank { "Mi Comercio" },
             categoryName = categoryName.ifBlank { "Comercio" },
             vigenciaText = formatVigencia(dto.vigenciaTipo, dto.vigenteHasta),
@@ -83,6 +67,38 @@ object OfferUiMapper {
             isVigente = dto.vigente,
             isActiva = dto.activa,
         )
+    }
+
+    /** Única fuente del precio que se muestra en feed, perfil y "Mis ofertas". */
+    fun priceInfo(dto: OfferResponseDto): OfferPriceInfo {
+        val tipo = dto.tipoOferta.uppercase()
+        return when {
+            tipo.contains("PORCENTA") -> dto.detallePorcentaje?.let { p ->
+                OfferPriceInfo.Percentage(
+                    regularPrice = p.precioOriginal,
+                    discountedPrice = p.precioFinal
+                        ?: OfferPricing.percentageFinal(p.precioOriginal, p.porcentajeDescuento.toInt()),
+                )
+            }
+            tipo.contains("2X1") || tipo.contains("DOS") -> dto.detalle2x1?.let { d ->
+                val regular = d.precioUnitario ?: return@let null
+                val take = d.unidadesALlevar.toInt()
+                val pay = d.unidadesAPagar.toInt()
+                OfferPricing.twoForOneUnit(regular, take, pay)
+                    ?.let { OfferPriceInfo.TwoForOne(it, regular, take, pay) }
+            }
+            tipo.contains("MAYOR") -> dto.detallePorMayor?.let {
+                OfferPriceInfo.Wholesale(it.precioUnitarioMayorista, it.precioUnitarioRegular)
+            }
+            tipo.contains("CANTIDAD") -> dto.detalleCantidad?.let { c ->
+                OfferPriceInfo.Quantity(
+                    regularPrice = c.precioUnitario,
+                    discountedPrice = OfferPricing.percentageFinal(c.precioUnitario, c.porcentajeDescuentoUltimaUnidad.toInt()),
+                    requiredQuantity = c.cantidadRequerida.toInt(),
+                )
+            }
+            else -> null
+        } ?: OfferPriceInfo.Empty
     }
 
     private fun confirmationsText(count: Int): String =

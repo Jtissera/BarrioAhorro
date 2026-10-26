@@ -13,6 +13,7 @@ import com.barrioahorro.app.domain.repository.IOfferRepository
 import com.barrioahorro.app.domain.repository.Result
 import com.barrioahorro.app.domain.usecase.offer.CreateOfferUseCase
 import com.barrioahorro.app.domain.usecase.offer.UploadOfferPhotoUseCase
+import com.barrioahorro.app.ui.components.OfferPricing
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,11 +68,12 @@ data class CreateOfferUiState(
     val wholesalePriceValue: BigDecimal? get() = wholesalePrice.replace(",", ".").toBigDecimalOrNull()
 
     /** Precio con descuento, solo para la vista previa. El precio real lo calcula el backend. */
+
     val previewDiscountedPrice: BigDecimal?
         get() {
             val p = priceValue ?: return null
             val d = discountPercent ?: return null
-            return p.multiply(BigDecimal(100 - d)).divide(BigDecimal(100), 2, RoundingMode.HALF_UP)
+            return OfferPricing.percentageFinal(p, d)
         }
 
     val preview2x1SavingsPercent: Int
@@ -85,18 +87,13 @@ data class CreateOfferUiState(
         get() = priceValue?.multiply(BigDecimal(unitsToPay))
 
     val preview2x1UnitPrice: BigDecimal?
-        get() = if (unitsToTake > 0) {
-            preview2x1TotalPromo?.divide(BigDecimal(unitsToTake), 2, RoundingMode.HALF_UP)
-        } else {
-            null
-        }
+        get() = priceValue?.let { OfferPricing.twoForOneUnit(it, unitsToTake, unitsToPay) }
 
     val previewWholesaleSavingsPercent: Int?
         get() {
             val reg = priceValue ?: return null
             val wh = wholesalePriceValue ?: return null
-            if (reg <= BigDecimal.ZERO || wh >= reg || wh <= BigDecimal.ZERO) return null
-            return ((reg - wh).divide(reg, 4, RoundingMode.HALF_UP).multiply(BigDecimal(100))).toInt()
+            return OfferPricing.wholesalePercent(reg, wh)
         }
 
     val canSubmit: Boolean

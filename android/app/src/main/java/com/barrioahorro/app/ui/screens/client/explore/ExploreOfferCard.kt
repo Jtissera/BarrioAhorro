@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.barrioahorro.app.di.BASE_URL
+import com.barrioahorro.app.ui.components.OfferPriceBlock
 import com.barrioahorro.app.ui.components.ToldoConFranjas
 import com.barrioahorro.app.ui.theme.BadgeGreenDot
 import com.barrioahorro.app.ui.theme.BadgeGreenText
@@ -123,18 +124,7 @@ fun ExploreOfferCard(
                                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
                                 )
                             }
-                            Row(verticalAlignment = Alignment.Bottom) {
-                                Text(
-                                    text = offer.priceMain,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Ink,
-                                )
-                                offer.priceUnit?.let {
-                                    Spacer(Modifier.width(2.dp))
-                                    Text(it, style = MaterialTheme.typography.bodySmall, color = WarmGray, modifier = Modifier.padding(bottom = 2.dp))
-                                }
-                            }
+                            OfferPriceBlock(info = offer.priceInfo)
                         }
 
                         Text(

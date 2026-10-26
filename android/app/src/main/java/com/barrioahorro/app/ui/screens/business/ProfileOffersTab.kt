@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.barrioahorro.app.di.BASE_URL
+import com.barrioahorro.app.ui.components.OfferPriceBlock
 import com.barrioahorro.app.ui.components.ToldoConFranjas
 import com.barrioahorro.app.ui.components.profile.ErrorHint
 import com.barrioahorro.app.ui.components.profile.PrimaryPillButton
@@ -185,7 +186,7 @@ private fun ProfileOfferCard(offer: MyOfferItemUi, enabled: Boolean, onEdit: () 
                                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
                                 )
                             }
-                            PriceBlock(offer)
+                            OfferPriceBlock(info = offer.priceInfo)
                         }
 
                         Text(
@@ -269,37 +270,6 @@ private fun ProfileOfferCard(offer: MyOfferItemUi, enabled: Boolean, onEdit: () 
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun PriceBlock(offer: MyOfferItemUi) {
-    Column(horizontalAlignment = Alignment.End) {
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                text = offer.priceMain,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.ExtraBold,
-                color = Ink,
-            )
-            if (offer.priceUnit != null) {
-                Spacer(Modifier.width(2.dp))
-                Text(
-                    text = offer.priceUnit,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = WarmGray,
-                    modifier = Modifier.padding(bottom = 2.dp),
-                )
-            }
-        }
-        if (offer.priceOriginal != null) {
-            Text(
-                text = offer.priceOriginal,
-                style = MaterialTheme.typography.labelSmall,
-                color = MutedLabel,
-                textDecoration = TextDecoration.LineThrough,
-            )
         }
     }
 }

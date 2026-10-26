@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.barrioahorro.app.data.remote.api.BusinessApiService
 import com.barrioahorro.app.domain.repository.IOfferRepository
 import com.barrioahorro.app.domain.repository.Result
+import com.barrioahorro.app.ui.components.OfferPriceInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,9 +25,7 @@ data class MyOfferItemUi(
     val photoUrl: String?,
     val badgeText: String,
     val isYellowBadge: Boolean = false,
-    val priceMain: String,
-    val priceUnit: String? = null,
-    val priceOriginal: String? = null, // NUEVO
+    val priceInfo: OfferPriceInfo,
     val businessName: String,
     val categoryName: String,
     val distanceText: String = "a 250 m",

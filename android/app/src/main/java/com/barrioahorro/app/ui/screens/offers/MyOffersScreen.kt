@@ -29,6 +29,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.barrioahorro.app.di.BASE_URL
+import com.barrioahorro.app.ui.components.OfferPriceBlock
 import com.barrioahorro.app.ui.components.ToldoConFranjas
 import com.barrioahorro.app.ui.theme.BadgeGreen
 import com.barrioahorro.app.ui.theme.BadgeGreenDot
@@ -428,23 +429,7 @@ private fun OfferItemCard(
                             }
 
                             // Precio
-                            Row(verticalAlignment = Alignment.Bottom) {
-                                Text(
-                                    text = offer.priceMain,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = c.textPrimary,
-                                )
-                                if (offer.priceUnit != null) {
-                                    Spacer(Modifier.width(2.dp))
-                                    Text(
-                                        text = offer.priceUnit,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = c.textSecondary,
-                                        modifier = Modifier.padding(bottom = 2.dp),
-                                    )
-                                }
-                            }
+                            OfferPriceBlock(info = offer.priceInfo)
                         }
 
                         // Título del producto
