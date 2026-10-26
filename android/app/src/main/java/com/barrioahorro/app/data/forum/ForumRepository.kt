@@ -22,6 +22,10 @@ class ForumRepository @Inject constructor(
         forumApi.getFeed()
     }
 
+    suspend fun getMyActivity(): Result<MyForumActivityDto> = call {
+        forumApi.getMyActivity()
+    }
+
     suspend fun getPostById(id: Long): Result<ForumPostDto> = call {
         forumApi.getPostById(id)
     }
@@ -32,6 +36,14 @@ class ForumRepository @Inject constructor(
 
     suspend fun addComment(postId: Long, dto: CreateCommentDto): Result<ForumCommentDto> = call {
         forumApi.addComment(postId, dto)
+    }
+
+    suspend fun updatePost(id: Long, dto: UpdateForumPostDto): Result<ForumPostDto> = call {
+        forumApi.updatePost(id, dto)
+    }
+
+    suspend fun updateComment(id: Long, texto: String): Result<ForumCommentDto> = call {
+        forumApi.updateComment(id, UpdateCommentDto(texto))
     }
 
     private suspend fun <T> call(block: suspend () -> T): Result<T> =

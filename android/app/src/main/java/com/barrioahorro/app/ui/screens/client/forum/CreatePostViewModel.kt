@@ -115,7 +115,7 @@ class CreatePostViewModel @Inject constructor(
     }
 
     fun onTextChanged(newText: String) {
-        if (newText.length <= 300) {
+        if (newText.length <= FORUM_POST_MAX_LENGTH) {
             _uiState.update { it.copy(text = newText, errorMessage = null) }
         }
     }
@@ -138,7 +138,7 @@ class CreatePostViewModel @Inject constructor(
             _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
 
             // Extraer valor numérico del precio si fue ingresado
-            val numericPrice = parsePrice(state.price)
+            val numericPrice = parseForumPrice(state.price)
 
             val clientLoc = locationDataStore.location.firstOrNull()
 
@@ -164,15 +164,5 @@ class CreatePostViewModel @Inject constructor(
                     }
                 }
         }
-    }
-
-    private fun parsePrice(input: String): Double? {
-        if (input.isBlank()) return null
-        val cleaned = input
-            .replace("$", "")
-            .replace(".", "")
-            .replace(",", ".")
-            .trim()
-        return cleaned.toDoubleOrNull()?.takeIf { it > 0 }
     }
 }

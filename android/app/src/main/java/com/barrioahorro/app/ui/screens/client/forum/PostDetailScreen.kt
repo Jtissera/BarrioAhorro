@@ -31,7 +31,6 @@ import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocalOffer
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
@@ -64,6 +63,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.barrioahorro.app.data.forum.ForumCommentDto
 import com.barrioahorro.app.data.forum.ForumPostDto
@@ -76,8 +77,6 @@ import com.barrioahorro.app.ui.theme.PlaceholderGray
 import com.barrioahorro.app.ui.theme.Primary
 import com.barrioahorro.app.ui.theme.WarmGray
 import java.text.NumberFormat
-import java.time.Duration
-import java.time.OffsetDateTime
 import java.util.Locale
 
 private val YellowAccent = Color(0xFFF2B134)
@@ -91,6 +90,7 @@ private val CommercePillBg = Color(0xFFFBF4ED)
 @Composable
 fun PostDetailScreen(
     onNavigateBack: () -> Unit,
+    onEditPost: (Long) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PostDetailViewModel = hiltViewModel(),
 ) {
@@ -102,6 +102,19 @@ fun PostDetailScreen(
         state.errorMessage?.let { msg ->
             snackbarHostState.showSnackbar(msg)
         }
+    }
+
+    // Al volver de editar la publicación se recargan publicación y comentarios.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshOnResume() }
+
+    state.editingComment?.let { comment ->
+        EditCommentDialog(
+            initialText = comment.texto,
+            isSaving = state.isSavingComment,
+            errorMessage = state.editCommentError,
+            onDismiss = viewModel::cancelEditComment,
+            onSave = viewModel::saveCommentEdit,
+        )
     }
 
     val isThreadView = state.focusedComment != null
@@ -287,6 +300,7 @@ fun PostDetailScreen(
                                     replyCount = childReplyCount,
                                     onReply = { viewModel.onReplyToComment(child) },
                                     onOpenThread = { viewModel.focusComment(child.id) },
+                                    onEdit = { viewModel.startEditComment(child) },
                                 )
                             }
 
@@ -299,6 +313,7 @@ fun PostDetailScreen(
                                         replyCount = firstSubCount,
                                         onReply = { viewModel.onReplyToComment(firstSub) },
                                         onOpenThread = { viewModel.focusComment(firstSub.id) },
+                                        onEdit = { viewModel.startEditComment(firstSub) },
                                     )
                                 }
 
@@ -348,7 +363,14 @@ fun PostDetailScreen(
                     // 1. Tarjeta de la publicación principal
                     state.post?.let { post ->
                         item {
-                            PostDetailHeaderCard(post = post)
+                            PostDetailHeaderCard(
+                                post = post,
+                                onEdit = if (post.esUsuarioActual) {
+                                    { onEditPost(post.id) }
+                                } else {
+                                    null
+                                },
+                            )
                         }
 
                         // 2. Título de sección de comentarios (ej: "Comentarios  5 comentarios")
@@ -394,6 +416,7 @@ fun PostDetailScreen(
                                     onOpenThread = {
                                         viewModel.focusComment(rootComment.id)
                                     },
+                                    onEdit = { viewModel.startEditComment(rootComment) },
                                 )
                             }
 
@@ -407,6 +430,7 @@ fun PostDetailScreen(
                                         replyCount = subReplyCount,
                                         onReply = { viewModel.onReplyToComment(reply) },
                                         onOpenThread = { viewModel.focusComment(reply.id) },
+                                        onEdit = { viewModel.startEditComment(reply) },
                                     )
                                 }
                             }
@@ -479,7 +503,7 @@ fun PostDetailScreen(
 }
 
 @Composable
-private fun PostDetailHeaderCard(post: ForumPostDto) {
+private fun PostDetailHeaderCard(post: ForumPostDto, onEdit: (() -> Unit)?) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = CardWhite),
@@ -557,6 +581,11 @@ private fun PostDetailHeaderCard(post: ForumPostDto) {
                             color = PillBeigeText,
                         )
                     }
+
+                    if (onEdit != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        ForumOptionsMenu(onEdit = onEdit, circular = true)
+                    }
                 }
 
                 // Comercio
@@ -591,7 +620,8 @@ private fun PostDetailHeaderCard(post: ForumPostDto) {
                 )
 
                 // Badges opcionales
-                if (post.precioObservado != null || (post.latitud != null && post.longitud != null)) {
+                val locationLabel = post.locationLabel()
+                if (post.precioObservado != null || locationLabel != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -625,7 +655,7 @@ private fun PostDetailHeaderCard(post: ForumPostDto) {
                             }
                         }
 
-                        if (post.latitud != null && post.longitud != null) {
+                        if (locationLabel != null) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
@@ -641,7 +671,7 @@ private fun PostDetailHeaderCard(post: ForumPostDto) {
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "Visto en ${post.comercioNombre}",
+                                    text = locationLabel,
                                     color = SageGreenText,
                                     fontWeight = FontWeight.Medium,
                                     fontSize = 12.sp,
@@ -913,6 +943,7 @@ private fun CommentRowItem(
     replyCount: Int,
     onReply: () -> Unit,
     onOpenThread: () -> Unit,
+    onEdit: () -> Unit,
 ) {
     Card(
         shape = RoundedCornerShape(14.dp),
@@ -1006,12 +1037,9 @@ private fun CommentRowItem(
                     )
                 }
 
-                Icon(
-                    imageVector = Icons.Default.MoreHoriz,
-                    contentDescription = "Opciones",
-                    tint = WarmGray,
-                    modifier = Modifier.size(18.dp),
-                )
+                if (comment.esUsuarioActual) {
+                    ForumOptionsMenu(onEdit = onEdit)
+                }
             }
 
             // Texto del comentario
@@ -1090,6 +1118,7 @@ private fun ReplyCommentRowItem(
     replyCount: Int,
     onReply: () -> Unit,
     onOpenThread: () -> Unit,
+    onEdit: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -1198,12 +1227,9 @@ private fun ReplyCommentRowItem(
                         )
                     }
 
-                    Icon(
-                        imageVector = Icons.Default.MoreHoriz,
-                        contentDescription = "Opciones",
-                        tint = WarmGray,
-                        modifier = Modifier.size(18.dp),
-                    )
+                    if (comment.esUsuarioActual) {
+                        ForumOptionsMenu(onEdit = onEdit)
+                    }
                 }
 
                 // Texto del comentario
@@ -1455,25 +1481,5 @@ private fun getInitials(name: String): String {
         parts.isEmpty() -> "V"
         parts.size == 1 -> parts[0].take(2).uppercase()
         else -> "${parts[0].first().uppercaseChar()}${parts[1].first().uppercaseChar()}"
-    }
-}
-
-private fun formatRelativeTime(dateString: String): String {
-    return try {
-        val parsed = OffsetDateTime.parse(dateString)
-        val now = OffsetDateTime.now()
-        val duration = Duration.between(parsed, now)
-        val minutes = duration.toMinutes()
-        val hours = duration.toHours()
-        val days = duration.toDays()
-        when {
-            duration.isNegative || minutes < 1 -> "recién"
-            minutes < 60 -> "hace $minutes min"
-            hours < 24 -> "hace $hours h"
-            days < 7 -> "hace $days d"
-            else -> "hace ${days / 7} sem"
-        }
-    } catch (e: Exception) {
-        "reciente"
     }
 }
