@@ -4,6 +4,7 @@ import com.barrioahorro.api.modules.forum.dto.CreateCommentRequest
 import com.barrioahorro.api.modules.forum.dto.CreateForumPostRequest
 import com.barrioahorro.api.modules.forum.dto.ForumCommentResponse
 import com.barrioahorro.api.modules.forum.dto.ForumPostResponse
+import com.barrioahorro.api.modules.forum.dto.MyForumActivityResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -35,6 +36,12 @@ class ForumPostController(
     fun getFeed(): ResponseEntity<List<ForumPostResponse>> {
         val feed = forumPostService.getFeed()
         return ResponseEntity.ok(feed)
+    }
+
+    @GetMapping("/mis-publicaciones")
+    fun getMyActivity(authentication: Authentication): ResponseEntity<MyForumActivityResponse> {
+        val userId = authentication.principal as Long
+        return ResponseEntity.ok(forumPostService.getMyActivity(userId))
     }
 
     @GetMapping("/publicaciones/{id}")

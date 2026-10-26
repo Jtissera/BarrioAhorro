@@ -1,17 +1,23 @@
 package com.barrioahorro.api.modules.forum
 
+import com.barrioahorro.api.modules.business.BusinessEntity
 import com.barrioahorro.api.modules.business.BusinessRepository
 import com.barrioahorro.api.modules.forum.dto.CreateCommentRequest
 import com.barrioahorro.api.modules.forum.dto.CreateForumPostRequest
 import com.barrioahorro.api.modules.forum.dto.ForumCommentResponse
 import com.barrioahorro.api.modules.forum.dto.ForumPostResponse
+import com.barrioahorro.api.modules.forum.dto.MyForumActivityResponse
+import com.barrioahorro.api.modules.forum.dto.MyForumCommentResponse
 import com.barrioahorro.api.modules.location.LocationService
 import com.barrioahorro.api.modules.location.dto.ValidateAddressRequest
+import com.barrioahorro.api.modules.user.UserEntity
 import com.barrioahorro.api.modules.user.UserRepository
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.PrecisionModel
 import org.springframework.http.HttpStatus
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
@@ -23,6 +29,7 @@ class ForumPostService(
     private val businessRepository: BusinessRepository,
     private val userRepository: UserRepository,
     private val locationService: LocationService,
+    private val jdbc: NamedParameterJdbcTemplate,
 ) {
     private val geometryFactory = GeometryFactory(PrecisionModel(), 4326)
 
@@ -94,25 +101,7 @@ class ForumPostService(
         val users = userRepository.findAllById(userIds).associateBy { it.id }
 
         return posts.map { post ->
-            val business = businesses[post.comercioId]
-            val user = users[post.autorId]
-            val comentariosCount = forumPostRepository.countCommentsByPostId(post.id)
-            val upvotesCount = forumPostRepository.countUpvotesByPostId(post.id)
-
-            ForumPostResponse(
-                id = post.id,
-                autorId = post.autorId,
-                autorNombre = formatAuthorName(user?.email ?: "Vecino"),
-                comercioId = post.comercioId,
-                comercioNombre = business?.nombreNegocio ?: "Comercio del barrio",
-                texto = post.texto,
-                precioObservado = post.precioObservado,
-                latitud = post.ubicacionObservada?.y,
-                longitud = post.ubicacionObservada?.x,
-                upvotesCount = upvotesCount,
-                comentariosCount = comentariosCount,
-                createdAt = post.createdAt,
-            )
+            toPostResponse(post, businesses[post.comercioId], users[post.autorId])
         }
     }
 
@@ -128,23 +117,8 @@ class ForumPostService(
 
         val business = businessRepository.findById(post.comercioId).orElse(null)
         val user = userRepository.findById(post.autorId).orElse(null)
-        val comentariosCount = forumPostRepository.countCommentsByPostId(post.id)
-        val upvotesCount = forumPostRepository.countUpvotesByPostId(post.id)
 
-        return ForumPostResponse(
-            id = post.id,
-            autorId = post.autorId,
-            autorNombre = formatAuthorName(user?.email ?: "Vecino"),
-            comercioId = post.comercioId,
-            comercioNombre = business?.nombreNegocio ?: "Comercio del barrio",
-            texto = post.texto,
-            precioObservado = post.precioObservado,
-            latitud = post.ubicacionObservada?.y,
-            longitud = post.ubicacionObservada?.x,
-            upvotesCount = upvotesCount,
-            comentariosCount = comentariosCount,
-            createdAt = post.createdAt,
-        )
+        return toPostResponse(post, business, user)
     }
 
     @Transactional
@@ -233,6 +207,63 @@ class ForumPostService(
                 createdAt = comment.createdAt,
             )
         }
+    }
+
+    @Transactional(readOnly = true)
+    fun getMyActivity(userId: Long): MyForumActivityResponse {
+        val user = userRepository.findById(userId).orElse(null)
+        val myPosts = forumPostRepository.findByAutorIdAndEliminadoEnIsNullOrderByCreatedAtDesc(userId)
+        val myComments = forumCommentRepository.findByAutorIdAndEliminadoEnIsNullOrderByCreatedAtDesc(userId)
+
+        // Publicaciones (propias o ajenas) donde comentó el usuario; se descartan las eliminadas.
+        val commentedPosts = forumPostRepository.findAllById(myComments.map { it.publicacionId }.distinct())
+            .filter { it.eliminadoEn == null }
+            .associateBy { it.id }
+
+        val businessIds = (myPosts.map { it.comercioId } + commentedPosts.values.map { it.comercioId }).distinct()
+        val businesses = businessRepository.findAllById(businessIds).associateBy { it.usuarioId }
+
+        val publicaciones = myPosts.map { post -> toPostResponse(post, businesses[post.comercioId], user) }
+
+        val comentarios = myComments.mapNotNull { comment ->
+            val post = commentedPosts[comment.publicacionId] ?: return@mapNotNull null
+            MyForumCommentResponse(
+                id = comment.id,
+                publicacionId = comment.publicacionId,
+                comentarioPadreId = comment.comentarioPadreId,
+                texto = comment.texto,
+                upvotesCount = forumCommentRepository.countUpvotesByCommentId(comment.id),
+                publicacionTexto = post.texto,
+                comercioNombre = businesses[post.comercioId]?.nombreNegocio ?: "Comercio del barrio",
+                createdAt = comment.createdAt,
+            )
+        }
+
+        // Saldo de puntos del vecino (0 si no tiene perfil de cliente).
+        val puntos = jdbc.queryForList(
+            "SELECT saldo_puntos FROM perfiles_cliente WHERE usuario_id = :id",
+            MapSqlParameterSource("id", userId),
+            Int::class.java,
+        ).firstOrNull() ?: 0
+
+        return MyForumActivityResponse(puntos = puntos, publicaciones = publicaciones, comentarios = comentarios)
+    }
+
+    private fun toPostResponse(post: ForumPostEntity, business: BusinessEntity?, user: UserEntity?): ForumPostResponse {
+        return ForumPostResponse(
+            id = post.id,
+            autorId = post.autorId,
+            autorNombre = formatAuthorName(user?.email ?: "Vecino"),
+            comercioId = post.comercioId,
+            comercioNombre = business?.nombreNegocio ?: "Comercio del barrio",
+            texto = post.texto,
+            precioObservado = post.precioObservado,
+            latitud = post.ubicacionObservada?.y,
+            longitud = post.ubicacionObservada?.x,
+            upvotesCount = forumPostRepository.countUpvotesByPostId(post.id),
+            comentariosCount = forumPostRepository.countCommentsByPostId(post.id),
+            createdAt = post.createdAt,
+        )
     }
 
     private fun formatAuthorName(email: String): String {
