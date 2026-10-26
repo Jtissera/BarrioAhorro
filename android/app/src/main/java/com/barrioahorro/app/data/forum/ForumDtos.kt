@@ -23,3 +23,22 @@ data class ForumPostDto(
     val comentariosCount: Int,
     val createdAt: String,
 )
+
+data class CreateCommentDto(
+    val texto: String,
+    val comentarioPadreId: Long? = null,
+)
+
+data class ForumCommentDto(
+    val id: Long,
+    val publicacionId: Long,
+    val comentarioPadreId: Long?,
+    val autorId: Long,
+    val autorNombre: String,
+    val texto: String,
+    val upvotesCount: Int,
+    val respuestasCount: Int = 0,
+    val esAutorDePublicacion: Boolean,
+    val esUsuarioActual: Boolean,
+    val createdAt: String,
+)

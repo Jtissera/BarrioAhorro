@@ -43,6 +43,7 @@ fun ClientMainScreen(
     onLogout: () -> Unit,
     isLoggingOut: Boolean,
     onCreatePost: () -> Unit = {},
+    onPostClick: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ClientTab.EXPLORAR) }
@@ -64,7 +65,10 @@ fun ClientMainScreen(
             when (selectedTab) {
                 ClientTab.EXPLORAR -> ExploreScreen(onEditLocation = onEditLocation)
                 ClientTab.FAVORITOS -> ComingSoon("Favoritos")
-                ClientTab.FORO -> ForumFeedScreen(onCreatePost = onCreatePost)
+                ClientTab.FORO -> ForumFeedScreen(
+                    onCreatePost = onCreatePost,
+                    onPostClick = onPostClick,
+                )
                 ClientTab.CUPONES -> ComingSoon("Cupones")
                 ClientTab.PERFIL -> ClientProfileTab(
                     onEditLocation = onEditLocation,

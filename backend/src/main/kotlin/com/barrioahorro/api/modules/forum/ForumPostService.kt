@@ -1,7 +1,9 @@
 package com.barrioahorro.api.modules.forum
 
 import com.barrioahorro.api.modules.business.BusinessRepository
+import com.barrioahorro.api.modules.forum.dto.CreateCommentRequest
 import com.barrioahorro.api.modules.forum.dto.CreateForumPostRequest
+import com.barrioahorro.api.modules.forum.dto.ForumCommentResponse
 import com.barrioahorro.api.modules.forum.dto.ForumPostResponse
 import com.barrioahorro.api.modules.location.LocationService
 import com.barrioahorro.api.modules.location.dto.ValidateAddressRequest
@@ -17,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException
 @Service
 class ForumPostService(
     private val forumPostRepository: ForumPostRepository,
+    private val forumCommentRepository: ForumCommentRepository,
     private val businessRepository: BusinessRepository,
     private val userRepository: UserRepository,
     private val locationService: LocationService,
@@ -41,8 +44,6 @@ class ForumPostService(
             ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado")
         }
 
-        // Si se proveen coordenadas directas, se usan.
-        // Si se escribió una dirección en texto, se geocodifica con LocationService a coordenadas GPS (Point 4326)
         val point = if (request.latitud != null && request.longitud != null) {
             geometryFactory.createPoint(Coordinate(request.longitud, request.latitud))
         } else if (!request.direccion.isNullOrBlank()) {
@@ -111,6 +112,125 @@ class ForumPostService(
                 upvotesCount = upvotesCount,
                 comentariosCount = comentariosCount,
                 createdAt = post.createdAt,
+            )
+        }
+    }
+
+    @Transactional(readOnly = true)
+    fun getPostById(postId: Long): ForumPostResponse {
+        val post = forumPostRepository.findById(postId).orElseThrow {
+            ResponseStatusException(HttpStatus.NOT_FOUND, "La publicación no existe")
+        }
+
+        if (post.eliminadoEn != null) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "La publicación fue eliminada")
+        }
+
+        val business = businessRepository.findById(post.comercioId).orElse(null)
+        val user = userRepository.findById(post.autorId).orElse(null)
+        val comentariosCount = forumPostRepository.countCommentsByPostId(post.id)
+        val upvotesCount = forumPostRepository.countUpvotesByPostId(post.id)
+
+        return ForumPostResponse(
+            id = post.id,
+            autorId = post.autorId,
+            autorNombre = formatAuthorName(user?.email ?: "Vecino"),
+            comercioId = post.comercioId,
+            comercioNombre = business?.nombreNegocio ?: "Comercio del barrio",
+            texto = post.texto,
+            precioObservado = post.precioObservado,
+            latitud = post.ubicacionObservada?.y,
+            longitud = post.ubicacionObservada?.x,
+            upvotesCount = upvotesCount,
+            comentariosCount = comentariosCount,
+            createdAt = post.createdAt,
+        )
+    }
+
+    @Transactional
+    fun addComment(userId: Long, postId: Long, request: CreateCommentRequest): ForumCommentResponse {
+        val post = forumPostRepository.findById(postId).orElseThrow {
+            ResponseStatusException(HttpStatus.NOT_FOUND, "La publicación no existe")
+        }
+
+        if (post.eliminadoEn != null) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "La publicación fue eliminada")
+        }
+
+        val texto = request.texto?.trim()
+        if (texto.isNullOrBlank()) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "El texto del comentario es obligatorio")
+        }
+
+        if (request.comentarioPadreId != null) {
+            val padre = forumCommentRepository.findById(request.comentarioPadreId).orElseThrow {
+                ResponseStatusException(HttpStatus.NOT_FOUND, "El comentario al que responde no existe")
+            }
+            if (padre.publicacionId != postId) {
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "El comentario padre pertenece a otra publicación")
+            }
+        }
+
+        val user = userRepository.findById(userId).orElseThrow {
+            ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado")
+        }
+
+        val comment = ForumCommentEntity(
+            publicacionId = postId,
+            comentarioPadreId = request.comentarioPadreId,
+            autorId = userId,
+            texto = texto,
+        )
+
+        val saved = forumCommentRepository.save(comment)
+
+        return ForumCommentResponse(
+            id = saved.id,
+            publicacionId = saved.publicacionId,
+            comentarioPadreId = saved.comentarioPadreId,
+            autorId = saved.autorId,
+            autorNombre = formatAuthorName(user.email),
+            texto = saved.texto,
+            upvotesCount = 0,
+            esAutorDePublicacion = (post.autorId == userId),
+            esUsuarioActual = true,
+            createdAt = saved.createdAt,
+        )
+    }
+
+    @Transactional(readOnly = true)
+    fun getComments(postId: Long, currentUserId: Long): List<ForumCommentResponse> {
+        val post = forumPostRepository.findById(postId).orElseThrow {
+            ResponseStatusException(HttpStatus.NOT_FOUND, "La publicación no existe")
+        }
+
+        val comments = forumCommentRepository.findByPublicacionIdAndEliminadoEnIsNullOrderByCreatedAtAsc(postId)
+        if (comments.isEmpty()) return emptyList()
+
+        val repliesCountMap = comments.filter { it.comentarioPadreId != null }
+            .groupingBy { it.comentarioPadreId!! }
+            .eachCount()
+
+        val userIds = comments.map { it.autorId }.distinct()
+        val users = userRepository.findAllById(userIds).associateBy { it.id }
+
+        return comments.map { comment ->
+            val user = users[comment.autorId]
+            val upvotesCount = forumCommentRepository.countUpvotesByCommentId(comment.id)
+            val respuestasCount = repliesCountMap[comment.id] ?: 0
+
+            ForumCommentResponse(
+                id = comment.id,
+                publicacionId = comment.publicacionId,
+                comentarioPadreId = comment.comentarioPadreId,
+                autorId = comment.autorId,
+                autorNombre = formatAuthorName(user?.email ?: "Vecino"),
+                texto = comment.texto,
+                upvotesCount = upvotesCount,
+                respuestasCount = respuestasCount,
+                esAutorDePublicacion = (post.autorId == comment.autorId),
+                esUsuarioActual = (currentUserId == comment.autorId),
+                createdAt = comment.createdAt,
             )
         }
     }

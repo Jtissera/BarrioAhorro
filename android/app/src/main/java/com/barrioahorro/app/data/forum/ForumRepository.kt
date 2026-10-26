@@ -22,6 +22,18 @@ class ForumRepository @Inject constructor(
         forumApi.getFeed()
     }
 
+    suspend fun getPostById(id: Long): Result<ForumPostDto> = call {
+        forumApi.getPostById(id)
+    }
+
+    suspend fun getComments(postId: Long): Result<List<ForumCommentDto>> = call {
+        forumApi.getComments(postId)
+    }
+
+    suspend fun addComment(postId: Long, dto: CreateCommentDto): Result<ForumCommentDto> = call {
+        forumApi.addComment(postId, dto)
+    }
+
     private suspend fun <T> call(block: suspend () -> T): Result<T> =
         try {
             Result.success(block())
@@ -34,7 +46,7 @@ class ForumRepository @Inject constructor(
         } catch (e: IOException) {
             Result.failure(ForumException("No hay conexión. Revisá tu internet e intentá de nuevo."))
         } catch (e: Exception) {
-            Result.failure(ForumException("Ocurrió un error inesperado al procesar la publicación."))
+            Result.failure(ForumException("Ocurrió un error inesperado al procesar la solicitud."))
         }
 
     private fun httpMessage(e: HttpException): String {

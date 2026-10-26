@@ -1,12 +1,15 @@
 package com.barrioahorro.api.modules.forum
 
+import com.barrioahorro.api.modules.forum.dto.CreateCommentRequest
 import com.barrioahorro.api.modules.forum.dto.CreateForumPostRequest
+import com.barrioahorro.api.modules.forum.dto.ForumCommentResponse
 import com.barrioahorro.api.modules.forum.dto.ForumPostResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -32,5 +35,30 @@ class ForumPostController(
     fun getFeed(): ResponseEntity<List<ForumPostResponse>> {
         val feed = forumPostService.getFeed()
         return ResponseEntity.ok(feed)
+    }
+
+    @GetMapping("/publicaciones/{id}")
+    fun getPostById(@PathVariable id: Long): ResponseEntity<ForumPostResponse> {
+        return ResponseEntity.ok(forumPostService.getPostById(id))
+    }
+
+    @GetMapping("/publicaciones/{id}/comentarios")
+    fun getComments(
+        authentication: Authentication,
+        @PathVariable id: Long,
+    ): ResponseEntity<List<ForumCommentResponse>> {
+        val userId = authentication.principal as Long
+        return ResponseEntity.ok(forumPostService.getComments(id, userId))
+    }
+
+    @PostMapping("/publicaciones/{id}/comentarios")
+    fun addComment(
+        authentication: Authentication,
+        @PathVariable id: Long,
+        @Valid @RequestBody request: CreateCommentRequest,
+    ): ResponseEntity<ForumCommentResponse> {
+        val userId = authentication.principal as Long
+        val response = forumPostService.addComment(userId, id, request)
+        return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 }

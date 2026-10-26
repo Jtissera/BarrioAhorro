@@ -461,6 +461,7 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
             onLogout = { sessionViewModel.logout(onLoggedOut = { navController.navigateAfterLogout() }) },
             isLoggingOut = isLoggingOut,
             onCreatePost = { navController.navigate(ClientRoutes.CREATE_POST) },
+            onPostClick = { postId -> navController.navigate(ClientRoutes.postDetail(postId)) },
         )
     }
 
@@ -468,6 +469,15 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
         com.barrioahorro.app.ui.screens.client.forum.CreatePostScreen(
             onNavigateBack = { navController.popBackStack() },
             onPostCreated = { navController.popBackStack() },
+        )
+    }
+
+    composable(
+        route = ClientRoutes.POST_DETAIL,
+        arguments = listOf(navArgument("postId") { type = NavType.LongType }),
+    ) {
+        com.barrioahorro.app.ui.screens.client.forum.PostDetailScreen(
+            onNavigateBack = { navController.popBackStack() },
         )
     }
 }

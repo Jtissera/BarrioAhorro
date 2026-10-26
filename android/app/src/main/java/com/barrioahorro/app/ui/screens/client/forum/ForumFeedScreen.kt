@@ -2,6 +2,7 @@ package com.barrioahorro.app.ui.screens.client.forum
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -75,6 +76,7 @@ private val CommercePillBg = Color(0xFFFBF4ED)
 @Composable
 fun ForumFeedScreen(
     onCreatePost: () -> Unit,
+    onPostClick: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ForumViewModel = hiltViewModel(),
 ) {
@@ -154,7 +156,10 @@ fun ForumFeedScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(state.posts, key = { it.id }) { post ->
-                        ForumPostCard(post = post)
+                        ForumPostCard(
+                            post = post,
+                            onClick = { onPostClick(post.id) },
+                        )
                     }
                     item {
                         Spacer(modifier = Modifier.height(80.dp))
@@ -166,14 +171,18 @@ fun ForumFeedScreen(
 }
 
 @Composable
-private fun ForumPostCard(post: ForumPostDto) {
+private fun ForumPostCard(
+    post: ForumPostDto,
+    onClick: () -> Unit,
+) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, BorderGray, RoundedCornerShape(16.dp)),
+            .border(1.dp, BorderGray, RoundedCornerShape(16.dp))
+            .clickable { onClick() },
     ) {
         Row(
             modifier = Modifier
