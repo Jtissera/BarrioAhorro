@@ -289,7 +289,8 @@ private fun ForumPostCard(
                 )
 
                 // Badges opcionales: Precio observado y Ubicación
-                if (post.precioObservado != null || (post.latitud != null && post.longitud != null)) {
+                val locationLabel = post.locationLabel()
+                if (post.precioObservado != null || locationLabel != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -323,7 +324,7 @@ private fun ForumPostCard(
                             }
                         }
 
-                        if (post.latitud != null && post.longitud != null) {
+                        if (locationLabel != null) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
@@ -339,7 +340,7 @@ private fun ForumPostCard(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "Visto en ${post.comercioNombre}",
+                                    text = locationLabel,
                                     color = SageGreenText,
                                     fontWeight = FontWeight.Medium,
                                     fontSize = 12.sp,

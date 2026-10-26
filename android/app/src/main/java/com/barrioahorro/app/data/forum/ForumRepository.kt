@@ -38,6 +38,14 @@ class ForumRepository @Inject constructor(
         forumApi.addComment(postId, dto)
     }
 
+    suspend fun updatePost(id: Long, dto: UpdateForumPostDto): Result<ForumPostDto> = call {
+        forumApi.updatePost(id, dto)
+    }
+
+    suspend fun updateComment(id: Long, texto: String): Result<ForumCommentDto> = call {
+        forumApi.updateComment(id, UpdateCommentDto(texto))
+    }
+
     private suspend fun <T> call(block: suspend () -> T): Result<T> =
         try {
             Result.success(block())

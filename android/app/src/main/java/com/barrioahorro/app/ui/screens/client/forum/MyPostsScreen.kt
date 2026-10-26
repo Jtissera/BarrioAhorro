@@ -55,6 +55,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.barrioahorro.app.data.forum.ForumPostDto
 import com.barrioahorro.app.data.forum.MyForumCommentDto
@@ -79,11 +81,25 @@ private enum class MyPostsTab(val label: String) {
 fun MyPostsScreen(
     onNavigateBack: () -> Unit,
     onPostClick: (Long) -> Unit,
+    onEditPost: (Long) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MyPostsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTab by rememberSaveable { mutableStateOf(MyPostsTab.PUBLICACIONES) }
+
+    // Al volver de editar (u otra pantalla) se recarga la actividad.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshOnResume() }
+
+    state.editingComment?.let { comment ->
+        EditCommentDialog(
+            initialText = comment.texto,
+            isSaving = state.isSavingComment,
+            errorMessage = state.editCommentError,
+            onDismiss = viewModel::cancelEditComment,
+            onSave = viewModel::saveCommentEdit,
+        )
+    }
 
     Scaffold(
         containerColor = Cream,
@@ -140,7 +156,7 @@ fun MyPostsScreen(
                         title = "No pudimos cargar tu actividad",
                         message = state.errorMessage.orEmpty(),
                         actionLabel = "Reintentar",
-                        onAction = viewModel::loadMyActivity,
+                        onAction = { viewModel.loadMyActivity() },
                     )
                 }
 
@@ -172,11 +188,19 @@ fun MyPostsScreen(
                             }
 
                             selectedTab == MyPostsTab.PUBLICACIONES -> items(state.posts, key = { "post-${it.id}" }) { post ->
-                                MyPostCard(post = post, onClick = { onPostClick(post.id) })
+                                MyPostCard(
+                                    post = post,
+                                    onClick = { onPostClick(post.id) },
+                                    onEdit = { onEditPost(post.id) },
+                                )
                             }
 
                             else -> items(state.comments, key = { "comment-${it.id}" }) { comment ->
-                                MyCommentCard(comment = comment, onClick = { onPostClick(comment.publicacionId) })
+                                MyCommentCard(
+                                    comment = comment,
+                                    onClick = { onPostClick(comment.publicacionId) },
+                                    onEdit = { viewModel.startEditComment(comment) },
+                                )
                             }
                         }
 
@@ -315,40 +339,47 @@ private fun MyActivityCard(
     }
 }
 
-/** Fila superior: chip del comercio + fecha relativa. */
+/** Fila superior: chip del comercio + fecha relativa + menú "⋯". */
 @Composable
-private fun MyActivityHeader(comercioNombre: String, createdAt: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .height(24.dp)
-                .clip(CircleShape)
-                .background(Cream)
-                .padding(horizontal = 10.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Store,
-                contentDescription = null,
-                tint = Primary,
-                modifier = Modifier.size(14.dp),
-            )
-            Spacer(modifier = Modifier.width(4.dp))
+private fun MyActivityHeader(comercioNombre: String, createdAt: String, onEdit: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        // Chip + fecha ocupan todo el ancho libre; el chip solo se recorta si el nombre no entra.
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .height(24.dp)
+                    .clip(CircleShape)
+                    .background(Cream)
+                    .padding(horizontal = 10.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Store,
+                    contentDescription = null,
+                    tint = Primary,
+                    modifier = Modifier.size(14.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = comercioNombre,
+                    color = Ink,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = comercioNombre,
-                color = Ink,
-                fontWeight = FontWeight.SemiBold,
+                text = formatRelativeTime(createdAt),
+                color = WarmGray,
                 fontSize = 12.sp,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
         }
         Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = formatRelativeTime(createdAt),
-            color = WarmGray,
-            fontSize = 12.sp,
-        )
+        ForumOptionsMenu(onEdit = onEdit, circular = true)
     }
 }
 
@@ -356,9 +387,10 @@ private fun MyActivityHeader(comercioNombre: String, createdAt: String) {
 private fun MyPostCard(
     post: ForumPostDto,
     onClick: () -> Unit,
+    onEdit: () -> Unit,
 ) {
     MyActivityCard(onClick = onClick) {
-        MyActivityHeader(comercioNombre = post.comercioNombre, createdAt = post.createdAt)
+        MyActivityHeader(comercioNombre = post.comercioNombre, createdAt = post.createdAt, onEdit = onEdit)
 
         Text(
             text = post.texto,
@@ -367,8 +399,8 @@ private fun MyPostCard(
             lineHeight = 22.sp,
         )
 
-        val hasLocation = post.latitud != null && post.longitud != null
-        if (post.precioObservado != null || hasLocation) {
+        val locationLabel = post.locationLabel()
+        if (post.precioObservado != null || locationLabel != null) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 post.precioObservado?.let { precio ->
                     val formattedPrice = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("es-AR")).apply {
@@ -382,10 +414,10 @@ private fun MyPostCard(
                         textColor = Primary,
                     )
                 }
-                if (hasLocation) {
+                if (locationLabel != null) {
                     MyTagChip(
                         icon = Icons.Filled.Place,
-                        text = "Visto en ${post.comercioNombre}",
+                        text = locationLabel,
                         background = Cream,
                         tint = WarmGray,
                         textColor = WarmGray,
@@ -402,9 +434,10 @@ private fun MyPostCard(
 private fun MyCommentCard(
     comment: MyForumCommentDto,
     onClick: () -> Unit,
+    onEdit: () -> Unit,
 ) {
     MyActivityCard(onClick = onClick) {
-        MyActivityHeader(comercioNombre = comment.comercioNombre, createdAt = comment.createdAt)
+        MyActivityHeader(comercioNombre = comment.comercioNombre, createdAt = comment.createdAt, onEdit = onEdit)
 
         Text(
             text = comment.texto,

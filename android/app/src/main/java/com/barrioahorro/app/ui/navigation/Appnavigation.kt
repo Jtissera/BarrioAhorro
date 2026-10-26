@@ -470,6 +470,7 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
         com.barrioahorro.app.ui.screens.client.forum.MyPostsScreen(
             onNavigateBack = { navController.popBackStack() },
             onPostClick = { postId -> navController.navigate(ClientRoutes.postDetail(postId)) },
+            onEditPost = { postId -> navController.navigate(ClientRoutes.editPost(postId)) },
         )
     }
 
@@ -486,6 +487,18 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
     ) {
         com.barrioahorro.app.ui.screens.client.forum.PostDetailScreen(
             onNavigateBack = { navController.popBackStack() },
+            onEditPost = { postId -> navController.navigate(ClientRoutes.editPost(postId)) },
+        )
+    }
+
+    composable(
+        route = ClientRoutes.EDIT_POST,
+        arguments = listOf(navArgument("postId") { type = NavType.LongType }),
+    ) {
+        // Al volver, Mis publicaciones y el detalle recargan en ON_RESUME.
+        com.barrioahorro.app.ui.screens.client.forum.EditPostScreen(
+            onNavigateBack = { navController.popBackStack() },
+            onPostSaved = { navController.popBackStack() },
         )
     }
 }

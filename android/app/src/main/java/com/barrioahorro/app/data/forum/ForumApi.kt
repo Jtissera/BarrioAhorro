@@ -2,6 +2,7 @@ package com.barrioahorro.app.data.forum
 
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 
@@ -26,5 +27,17 @@ interface ForumApi {
     suspend fun addComment(
         @Path("id") id: Long,
         @Body body: CreateCommentDto,
+    ): ForumCommentDto
+
+    @PATCH("api/foro/publicaciones/{id}")
+    suspend fun updatePost(
+        @Path("id") id: Long,
+        @Body body: UpdateForumPostDto,
+    ): ForumPostDto
+
+    @PATCH("api/foro/comentarios/{id}")
+    suspend fun updateComment(
+        @Path("id") id: Long,
+        @Body body: UpdateCommentDto,
     ): ForumCommentDto
 }

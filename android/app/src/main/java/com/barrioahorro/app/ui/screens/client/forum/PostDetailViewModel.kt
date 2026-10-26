@@ -24,6 +24,9 @@ data class PostDetailUiState(
     val commentText: String = "",
     val errorMessage: String? = null,
     val focusedCommentStack: List<Long> = emptyList(),
+    val editingComment: ForumCommentDto? = null,
+    val isSavingComment: Boolean = false,
+    val editCommentError: String? = null,
 ) {
     val isSendEnabled: Boolean
         get() = commentText.trim().isNotEmpty() && !isSendingComment
@@ -46,13 +49,25 @@ class PostDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(PostDetailUiState())
     val uiState: StateFlow<PostDetailUiState> = _uiState.asStateFlow()
 
+    // El primer ON_RESUME coincide con la carga de init; se ignora para no pedir dos veces.
+    private var skipNextResume = true
+
     init {
         loadData()
     }
 
-    fun loadData() {
+    /** Recarga sin spinner al volver a la pantalla (por ejemplo, después de editar la publicación). */
+    fun refreshOnResume() {
+        if (skipNextResume) {
+            skipNextResume = false
+            return
+        }
+        loadData(showLoading = false)
+    }
+
+    fun loadData(showLoading: Boolean = true) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            if (showLoading) _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
             val postResult = forumRepository.getPostById(postId)
             val commentsResult = forumRepository.getComments(postId)
@@ -156,6 +171,44 @@ class PostDetailViewModel @Inject constructor(
                         it.copy(
                             isSendingComment = false,
                             errorMessage = error.message ?: "No se pudo enviar el comentario",
+                        )
+                    }
+                }
+        }
+    }
+
+    fun startEditComment(comment: ForumCommentDto) {
+        _uiState.update { it.copy(editingComment = comment, editCommentError = null) }
+    }
+
+    fun cancelEditComment() {
+        if (_uiState.value.isSavingComment) return
+        _uiState.update { it.copy(editingComment = null, editCommentError = null) }
+    }
+
+    fun saveCommentEdit(texto: String) {
+        val comment = _uiState.value.editingComment ?: return
+        if (texto.isBlank() || _uiState.value.isSavingComment) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSavingComment = true, editCommentError = null) }
+            forumRepository.updateComment(comment.id, texto)
+                .onSuccess { updated ->
+                    _uiState.update { current ->
+                        current.copy(
+                            comments = current.comments.map {
+                                if (it.id == updated.id) it.copy(texto = updated.texto) else it
+                            },
+                            editingComment = null,
+                            isSavingComment = false,
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(
+                            isSavingComment = false,
+                            editCommentError = error.message ?: "No pudimos guardar el comentario",
                         )
                     }
                 }
