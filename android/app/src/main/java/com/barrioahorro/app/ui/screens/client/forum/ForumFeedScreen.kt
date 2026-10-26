@@ -5,9 +5,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,11 +21,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Store
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -55,10 +58,19 @@ import com.barrioahorro.app.ui.theme.CardWhite
 import com.barrioahorro.app.ui.theme.Cream
 import com.barrioahorro.app.ui.theme.Ink
 import com.barrioahorro.app.ui.theme.Primary
-import com.barrioahorro.app.ui.theme.Secondary
 import com.barrioahorro.app.ui.theme.WarmGray
 import java.text.NumberFormat
+import java.time.Duration
+import java.time.OffsetDateTime
 import java.util.Locale
+
+private val YellowAccent = Color(0xFFF2B134)
+private val LightSalmon = Color(0xFFFFEDE6)
+private val SageGreen = Color(0xFFEBF5F0)
+private val SageGreenText = Color(0xFF2F6B55)
+private val PillBeige = Color(0xFFF5EFE9)
+private val PillBeigeText = Color(0xFF7A685D)
+private val CommercePillBg = Color(0xFFFBF4ED)
 
 @Composable
 fun ForumFeedScreen(
@@ -68,7 +80,6 @@ fun ForumFeedScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Recargar feed cada vez que se navega a esta pantalla
     LaunchedEffect(Unit) {
         viewModel.loadFeed()
     }
@@ -81,8 +92,8 @@ fun ForumFeedScreen(
                 containerColor = Primary,
                 contentColor = Color.White,
                 shape = RoundedCornerShape(24.dp),
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Publicar", fontWeight = FontWeight.Bold) },
+                icon = { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                text = { Text("+ Publicar", fontWeight = FontWeight.Bold, fontSize = 15.sp) },
             )
         },
         modifier = modifier.fillMaxSize(),
@@ -94,7 +105,7 @@ fun ForumFeedScreen(
         ) {
             ToldoConFranjas()
 
-            // Header del foro
+            // Header del foro según Figma
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -104,15 +115,17 @@ fun ForumFeedScreen(
             ) {
                 Column {
                     Text(
-                        text = "Foro del Barrio",
+                        text = "Foro del barrio",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = Ink,
+                        fontSize = 22.sp,
                     )
                     Text(
-                        text = "Comentarios y ofertas de los vecinos",
+                        text = "Precios y ofertas que ven tus vecinos.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = WarmGray,
+                        fontSize = 14.sp,
                     )
                 }
 
@@ -136,7 +149,7 @@ fun ForumFeedScreen(
                 EmptyFeedView(onCreatePost = onCreatePost)
             } else {
                 LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                     modifier = Modifier.fillMaxSize(),
                 ) {
@@ -162,134 +175,225 @@ private fun ForumPostCard(post: ForumPostDto) {
             .fillMaxWidth()
             .border(1.dp, BorderGray, RoundedCornerShape(16.dp)),
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+                .height(IntrinsicSize.Min),
         ) {
-            // Header: Comercio + Autor
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
+            // Barra de acento amarillo/ámbar en el lateral izquierdo
+            Box(
+                modifier = Modifier
+                    .width(5.dp)
+                    .fillMaxHeight()
+                    .background(
+                        color = YellowAccent,
+                        shape = RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp),
+                    ),
+            )
+
+            // Contenido de la tarjeta
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
+                // Header: Avatar con iniciales + Nombre + Tiempo + Badge "Aporte de vecino"
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    // Avatar con iniciales
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(Color(0xFFEDE6DF), CircleShape),
+                    ) {
+                        Text(
+                            text = getInitials(post.autorNombre),
+                            fontWeight = FontWeight.Bold,
+                            color = Ink,
+                            fontSize = 13.sp,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = post.autorNombre,
+                            fontWeight = FontWeight.Bold,
+                            color = Ink,
+                            fontSize = 14.sp,
+                        )
+                        Text(
+                            text = formatRelativeTime(post.createdAt),
+                            color = WarmGray,
+                            fontSize = 12.sp,
+                        )
+                    }
+
+                    // Badge "Aporte de vecino"
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(PillBeige)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            text = "Aporte de vecino",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = PillBeigeText,
+                        )
+                    }
+                }
+
+                // Píldora del Comercio
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .size(36.dp)
-                        .background(Color(0xFFFFEDE6), CircleShape),
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(CommercePillBg)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Store,
                         contentDescription = null,
                         tint = Primary,
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(14.dp),
                     )
-                }
-
-                Spacer(modifier = Modifier.width(10.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = post.comercioNombre,
-                        fontWeight = FontWeight.Bold,
-                        color = Ink,
-                        fontSize = 15.sp,
-                    )
-                    Text(
-                        text = "Compartido por ${post.autorNombre}",
-                        color = WarmGray,
                         fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF382319),
                     )
                 }
-            }
 
-            // Cuerpo del texto
-            Text(
-                text = post.texto,
-                color = Ink,
-                fontSize = 14.sp,
-                lineHeight = 20.sp,
-            )
+                // Cuerpo del texto
+                Text(
+                    text = post.texto,
+                    color = Ink,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                )
 
-            // Badges opcionales: Precio observado y Ubicación
-            if (post.precioObservado != null || (post.latitud != null && post.longitud != null)) {
+                // Badges opcionales: Precio observado y Ubicación
+                if (post.precioObservado != null || (post.latitud != null && post.longitud != null)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        post.precioObservado?.let { precio ->
+                            val formattedPrice = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("es-AR")).apply {
+                                maximumFractionDigits = 0
+                            }.format(precio)
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(LightSalmon)
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocalOffer,
+                                    contentDescription = null,
+                                    tint = Primary,
+                                    modifier = Modifier.size(13.dp),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = formattedPrice,
+                                    color = Primary,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                )
+                            }
+                        }
+
+                        if (post.latitud != null && post.longitud != null) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(SageGreen)
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Place,
+                                    contentDescription = null,
+                                    tint = SageGreenText,
+                                    modifier = Modifier.size(13.dp),
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Visto en ${post.comercioNombre}",
+                                    color = SageGreenText,
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 12.sp,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Footer: Upvotes y Comentarios
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.padding(top = 4.dp),
                 ) {
-                    post.precioObservado?.let { precio ->
-                        val formattedPrice = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("es-AR")).apply {
-                            maximumFractionDigits = 0
-                        }.format(precio)
-
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFFE8F7F0))
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                        ) {
-                            Text(
-                                text = "Precio visto: $formattedPrice",
-                                color = Secondary,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 12.sp,
-                            )
-                        }
+                    // Chip Upvotes
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(LightSalmon)
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            text = "↑",
+                            fontWeight = FontWeight.Bold,
+                            color = Primary,
+                            fontSize = 13.sp,
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${post.upvotesCount}",
+                            fontWeight = FontWeight.Bold,
+                            color = Primary,
+                            fontSize = 12.sp,
+                        )
                     }
 
-                    if (post.latitud != null && post.longitud != null) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFFFFF2EB))
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Place,
-                                contentDescription = null,
-                                tint = Primary,
-                                modifier = Modifier.size(14.dp),
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Ubicación observada",
-                                color = Primary,
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 12.sp,
-                            )
-                        }
+                    // Chip Comentarios
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFF7F3EE))
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ChatBubbleOutline,
+                            contentDescription = null,
+                            tint = WarmGray,
+                            modifier = Modifier.size(13.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${post.comentariosCount}",
+                            color = WarmGray,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
                     }
                 }
-            }
-
-            // Footer: Inicio del hilo de comentarios
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 4.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ChatBubbleOutline,
-                    contentDescription = null,
-                    tint = WarmGray,
-                    modifier = Modifier.size(16.dp),
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                val comentarioLabel = if (post.comentariosCount == 0) {
-                    "Iniciar hilo de comentarios"
-                } else {
-                    "${post.comentariosCount} comentarios"
-                }
-                Text(
-                    text = comentarioLabel,
-                    color = WarmGray,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                )
             }
         }
     }
@@ -311,7 +415,7 @@ private fun EmptyFeedView(onCreatePost: () -> Unit) {
                 .background(Color(0xFFFFEDE6), CircleShape),
         ) {
             Icon(
-                imageVector = Icons.Default.ChatBubbleOutline,
+                imageVector = Icons.Outlined.ChatBubbleOutline,
                 contentDescription = null,
                 tint = Primary,
                 modifier = Modifier.size(36.dp),
@@ -346,5 +450,34 @@ private fun EmptyFeedView(onCreatePost: () -> Unit) {
         ) {
             Text("Crear primera publicación", fontWeight = FontWeight.Bold)
         }
+    }
+}
+
+private fun getInitials(name: String): String {
+    val parts = name.trim().split(" ").filter { it.isNotBlank() }
+    return when {
+        parts.isEmpty() -> "V"
+        parts.size == 1 -> parts[0].take(2).uppercase()
+        else -> "${parts[0].first().uppercaseChar()}${parts[1].first().uppercaseChar()}"
+    }
+}
+
+private fun formatRelativeTime(dateString: String): String {
+    return try {
+        val parsed = OffsetDateTime.parse(dateString)
+        val now = OffsetDateTime.now()
+        val duration = Duration.between(parsed, now)
+        val minutes = duration.toMinutes()
+        val hours = duration.toHours()
+        val days = duration.toDays()
+        when {
+            duration.isNegative || minutes < 1 -> "recién"
+            minutes < 60 -> "hace $minutes min"
+            hours < 24 -> "hace $hours h"
+            days < 7 -> "hace $days d"
+            else -> "hace ${days / 7} sem"
+        }
+    } catch (e: Exception) {
+        "reciente"
     }
 }

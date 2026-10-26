@@ -9,4 +9,7 @@ interface ForumPostRepository : JpaRepository<ForumPostEntity, Long> {
 
     @Query(value = "SELECT COUNT(1) FROM foro_comentarios WHERE publicacion_id = :postId AND eliminado_en IS NULL", nativeQuery = true)
     fun countCommentsByPostId(@Param("postId") postId: Long): Int
+
+    @Query(value = "SELECT COUNT(1) FROM foro_publicacion_upvotes WHERE publicacion_id = :postId", nativeQuery = true)
+    fun countUpvotesByPostId(@Param("postId") postId: Long): Int
 }

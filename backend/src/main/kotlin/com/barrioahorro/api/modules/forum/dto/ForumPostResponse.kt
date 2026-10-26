@@ -13,6 +13,7 @@ data class ForumPostResponse(
     val precioObservado: BigDecimal?,
     val latitud: Double?,
     val longitud: Double?,
+    val upvotesCount: Int,
     val comentariosCount: Int,
     val createdAt: OffsetDateTime,
 )

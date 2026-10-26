@@ -75,6 +75,7 @@ class ForumPostService(
             precioObservado = saved.precioObservado,
             latitud = saved.ubicacionObservada?.y,
             longitud = saved.ubicacionObservada?.x,
+            upvotesCount = 0,
             comentariosCount = 0,
             createdAt = saved.createdAt,
         )
@@ -95,6 +96,7 @@ class ForumPostService(
             val business = businesses[post.comercioId]
             val user = users[post.autorId]
             val comentariosCount = forumPostRepository.countCommentsByPostId(post.id)
+            val upvotesCount = forumPostRepository.countUpvotesByPostId(post.id)
 
             ForumPostResponse(
                 id = post.id,
@@ -106,6 +108,7 @@ class ForumPostService(
                 precioObservado = post.precioObservado,
                 latitud = post.ubicacionObservada?.y,
                 longitud = post.ubicacionObservada?.x,
+                upvotesCount = upvotesCount,
                 comentariosCount = comentariosCount,
                 createdAt = post.createdAt,
             )
