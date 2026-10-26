@@ -35,11 +35,14 @@ import com.barrioahorro.app.ui.theme.OnPrimary
 import com.barrioahorro.app.ui.theme.Primary
 import com.barrioahorro.app.ui.theme.WarmGray
 
+import com.barrioahorro.app.ui.screens.client.forum.ForumFeedScreen
+
 @Composable
 fun ClientMainScreen(
     onEditLocation: () -> Unit,
     onLogout: () -> Unit,
     isLoggingOut: Boolean,
+    onCreatePost: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ClientTab.EXPLORAR) }
@@ -61,7 +64,7 @@ fun ClientMainScreen(
             when (selectedTab) {
                 ClientTab.EXPLORAR -> ExploreScreen(onEditLocation = onEditLocation)
                 ClientTab.FAVORITOS -> ComingSoon("Favoritos")
-                ClientTab.FORO -> ComingSoon("Foro")
+                ClientTab.FORO -> ForumFeedScreen(onCreatePost = onCreatePost)
                 ClientTab.CUPONES -> ComingSoon("Cupones")
                 ClientTab.PERFIL -> ClientProfileTab(
                     onEditLocation = onEditLocation,

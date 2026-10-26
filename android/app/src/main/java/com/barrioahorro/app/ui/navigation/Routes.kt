@@ -61,6 +61,7 @@ object ClientRoutes {
     const val LOCATION = "client/location"
     const val LOCATION_PATTERN = "client/location?edit={edit}"
     const val HOME = "client/home"
+    const val CREATE_POST = "client/forum/create"
 
     fun editLocation(): String = "client/location?edit=true"
 }

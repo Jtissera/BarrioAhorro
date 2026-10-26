@@ -69,4 +69,9 @@ object NetworkModule {
     fun provideExploreApi(retrofit: Retrofit): ExploreApi =
         retrofit.create(ExploreApi::class.java)
 
+    @Provides
+    @Singleton
+    fun provideForumApi(retrofit: Retrofit): com.barrioahorro.app.data.forum.ForumApi =
+        retrofit.create(com.barrioahorro.app.data.forum.ForumApi::class.java)
+
 }
