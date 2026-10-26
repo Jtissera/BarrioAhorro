@@ -32,6 +32,9 @@ class ForumPostEntity(
     @Column(name = "ubicacion_observada", columnDefinition = "geography(Point,4326)")
     var ubicacionObservada: Point? = null,
 
+    @Column(name = "direccion_observada", columnDefinition = "text")
+    var direccionObservada: String? = null,
+
     @Column(name = "eliminado_en")
     var eliminadoEn: OffsetDateTime? = null,
 

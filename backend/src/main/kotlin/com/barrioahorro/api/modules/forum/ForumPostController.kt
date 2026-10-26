@@ -5,11 +5,14 @@ import com.barrioahorro.api.modules.forum.dto.CreateForumPostRequest
 import com.barrioahorro.api.modules.forum.dto.ForumCommentResponse
 import com.barrioahorro.api.modules.forum.dto.ForumPostResponse
 import com.barrioahorro.api.modules.forum.dto.MyForumActivityResponse
+import com.barrioahorro.api.modules.forum.dto.UpdateCommentRequest
+import com.barrioahorro.api.modules.forum.dto.UpdateForumPostRequest
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -45,8 +48,22 @@ class ForumPostController(
     }
 
     @GetMapping("/publicaciones/{id}")
-    fun getPostById(@PathVariable id: Long): ResponseEntity<ForumPostResponse> {
-        return ResponseEntity.ok(forumPostService.getPostById(id))
+    fun getPostById(
+        authentication: Authentication,
+        @PathVariable id: Long,
+    ): ResponseEntity<ForumPostResponse> {
+        val userId = authentication.principal as Long
+        return ResponseEntity.ok(forumPostService.getPostById(id, userId))
+    }
+
+    @PatchMapping("/publicaciones/{id}")
+    fun updatePost(
+        authentication: Authentication,
+        @PathVariable id: Long,
+        @Valid @RequestBody request: UpdateForumPostRequest,
+    ): ResponseEntity<ForumPostResponse> {
+        val userId = authentication.principal as Long
+        return ResponseEntity.ok(forumPostService.updatePost(userId, id, request))
     }
 
     @GetMapping("/publicaciones/{id}/comentarios")
@@ -67,5 +84,15 @@ class ForumPostController(
         val userId = authentication.principal as Long
         val response = forumPostService.addComment(userId, id, request)
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
+    }
+
+    @PatchMapping("/comentarios/{id}")
+    fun updateComment(
+        authentication: Authentication,
+        @PathVariable id: Long,
+        @Valid @RequestBody request: UpdateCommentRequest,
+    ): ResponseEntity<ForumCommentResponse> {
+        val userId = authentication.principal as Long
+        return ResponseEntity.ok(forumPostService.updateComment(userId, id, request))
     }
 }

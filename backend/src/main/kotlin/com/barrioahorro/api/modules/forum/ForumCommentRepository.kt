@@ -11,4 +11,6 @@ interface ForumCommentRepository : JpaRepository<ForumCommentEntity, Long> {
 
     @Query(value = "SELECT COUNT(1) FROM foro_comentario_upvotes WHERE comentario_id = :commentId", nativeQuery = true)
     fun countUpvotesByCommentId(@Param("commentId") commentId: Long): Int
+
+    fun countByComentarioPadreIdAndEliminadoEnIsNull(comentarioPadreId: Long): Int
 }
