@@ -82,6 +82,7 @@ fun AuthSuccessScreen(
 private fun userTypeMessage(userType: UserType): String = when (userType) {
     UserType.CLIENTE -> "Iniciaste sesión como cliente."
     UserType.COMERCIO -> "Iniciaste sesión como comerciante."
+    UserType.ADMIN -> "Iniciaste sesión como moderador."
 }
 
 @Preview(showBackground = true)

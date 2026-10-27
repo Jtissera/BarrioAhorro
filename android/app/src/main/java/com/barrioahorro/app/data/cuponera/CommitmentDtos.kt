@@ -31,6 +31,7 @@ data class CommitmentOverviewDto(
     val restrictedAccess: Boolean,
     val cuponera: CuponeraCycleDto,
     val raffle: RaffleCycleDto,
+    val rejection: RejectionDto? = null,
 )
 
 data class RatifyRaffleRequestDto(
@@ -50,3 +51,11 @@ data class ScanRedemptionDto(
     val neighbor: String?,
     val date: String?,
 )
+
+data class RejectionDto(
+    /** CUPON | SORTEO */
+    val kind: String,
+    val title: String,
+    val reason: String,
+)
+

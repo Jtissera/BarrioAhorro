@@ -9,7 +9,6 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
-import java.time.LocalDate
 import java.time.OffsetDateTime
 
 @Service
@@ -60,7 +59,8 @@ class RaffleService(
         jdbc.update(
             """
             UPDATE compromisos_sorteo
-            SET premio_nombre = :name, premio_descripcion = :prize, premio_valor = :value
+            SET premio_nombre = :name, premio_descripcion = :prize, premio_valor = :value,
+                estado_revision = 'PENDIENTE', motivo_rechazo = NULL, revisado_en = NULL
             WHERE id = :id AND estado = 'PENDIENTE'
             """,
             params,

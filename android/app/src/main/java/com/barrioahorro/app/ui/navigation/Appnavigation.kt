@@ -43,6 +43,9 @@ import com.barrioahorro.app.ui.screens.splash.SplashViewModel
 import com.barrioahorro.app.ui.screens.business.BusinessMainScreen
 import com.barrioahorro.app.ui.cuponera.RaffleRatifyScreen
 import com.barrioahorro.app.ui.cuponera.scanner.QrScannerScreen
+import com.barrioahorro.app.ui.screens.admin.AdminDetailScreen
+import com.barrioahorro.app.ui.screens.admin.AdminRejectScreen
+import com.barrioahorro.app.ui.screens.admin.AdminListScreen
 import com.barrioahorro.app.ui.screens.offers.EditOfferScreen
 import com.barrioahorro.app.ui.screens.client.ClientEntryScreen
 import com.barrioahorro.app.ui.screens.client.ClientMainScreen
@@ -62,6 +65,7 @@ fun AppNavigation(
         onboardingGraph(navController = navController)
         businessGraph(navController = navController)
         clientGraph(navController = navController)
+        adminGraph(navController = navController)
     }
 }
 
@@ -74,9 +78,7 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
             isReady = destination != null,
             onFinished = {
                 val target = when (val d = destination) {
-                    is SplashDestination.Home ->
-                        if (d.userType == UserType.COMERCIO) GateRoutes.GATE
-                        else ClientRoutes.ENTRY
+                    is SplashDestination.Home -> d.userType.homeRoute()
                     else -> AuthRoutes.ROLE_SELECTION
                 }
                 navController.navigate(target) {
@@ -503,13 +505,43 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
     }
 }
 
-fun NavHostController.navigateAfterAuth(userType: UserType) {
-    val target = if (userType == UserType.COMERCIO) {
-        GateRoutes.GATE
-    } else {
-        ClientRoutes.ENTRY
+fun NavGraphBuilder.adminGraph(navController: NavHostController) {
+    composable(AdminRoutes.LIST) {
+        val session: SessionViewModel = hiltViewModel()
+        AdminListScreen(
+            onOpen = { kind, id -> navController.navigate(AdminRoutes.detail(kind, id)) },
+            onLogout = { session.logout(onLoggedOut = { navController.navigateAfterLogout() }) },
+        )
     }
-    navigate(target) {
+
+    val args = listOf(
+        navArgument("kind") { type = NavType.StringType },
+        navArgument("id") { type = NavType.LongType },
+    )
+
+    composable(AdminRoutes.DETAIL, arguments = args) {
+        AdminDetailScreen(
+            onBack = { navController.popBackStack() },
+            onReject = { item -> navController.navigate(AdminRoutes.reject(item.kind, item.id)) },
+            onDone = { navController.popBackStack(AdminRoutes.LIST, inclusive = false) },
+        )
+    }
+
+    composable(AdminRoutes.REJECT, arguments = args) {
+        AdminRejectScreen(
+            onBack = { navController.popBackStack() },
+            onDone = { navController.popBackStack(AdminRoutes.LIST, inclusive = false) },
+        )
+    }
+}
+
+fun UserType.homeRoute(): String = when (this) {
+    UserType.COMERCIO -> GateRoutes.GATE
+    UserType.CLIENTE -> ClientRoutes.ENTRY
+    UserType.ADMIN -> AdminRoutes.LIST
+}
+fun NavHostController.navigateAfterAuth(userType: UserType) {
+    navigate(userType.homeRoute()) {
         popUpTo(AuthRoutes.ROLE_SELECTION) { inclusive = true }
     }
 }

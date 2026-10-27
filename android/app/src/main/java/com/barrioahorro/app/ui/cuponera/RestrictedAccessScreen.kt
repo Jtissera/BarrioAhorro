@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,8 +40,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.barrioahorro.app.data.cuponera.CommitmentOverviewDto
+import com.barrioahorro.app.data.cuponera.RejectionDto
 import com.barrioahorro.app.ui.theme.CardWhite
 import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.ErrorRed
 import com.barrioahorro.app.ui.theme.Ink
 import com.barrioahorro.app.ui.theme.InkBlack
 import com.barrioahorro.app.ui.theme.OnPrimary
@@ -104,6 +107,8 @@ private fun RestrictedContent(
     modifier: Modifier = Modifier,
 ) {
     val ratifyNow: (() -> Unit)? = when {
+        overview.rejection?.kind == "SORTEO" && overview.raffle.canRatify -> onRatifyRaffle
+        overview.rejection?.kind == "CUPON" && overview.cuponera.canRatify -> onRatifyCuponera
         overview.cuponera.canRatify -> onRatifyCuponera
         overview.raffle.canRatify -> onRatifyRaffle
         else -> null
@@ -147,6 +152,7 @@ private fun RestrictedContent(
                         )
                     }
                 }
+                val rejection = overview.rejection
 
                 StatusPill("MODO COMERCIANTE", SurfaceSecondary, Ink)
 
@@ -158,11 +164,22 @@ private fun RestrictedContent(
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    text = "Para seguir usando la app, ratificá tu aporte del período.",
+                    text = if (rejection != null) {
+                        "El administrador revisó tu publicación y requiere ajustes para habilitar los beneficios barriales."
+                    } else {
+                        "Para seguir usando la app, ratificá tu aporte del período."
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = WarmGray,
                     textAlign = TextAlign.Center,
                 )
+
+                if (rejection != null) {
+                    RejectionCard(rejection)
+                } else {
+                    if (overview.cuponera.canRatify) PendingRow("Productos de la cuponera")
+                    if (overview.raffle.canRatify) PendingRow("Premio del sorteo")
+                }
 
                 if (overview.cuponera.canRatify) {
                     PendingRow("Productos de la cuponera")
@@ -220,6 +237,43 @@ private fun PendingRow(title: String) {
             }
             Spacer(Modifier.width(8.dp))
             Icon(Icons.Default.Lock, contentDescription = null, tint = WarmGray, modifier = Modifier.size(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun RejectionCard(rejection: RejectionDto) {
+    Surface(shape = RoundedCornerShape(16.dp), color = SurfaceSecondary, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(rejection.title, fontWeight = FontWeight.SemiBold, color = Ink)
+                    Text(
+                        "Validación rechazada",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = ErrorRed,
+                    )
+                }
+                Icon(Icons.Default.Lock, contentDescription = null, tint = WarmGray, modifier = Modifier.size(16.dp))
+            }
+            Surface(shape = RoundedCornerShape(10.dp), color = CardWhite, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Motivo: ${rejection.reason}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Ink,
+                    modifier = Modifier.padding(10.dp),
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.Info, contentDescription = null, tint = ErrorRed, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    "Canjes y sorteos inhabilitados hasta ratificar.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = ErrorRed,
+                )
+            }
         }
     }
 }

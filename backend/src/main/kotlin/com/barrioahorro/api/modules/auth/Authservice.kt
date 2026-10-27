@@ -2,7 +2,6 @@ package com.barrioahorro.api.modules.auth
 
 import com.barrioahorro.api.core.exception.EmailAlreadyExistsException
 import com.barrioahorro.api.core.exception.InvalidCredentialsException
-import com.barrioahorro.api.core.exception.PasswordMismatchException
 import com.barrioahorro.api.core.security.JwtService
 import com.barrioahorro.api.modules.auth.dto.AuthResponse
 import com.barrioahorro.api.modules.auth.dto.LoginRequest
@@ -12,9 +11,11 @@ import com.barrioahorro.api.modules.business.BusinessRepository
 import com.barrioahorro.api.modules.user.UserEntity
 import com.barrioahorro.api.modules.user.UserRepository
 import com.barrioahorro.api.modules.user.enum.TipoUsuario
+import org.springframework.http.HttpStatus
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.server.ResponseStatusException
 
 @Service
 class AuthService(
@@ -26,6 +27,9 @@ class AuthService(
 
     @Transactional
     fun register(request: RegisterRequest): AuthResponse {
+        if (request.tipoUsuario == TipoUsuario.ADMIN) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "No se puede registrar una cuenta de administrador")
+        }
 
         if (userRepository.existsByEmail(request.email)) {
             throw EmailAlreadyExistsException(request.email)

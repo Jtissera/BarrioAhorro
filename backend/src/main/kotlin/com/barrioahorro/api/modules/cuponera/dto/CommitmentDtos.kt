@@ -55,6 +55,7 @@ data class CommitmentOverviewResponse(
     val restrictedAccess: Boolean,
     val cuponera: CuponeraCycleResponse,
     val raffle: RaffleCycleResponse,
+    val rejection: RejectionResponse? = null,
 )
 
 enum class ScanResult {
@@ -83,4 +84,11 @@ data class ScanRedemptionResponse(
     val neighbor: String? = null,
     /** Fecha de validación (VALIDATED) o de uso previo (ALREADY_USED). */
     val date: OffsetDateTime? = null,
+)
+
+data class RejectionResponse(
+    /** CUPON | SORTEO */
+    val kind: String,
+    val title: String,
+    val reason: String,
 )

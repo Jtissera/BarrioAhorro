@@ -24,6 +24,7 @@ class RedemptionService(
         val id: Long,
         val clientId: Long,
         val status: String,
+        val commitmentStatus: String,
         val points: Int,
         val expiresAt: OffsetDateTime?,
         val validatedAt: OffsetDateTime?,
@@ -50,7 +51,7 @@ class RedemptionService(
             """
             SELECT cj.id, cj.cliente_id, cj.estado::text AS status, cj.puntos_costo,
                    cj.fecha_vencimiento, cj.fecha_validacion,
-                   p.nombre_producto, p.foto_url, cc.comercio_id, u.email
+                   p.nombre_producto, p.foto_url, cc.comercio_id, cc.estado::text AS commitment_status, u.email
             FROM canjes_cupon cj
             JOIN cupones_cuponera p ON p.id = cj.cupon_id
             JOIN compromisos_cuponera cc ON cc.id = p.compromiso_id
@@ -64,6 +65,7 @@ class RedemptionService(
                 id = rs.getLong("id"),
                 clientId = rs.getLong("cliente_id"),
                 status = rs.getString("status"),
+                commitmentStatus = rs.getString("commitment_status"),
                 points = rs.getInt("puntos_costo"),
                 expiresAt = rs.getObject("fecha_vencimiento", OffsetDateTime::class.java),
                 validatedAt = rs.getObject("fecha_validacion", OffsetDateTime::class.java),
@@ -90,6 +92,14 @@ class RedemptionService(
 
     private fun validatePending(row: RedemptionRow): ScanRedemptionResponse {
         val idParam = MapSqlParameterSource("id", row.id)
+
+        if (row.commitmentStatus != "RATIFICADO") {
+            jdbc.update(
+                "UPDATE canjes_cupon SET estado = 'CANCELADO' WHERE id = :id AND estado = 'PENDIENTE_VALIDACION'",
+                idParam,
+            )
+            return details(ScanResult.CANCELLED, row, null)
+        }
 
         if (row.expiresAt != null && !OffsetDateTime.now().isBefore(row.expiresAt)) {
             jdbc.update(

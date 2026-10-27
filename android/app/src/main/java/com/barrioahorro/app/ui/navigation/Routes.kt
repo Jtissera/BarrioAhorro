@@ -70,3 +70,12 @@ object ClientRoutes {
     fun postDetail(postId: Long): String = "client/forum/post/$postId"
     fun editPost(postId: Long): String = "client/forum/post/$postId/edit"
 }
+
+object AdminRoutes {
+    const val LIST = "admin/list"
+    const val DETAIL = "admin/detail/{kind}/{id}"
+    const val REJECT = "admin/reject/{kind}/{id}"
+
+    fun detail(kind: String, id: Long) = "admin/detail/$kind/$id"
+    fun reject(kind: String, id: Long) = "admin/reject/$kind/$id"
+}

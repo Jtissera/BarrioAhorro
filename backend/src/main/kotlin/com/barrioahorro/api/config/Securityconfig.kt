@@ -50,6 +50,7 @@ class SecurityConfig(
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
                 auth.requestMatchers(*PUBLIC_ENDPOINTS).permitAll()
+                auth.requestMatchers("/api/admin/**").hasRole("ADMIN")
                 auth.anyRequest().authenticated()
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
