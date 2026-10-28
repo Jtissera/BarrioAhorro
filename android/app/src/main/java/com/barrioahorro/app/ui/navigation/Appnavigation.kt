@@ -50,6 +50,7 @@ import com.barrioahorro.app.ui.screens.offers.EditOfferScreen
 import com.barrioahorro.app.ui.screens.client.ClientEntryScreen
 import com.barrioahorro.app.ui.screens.client.ClientMainScreen
 import com.barrioahorro.app.ui.screens.client.location.ClientLocationScreen
+import com.barrioahorro.app.ui.screens.client.business.ClientBusinessProfileScreen
 
 @Composable
 fun AppNavigation(
@@ -453,10 +454,12 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
         )
     }
 
-    // Provisorio: se reemplaza por el contenedor de Explorar en la próxima tanda.
-    composable(ClientRoutes.HOME) {
+    composable(ClientRoutes.HOME) { entry ->
         val sessionViewModel: SessionViewModel = hiltViewModel()
         val isLoggingOut by sessionViewModel.isLoggingOut.collectAsStateWithLifecycle()
+        val requestedTab by entry.savedStateHandle
+            .getStateFlow<String?>("tab", null)
+            .collectAsStateWithLifecycle()
 
         ClientMainScreen(
             onEditLocation = { navController.navigate(ClientRoutes.editLocation()) },
@@ -465,6 +468,9 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
             onCreatePost = { navController.navigate(ClientRoutes.CREATE_POST) },
             onPostClick = { postId -> navController.navigate(ClientRoutes.postDetail(postId)) },
             onMyPosts = { navController.navigate(ClientRoutes.MY_POSTS) },
+            requestedTab = requestedTab,
+            onRequestedTabConsumed = { entry.savedStateHandle["tab"] = null },
+            onOpenBusiness = { id -> navController.navigate(ClientRoutes.businessProfile(id)) },
         )
     }
 
@@ -473,6 +479,22 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
             onNavigateBack = { navController.popBackStack() },
             onPostClick = { postId -> navController.navigate(ClientRoutes.postDetail(postId)) },
             onEditPost = { postId -> navController.navigate(ClientRoutes.editPost(postId)) },
+        )
+    }
+
+    composable(
+        route = ClientRoutes.BUSINESS_PROFILE,
+        arguments = listOf(navArgument("businessId") { type = NavType.LongType }),
+    ) {
+        ClientBusinessProfileScreen(
+            onBack = { navController.popBackStack() },
+            // Cualquier pestaña de la barra (Explorar incluida) vuelve al home en esa pestaña.
+            // El home sigue en el back stack, así que Explorar conserva lista/mapa y filtros.
+            onTabSelected = { tab ->
+                runCatching { navController.getBackStackEntry(ClientRoutes.HOME) }
+                    .getOrNull()?.savedStateHandle?.set("tab", tab.name)
+                navController.popBackStack(ClientRoutes.HOME, inclusive = false)
+            },
         )
     }
 

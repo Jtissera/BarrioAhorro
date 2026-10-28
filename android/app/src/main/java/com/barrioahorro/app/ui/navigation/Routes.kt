@@ -66,9 +66,13 @@ object ClientRoutes {
     const val MY_POSTS = "client/forum/mine"
     const val EDIT_POST = "client/forum/post/{postId}/edit"
 
+    const val BUSINESS_PROFILE = "client/business/{businessId}"
+
     fun editLocation(): String = "client/location?edit=true"
     fun postDetail(postId: Long): String = "client/forum/post/$postId"
     fun editPost(postId: Long): String = "client/forum/post/$postId/edit"
+
+    fun businessProfile(businessId: Long): String = "client/business/$businessId"
 }
 
 object AdminRoutes {

@@ -90,6 +90,7 @@ import com.barrioahorro.app.ui.theme.WarmGray
 @Composable
 fun ExploreScreen(
     onEditLocation: () -> Unit,
+    onViewBusiness: (Long) -> Unit,
     viewModel: ExploreViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -151,9 +152,7 @@ fun ExploreScreen(
                 state = state,
                 onSelect = viewModel::selectBusiness,
                 onRetry = viewModel::retryMap,
-                onViewBusiness = {
-                    Toast.makeText(context, "La pantalla del comercio llega muy pronto", Toast.LENGTH_SHORT).show()
-                },
+                onViewBusiness = onViewBusiness,
                 onEditLocation = onEditLocation,
                 modifier = Modifier.weight(1f),
             )

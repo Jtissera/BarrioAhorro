@@ -249,6 +249,38 @@ class ExploreService(
         }
     }
 
+    /** 404 si el comercio no existe o no es visible (mismo criterio que Explorar). */
+    fun requireVisibleBusiness(businessId: Long) {
+        val visible = jdbc.queryForObject(
+            "SELECT EXISTS (SELECT 1 FROM perfiles_comercio pc WHERE pc.usuario_id = :id AND $BUSINESS_IS_VISIBLE)",
+            MapSqlParameterSource("id", businessId),
+            Boolean::class.java,
+        ) ?: false
+        if (!visible) throw ResponseStatusException(HttpStatus.NOT_FOUND, "Este comercio ya no está disponible")
+    }
+
+    /** Ofertas vigentes de un comercio, con la misma forma que las de Explorar (favorita, confirmaciones, distancia). */
+    @Transactional(readOnly = true)
+    fun businessOffers(userId: Long, businessId: Long, lat: Double?, lng: Double?): List<ExploreOfferResponse> {
+        requireClient(userId)
+        requireVisibleBusiness(businessId)
+
+        val hasLocation = lat != null && lng != null
+        val params = baseParams(ExploreFilters(lat, lng, null, emptyList(), emptyList(), null), userId)
+            .addValue("businessId", businessId)
+        val distance = if (hasLocation) DISTANCE_EXPR else "CAST(NULL AS double precision)"
+
+        return jdbc.query(
+            """
+            SELECT ${selectColumns(distance)}
+            FROM $OFFER_FROM
+            WHERE ($OFFER_IS_LIVE) AND pc.usuario_id = :businessId
+            ORDER BY o.created_at DESC, o.id
+            """.trimIndent(),
+            params,
+        ) { rs, _ -> rs.toOffer() }
+    }
+
     // ---- Helpers --------------------------------------------------------------------
 
     private val OFFER_FROM = """

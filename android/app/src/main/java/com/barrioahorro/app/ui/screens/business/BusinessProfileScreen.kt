@@ -290,7 +290,7 @@ private fun CategoryAndRating(state: BusinessProfileUiState) {
 }
 
 @Composable
-private fun OpenStatusPill(status: OpenStatus) {
+internal fun OpenStatusPill(status: OpenStatus) {
     if (status.text.isBlank()) return
     Row(
         modifier = Modifier
@@ -344,7 +344,7 @@ private fun ActionButton(
 
 /** Flat tabs: label + optional count chip, with a red indicator under the selected one. */
 @Composable
-private fun ProfileTabSelector(
+internal fun ProfileTabSelector(
     selected: ProfileTab,
     offersCount: Int?,
     reviewsCount: Int?,

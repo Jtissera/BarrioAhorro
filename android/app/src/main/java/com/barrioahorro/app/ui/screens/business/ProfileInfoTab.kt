@@ -110,7 +110,7 @@ internal fun ProfileInfoTab(state: BusinessProfileUiState,
 }
 
 @Composable
-private fun SectionHeader(
+internal fun SectionHeader(
     icon: ImageVector,
     title: String,
     trailing: @Composable (() -> Unit)? = null,
@@ -135,7 +135,7 @@ private fun SectionHeader(
 }
 
 @Composable
-private fun ScheduleRow(label: String, slotsText: String?, isToday: Boolean) {
+internal fun ScheduleRow(label: String, slotsText: String?, isToday: Boolean) {
     val rowModifier = if (isToday) {
         Modifier.background(HighlightOrange, RoundedCornerShape(12.dp))
     } else {

@@ -117,7 +117,7 @@ internal fun ProfileReviewsTab(
 }
 
 @Composable
-private fun SummaryCard(summary: ReviewsSummaryUi) {
+internal fun SummaryCard(summary: ReviewsSummaryUi) {
     ProfileCard {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(96.dp)) {

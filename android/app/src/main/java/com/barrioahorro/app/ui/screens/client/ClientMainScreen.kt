@@ -36,6 +36,7 @@ import com.barrioahorro.app.ui.theme.InkBlack
 import com.barrioahorro.app.ui.theme.OnPrimary
 import com.barrioahorro.app.ui.theme.Primary
 import com.barrioahorro.app.ui.theme.WarmGray
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun ClientMainScreen(
@@ -45,10 +46,19 @@ fun ClientMainScreen(
     onCreatePost: () -> Unit = {},
     onPostClick: (Long) -> Unit = {},
     onMyPosts: () -> Unit = {},
+    requestedTab: String? = null,
+    onRequestedTabConsumed: () -> Unit = {},
+    onOpenBusiness: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ClientTab.EXPLORAR) }
 
+    LaunchedEffect(requestedTab) {
+        if (requestedTab != null) {
+            ClientTab.entries.firstOrNull { it.name == requestedTab }?.let { selectedTab = it }
+            onRequestedTabConsumed()
+        }
+    }
     // Atrás desde otra pestaña vuelve a Explorar en lugar de salir.
     BackHandler(enabled = selectedTab != ClientTab.EXPLORAR) { selectedTab = ClientTab.EXPLORAR }
 
@@ -64,7 +74,7 @@ fun ClientMainScreen(
                 .consumeWindowInsets(padding),
         ) {
             when (selectedTab) {
-                ClientTab.EXPLORAR -> ExploreScreen(onEditLocation = onEditLocation)
+                ClientTab.EXPLORAR -> ExploreScreen(onEditLocation = onEditLocation, onViewBusiness = onOpenBusiness)
                 ClientTab.FAVORITOS -> FavoritesScreen()
                 ClientTab.FORO -> ForumFeedScreen(
                     onCreatePost = onCreatePost,
