@@ -56,13 +56,15 @@ class RaffleService(
             .addValue("name", request.prizeName.trim())
             .addValue("prize", request.prizeDescription.trim())
             .addValue("value", request.prizeValue)
+            .addValue("photo", request.prizePhotoUrl?.trim()?.takeIf { it.isNotEmpty() })
         jdbc.update(
             """
-            UPDATE compromisos_sorteo
-            SET premio_nombre = :name, premio_descripcion = :prize, premio_valor = :value,
-                estado_revision = 'PENDIENTE', motivo_rechazo = NULL, revisado_en = NULL
-            WHERE id = :id AND estado = 'PENDIENTE'
-            """,
+    UPDATE compromisos_sorteo
+    SET premio_nombre = :name, premio_descripcion = :prize, premio_valor = :value,
+        premio_foto_url = :photo,
+        estado_revision = 'PENDIENTE', motivo_rechazo = NULL, revisado_en = NULL
+    WHERE id = :id AND estado = 'PENDIENTE'
+    """,
             params,
         )
         val updated = jdbc.update(
@@ -76,23 +78,24 @@ class RaffleService(
         return cycle(userId)
     }
 
-    private fun load(row: CycleRow): RaffleCommitmentResponse {
-        val prize = jdbc.queryForObject(
-            "SELECT premio_nombre, premio_descripcion, premio_valor FROM compromisos_sorteo WHERE id = :id",
+    private fun load(row: CycleRow): RaffleCommitmentResponse =
+        jdbc.queryForObject(
+            """SELECT premio_nombre, premio_descripcion, premio_valor, premio_foto_url
+           FROM compromisos_sorteo WHERE id = :id""",
             MapSqlParameterSource("id", row.id),
-        ) { rs, _ -> Triple(rs.getString(1), rs.getString(2), rs.getBigDecimal(3)) }!!
-
-        return RaffleCommitmentResponse(
-            id = row.id,
-            cycleStart = row.start,
-            cycleEnd = row.end,
-            ratificationDeadline = row.deadline,
-            status = row.status,
-            prizeName = prize.first?.takeIf { it.isNotBlank() },
-            prizeDescription = prize.second?.takeIf { it.isNotBlank() },
-            prizeValue = prize.third,
-        )
-    }
+        ) { rs, _ ->
+            RaffleCommitmentResponse(
+                id = row.id,
+                cycleStart = row.start,
+                cycleEnd = row.end,
+                ratificationDeadline = row.deadline,
+                status = row.status,
+                prizeName = rs.getString("premio_nombre")?.takeIf { it.isNotBlank() },
+                prizeDescription = rs.getString("premio_descripcion")?.takeIf { it.isNotBlank() },
+                prizeValue = rs.getBigDecimal("premio_valor"),
+                prizePhotoUrl = rs.getString("premio_foto_url")?.takeIf { it.isNotBlank() },
+            )
+        }
 
     private fun requireBusiness(userId: Long): BusinessCommitmentInfo =
         commitments.findBusinessInfo(userId)

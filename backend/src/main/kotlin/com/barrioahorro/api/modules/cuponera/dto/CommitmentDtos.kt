@@ -19,6 +19,7 @@ data class RaffleCommitmentResponse(
     val prizeName: String?,
     val prizeDescription: String?,
     val prizeValue: BigDecimal?,
+    val prizePhotoUrl: String?,
 )
 
 data class RatifyRaffleRequest(
@@ -34,6 +35,7 @@ data class RatifyRaffleRequest(
     @field:DecimalMin(value = "0.01", message = "El valor del premio debe ser mayor a cero")
     @field:Digits(integer = 10, fraction = 2, message = "El valor del premio no es válido")
     val prizeValue: BigDecimal,
+    val prizePhotoUrl: String? = null,
 )
 
 /** ratificationType: EARLY (renovación anticipada) | LATE (cuenta restringida) | null. */

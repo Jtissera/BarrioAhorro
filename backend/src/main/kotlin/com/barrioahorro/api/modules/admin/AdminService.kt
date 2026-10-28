@@ -20,8 +20,8 @@ private const val PENDING_SQL = """
     WHERE cu.estado_revision = 'PENDIENTE' AND cc.estado = 'RATIFICADO'
     UNION ALL
     SELECT 'SORTEO', cs.id, pc.nombre_negocio, pc.direccion,
-           COALESCE(cs.premio_nombre, cs.premio_descripcion), cs.premio_descripcion, NULL::text,
-           cs.fecha_ratificacion, NULL::int, NULL::int, cs.premio_valor
+       COALESCE(cs.premio_nombre, cs.premio_descripcion), cs.premio_descripcion, cs.premio_foto_url,
+       cs.fecha_ratificacion, NULL::int, NULL::int, cs.premio_valor
     FROM compromisos_sorteo cs
     JOIN perfiles_comercio pc ON pc.usuario_id = cs.comercio_id
     WHERE cs.estado_revision = 'PENDIENTE' AND cs.estado = 'RATIFICADO'

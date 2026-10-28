@@ -240,22 +240,36 @@ private fun RafflePendingContent(state: RaffleRatifyUiState, viewModel: RaffleRa
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            OutlinedTextField(
-                value = state.name,
-                onValueChange = viewModel::onNameChange,
-                label = { Text("Premio *") },
-                placeholder = { Text("Ej.: Canasta de panadería") },
-                singleLine = true,
-                colors = fieldColors,
-                supportingText = {
-                    Text(
-                        "${state.name.length}/$RAFFLE_NAME_MAX_LENGTH",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.End,
-                    )
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Row(verticalAlignment = Alignment.Top) {
+                CuponeraProductPhoto(
+                    nombre = state.name,
+                    fotoUrl = state.photoUrl,
+                    fotoSubiendo = state.photoUploading,
+                    editable = true,
+                    onPhotoCaptured = viewModel::onPhotoCaptured,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                Spacer(Modifier.width(12.dp))
+                OutlinedTextField(
+                    value = state.name,
+                    onValueChange = viewModel::onNameChange,
+                    label = { Text("Premio *") },
+                    placeholder = { Text("Ej.: Canasta de panadería") },
+                    singleLine = true,
+                    colors = fieldColors,
+                    supportingText = {
+                        Text(
+                            "${state.name.length}/$RAFFLE_NAME_MAX_LENGTH",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End,
+                        )
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            state.photoError?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = ErrorRed)
+            }
             Text(
                 "Describí algo atractivo y claro que motive a sumar puntos en tu tienda.",
                 style = MaterialTheme.typography.bodySmall,
@@ -402,14 +416,26 @@ private fun RaffleRatifiedContent(commitment: RaffleCommitmentDto) {
                 )
                 StatusPill(text = "Bloqueado", container = PrimaryContainer, content = Primary)
             }
-            Text(
-                commitment.prizeName.orEmpty(),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = InkBlack,
-            )
-            commitment.prizeDescription?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = MaterialTheme.typography.bodyMedium, color = Ink)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CuponeraProductPhoto(
+                    nombre = commitment.prizeName.orEmpty(),
+                    fotoUrl = commitment.prizePhotoUrl,
+                    fotoSubiendo = false,
+                    editable = false,
+                    onPhotoCaptured = {},
+                )
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        commitment.prizeName.orEmpty(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = InkBlack,
+                    )
+                    commitment.prizeDescription?.takeIf { it.isNotBlank() }?.let {
+                        Text(it, style = MaterialTheme.typography.bodyMedium, color = Ink)
+                    }
+                }
             }
             Spacer(Modifier.height(4.dp))
             Row {

@@ -26,8 +26,8 @@ class CuponeraRepository @Inject constructor(
 
     suspend fun getOverview(): Result<CommitmentOverviewDto> = call { api.getOverview() }
 
-    suspend fun ratifyRaffle(name: String, description: String, value: Double): Result<RaffleCycleDto> =
-        call { api.ratifyRaffle(RatifyRaffleRequestDto(name, description, value)) }
+    suspend fun ratifyRaffle(name: String, description: String, value: Double, photoUrl: String?): Result<RaffleCycleDto> =
+        call { api.ratifyRaffle(RatifyRaffleRequestDto(name, description, value, photoUrl)) }
 
     suspend fun validateRedemption(code: String): Result<ScanRedemptionDto> =
         call { api.validateRedemption(ScanRedemptionRequestDto(code)) }

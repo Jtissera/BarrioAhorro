@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -40,6 +41,15 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.ImageNotSupported
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Storefront
 
 private val esAR = Locale.forLanguageTag("es-AR")
 
@@ -91,8 +101,13 @@ fun AdminListScreen(
             state.error != null && state.items.isEmpty() ->
                 ContributionErrorState(state.error.orEmpty(), viewModel::load, Modifier.weight(1f))
             else -> LazyColumn(
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                modifier = Modifier.weight(1f).navigationBarsPadding(),
+                contentPadding = PaddingValues(
+                    start = 20.dp,
+                    end = 20.dp,
+                    top = 8.dp,
+                    bottom = 32.dp,
+                ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item {
@@ -198,7 +213,7 @@ fun AdminDetailScreen(
                                 onClick = { onReject(item) },
                                 enabled = !state.submitting,
                                 shape = RoundedCornerShape(27.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = SurfaceMuted, contentColor = Ink),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Primary),
                                 modifier = Modifier.weight(1f).height(52.dp),
                             ) {
                                 Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -241,69 +256,249 @@ private fun DetailContent(item: AdminPublicationDto, modifier: Modifier = Modifi
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            StatusPill("Pendiente de aprobación", BadgeYellow, BadgeYellowText)
-            Spacer(Modifier.weight(1f))
-            Text(formatSubmitted(item.submittedAt), style = MaterialTheme.typography.labelSmall, color = WarmGray)
-        }
-
-        Surface(shape = RoundedCornerShape(16.dp), color = CardWhite, modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(14.dp)) {
-                Text(item.businessName ?: "Comercio", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Ink)
-                item.businessAddress?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = WarmGray) }
+        // Franja oscura: estado y hora
+        Surface(shape = RoundedCornerShape(16.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                StatusPill("Pendiente de aprobación", BadgeYellow, BadgeYellowText)
+                Spacer(Modifier.weight(1f))
+                Icon(Icons.Outlined.Schedule, contentDescription = null, tint = WarmGray, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(formatSubmitted(item.submittedAt), style = MaterialTheme.typography.labelSmall, color = Ink)
             }
         }
 
-        item.photoUrl?.let {
-            AsyncImage(
-                model = it.toAbsoluteUrl(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(20.dp)),
-            )
-        }
-
-        Text("BENEFICIO PROPUESTO", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Primary)
-        Text(item.title, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, color = Ink)
-
-        item.description?.takeIf { it.isNotBlank() }?.let {
-            Surface(shape = RoundedCornerShape(16.dp), color = BadgeOrangeLight, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Descripción enviada", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = WarmGray)
-                    Text(it, style = MaterialTheme.typography.bodyMedium, color = Ink)
+        // Comercio
+        Surface(shape = RoundedCornerShape(16.dp), color = CardWhite, modifier = Modifier.fillMaxWidth()) {
+            Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(44.dp).background(SecondaryContainer, RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Outlined.Storefront, contentDescription = null, tint = Secondary)
+                }
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(
+                        item.businessName ?: "Comercio",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink,
+                    )
+                    item.businessAddress?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = WarmGray)
+                    }
                 }
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (isRaffle) {
-                StatCard("Valor del premio", item.amount?.let(::money) ?: "—", "", Primary, Modifier.weight(1f))
-            } else {
-                StatCard("Costo para el vecino", "${item.points ?: "—"}", "puntos", Primary, Modifier.weight(1f))
-                StatCard("Stock por ciclo", "${item.stock ?: "—"}", "unidades", Secondary, Modifier.weight(1f))
-            }
-        }
+        // Tarjeta blanca principal
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = CardWhite,
+            shadowElevation = 1.dp,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column {
+                PhotoHeader(item)
 
-        Surface(shape = RoundedCornerShape(16.dp), color = SurfaceDay, modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Criterios de moderación barrial", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = Ink)
-                if (isRaffle) {
-                    Criterion("El premio es claro y atractivo para los vecinos")
-                    Criterion("El valor declarado es coherente con el premio")
-                } else {
-                    Criterion("El valor en puntos es coherente con el ticket promedio")
-                    Criterion("La foto representa fielmente el producto ofrecido")
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        "BENEFICIO PROPUESTO",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Primary,
+                    )
+                    Text(
+                        item.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Ink,
+                    )
+
+                    item.description?.takeIf { it.isNotBlank() }?.let {
+                        Surface(shape = RoundedCornerShape(16.dp), color = SurfaceFieldAlt , modifier = Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Outlined.Description, contentDescription = null, tint = WarmGray, modifier = Modifier.size(14.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(
+                                        "Descripción enviada",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = WarmGray,
+                                    )
+                                }
+                                Text(it, style = MaterialTheme.typography.bodyMedium, color = Ink)
+                            }
+                        }
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (isRaffle) {
+                            StatCard(
+                                icon = Icons.Filled.Star,
+                                label = "Valor del premio",
+                                value = item.amount?.let(::money) ?: "—",
+                                unit = "",
+                                accent = Primary,
+                                modifier = Modifier.weight(1f),
+                            )
+                        } else {
+                            StatCard(
+                                icon = Icons.Filled.Star,
+                                label = "Costo para el vecino",
+                                value = "${item.points ?: "—"}",
+                                unit = "puntos",
+                                accent = Primary,
+                                modifier = Modifier.weight(1f),
+                            )
+                            StatCard(
+                                icon = Icons.Outlined.Inventory2,
+                                label = "Stock por ciclo",
+                                value = "${item.stock ?: "—"}",
+                                unit = "unidades",
+                                accent = Secondary,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+
+                    Surface(shape = RoundedCornerShape(16.dp), color = SurfaceFieldAlt, modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.Checklist, contentDescription = null, tint = Ink, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    "Criterios de moderación barrial",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Ink,
+                                )
+                            }
+                            if (isRaffle) {
+                                Criterion("El premio es claro y atractivo para los vecinos")
+                                Criterion("El valor declarado es coherente con el premio")
+                            } else {
+                                Criterion("El valor en puntos es coherente con el ticket promedio")
+                                Criterion("La foto representa fielmente el producto ofrecido")
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+/** Foto del comercio con sus etiquetas, o un aviso claro si no cargó ninguna. */
 @Composable
-private fun StatCard(label: String, value: String, unit: String, accent: Color, modifier: Modifier = Modifier) {
-    Surface(shape = RoundedCornerShape(16.dp), color = SurfaceDay, modifier = modifier) {
-        Column(Modifier.padding(14.dp)) {
-            Text(label, style = MaterialTheme.typography.labelSmall, color = WarmGray)
+private fun PhotoHeader(item: AdminPublicationDto) {
+    val isRaffle = item.kind == "SORTEO"
+    val photo = item.photoUrl?.takeIf { it.isNotBlank() }
+
+    Box(Modifier.fillMaxWidth().height(200.dp)) {
+        if (photo != null) {
+            AsyncImage(
+                model = photo.toAbsoluteUrl(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Column(
+                modifier = Modifier.fillMaxSize().background(SurfaceFieldAlt),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    Icons.Outlined.ImageNotSupported,
+                    contentDescription = null,
+                    tint = MutedLabel,
+                    modifier = Modifier.size(56.dp),
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                     "El comercio no cargó una foto",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = WarmGray,
+                )
+            }
+        }
+
+        // Etiqueta superior izquierda
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = BadgeYellow,
+            modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
+        ) {
+            Row(
+                Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    if (isRaffle) Icons.Filled.CardGiftcard else Icons.Outlined.Description,
+                    contentDescription = null,
+                    tint = BadgeYellowText,
+                    modifier = Modifier.size(12.dp),
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    if (isRaffle) "Sorteo Barrial" else "Cupón Barrial",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = BadgeYellowText,
+                )
+            }
+        }
+
+        // Etiqueta inferior derecha
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = CardWhite.copy(alpha = 0.92f),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp),
+        ) {
+            Row(
+                Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    if (photo != null) Icons.Outlined.PhotoCamera else Icons.Outlined.ImageNotSupported,
+                    contentDescription = null,
+                    tint = Ink,
+                    modifier = Modifier.size(12.dp),
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    if (photo != null) "Foto del comercio" else "Sin foto",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Ink,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    value: String,
+    unit: String,
+    accent: Color,
+    modifier: Modifier = Modifier,
+) {
+    Surface(shape = RoundedCornerShape(16.dp), color = SurfaceFieldAlt, modifier = modifier) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.Top) {
+                Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = Ink)
+            }
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(value, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = accent)
                 if (unit.isNotEmpty()) {
@@ -318,7 +513,12 @@ private fun StatCard(label: String, value: String, unit: String, accent: Color, 
 @Composable
 private fun Criterion(text: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Filled.Check, contentDescription = null, tint = Secondary, modifier = Modifier.size(16.dp))
+        Box(
+            Modifier.size(18.dp).background(Secondary, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Filled.Check, contentDescription = null, tint = OnPrimary, modifier = Modifier.size(12.dp))
+        }
         Spacer(Modifier.width(8.dp))
         Text(text, style = MaterialTheme.typography.bodySmall, color = Ink)
     }

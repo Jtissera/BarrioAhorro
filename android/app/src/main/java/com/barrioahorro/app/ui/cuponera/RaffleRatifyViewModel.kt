@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import android.util.Log
+import java.io.File
 
 const val RAFFLE_NAME_MAX_LENGTH = 120
 const val RAFFLE_DESCRIPTION_MAX_LENGTH = 255
@@ -32,6 +34,9 @@ data class RaffleRatifyUiState(
     val name: String = "",
     val description: String = "",
     val valueText: String = "",
+    val photoUrl: String? = null,
+    val photoUploading: Boolean = false,
+    val photoError: String? = null,
     val submitting: Boolean = false,
     val error: String? = null,
 ) {
@@ -39,7 +44,7 @@ data class RaffleRatifyUiState(
 
     val canSubmit: Boolean
         get() = canRatify && name.isNotBlank() && description.isNotBlank() &&
-                value != null && !submitting && !loading
+                value != null && !submitting && !loading && !photoUploading
 }
 
 @HiltViewModel
@@ -106,6 +111,27 @@ class RaffleRatifyViewModel @Inject constructor(
         _uiState.update { it.copy(showConfirm = false) }
     }
 
+    fun onPhotoCaptured(file: File) {
+        _uiState.update { it.copy(photoUploading = true, photoError = null) }
+        viewModelScope.launch {
+            repository.uploadPhoto(file)
+                .onSuccess { response ->
+                    _uiState.update { it.copy(photoUrl = response.url, photoUploading = false, photoError = null) }
+                }
+                .onFailure { error ->
+                    Log.e("RaffleRatify", "uploadPhoto falló", error)
+                    _uiState.update {
+                        it.copy(
+                            photoUploading = false,
+                            photoError = (error.message ?: "No se pudo subir la foto.") +
+                                    " Tocá la foto para reintentar.",
+                        )
+                    }
+                }
+            file.delete()
+        }
+    }
+
     fun submit() {
         val state = _uiState.value
         val value = state.value
@@ -113,8 +139,7 @@ class RaffleRatifyViewModel @Inject constructor(
 
         _uiState.update { it.copy(showConfirm = false, submitting = true, error = null) }
         viewModelScope.launch {
-            repository.ratifyRaffle(state.name.trim(), state.description.trim(), value)
-                .onSuccess { cycle ->
+            repository.ratifyRaffle(state.name.trim(), state.description.trim(), value, state.photoUrl)                .onSuccess { cycle ->
                     _uiState.update {
                         it.copy(
                             submitting = false,
@@ -129,7 +154,6 @@ class RaffleRatifyViewModel @Inject constructor(
         }
     }
 
-    /** Desde el estado "¡Todo listo!": sigue el flujo (dashboard u onboarding). */
     fun onContinue() {
         _events.trySend(Unit)
     }

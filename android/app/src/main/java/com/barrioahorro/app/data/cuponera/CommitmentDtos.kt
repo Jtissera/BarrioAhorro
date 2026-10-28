@@ -10,6 +10,7 @@ data class RaffleCommitmentDto(
     val prizeName: String?,
     val prizeDescription: String?,
     val prizeValue: Double?,
+    val prizePhotoUrl: String? = null,
 )
 
 data class CuponeraCycleDto(
@@ -38,6 +39,7 @@ data class RatifyRaffleRequestDto(
     val prizeName: String,
     val prizeDescription: String,
     val prizeValue: Double,
+    val prizePhotoUrl: String? = null,
 )
 data class ScanRedemptionRequestDto(val code: String)
 
