@@ -25,6 +25,14 @@ interface ExploreApi {
         @Query("size") size: Int,
     ): ExploreOffersPageDto
 
+    @GET("api/favoritos")
+    suspend fun getFavorites(
+        @Query("lat") latitude: Double?,
+        @Query("lng") longitude: Double?,
+        @Query("page") page: Int,
+        @Query("size") size: Int,
+    ): ExploreOffersPageDto
+
     @PUT("api/favoritos/{id}")
     suspend fun addFavorite(@Path("id") offerId: Long): Response<Unit>
 

@@ -72,6 +72,21 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import java.io.File
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.RectF
+import android.graphics.drawable.BitmapDrawable
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.layout.offset
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 
 private const val USER_COLOR = 0xFF1A73E8.toInt()
 
@@ -98,7 +113,10 @@ fun ExploreMapContent(
 
     val selected = state.businesses.firstOrNull { it.id == state.selectedBusinessId }
 
-    Box(modifier.fillMaxSize()) {
+    var cardHeightPx by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
+
+    Box(modifier.fillMaxSize().clipToBounds()) {
         BusinessesMap(
             businesses = state.businesses,
             selected = selected,
@@ -106,6 +124,7 @@ fun ExploreMapContent(
             userLongitude = location.longitude,
             zoom = zoomFor(state.distance),
             onSelect = onSelect,
+            bottomInset = if (selected != null) with(density) { cardHeightPx.toDp() } else 0.dp,
             modifier = Modifier.fillMaxSize(),
         )
 
@@ -125,11 +144,16 @@ fun ExploreMapContent(
         }
 
         if (selected != null) {
-            BusinessCard(
-                business = selected,
-                onViewBusiness = { onViewBusiness(selected.id) },
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .onSizeChanged { cardHeightPx = it.height },
+            ) {
+                BusinessCard(
+                    business = selected,
+                    onViewBusiness = { onViewBusiness(selected.id) },
+                )
+            }
         }
     }
 }
@@ -145,6 +169,7 @@ private fun BusinessesMap(
     userLongitude: Double,
     zoom: Double,
     onSelect: (Long?) -> Unit,
+    bottomInset: Dp,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -160,9 +185,27 @@ private fun BusinessesMap(
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
+            isHorizontalMapRepetitionEnabled = false
+            isVerticalMapRepetitionEnabled = false
+            setScrollableAreaLimitLatitude(
+                MapView.getTileSystem().maxLatitude,
+                MapView.getTileSystem().minLatitude,
+                0,
+            )
+            minZoomLevel = 4.0
             zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
             controller.setZoom(zoom)
             controller.setCenter(GeoPoint(userLatitude, userLongitude))
+            // El mapa se queda con todos los gestos: el padre no los intercepta.
+            setOnTouchListener { v, event ->
+                when (event.actionMasked) {
+                    android.view.MotionEvent.ACTION_DOWN,
+                    android.view.MotionEvent.ACTION_MOVE -> v.parent?.requestDisallowInterceptTouchEvent(true)
+                    android.view.MotionEvent.ACTION_UP,
+                    android.view.MotionEvent.ACTION_CANCEL -> v.parent?.requestDisallowInterceptTouchEvent(false)
+                }
+                false
+            }
         }
     }
 
@@ -204,15 +247,26 @@ private fun BusinessesMap(
         selected?.let { mapView.controller.animateTo(GeoPoint(it.latitude, it.longitude)) }
     }
 
-    Box(modifier) {
-        AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
+    val buttonBottom by animateDpAsState(
+        targetValue = bottomInset + 16.dp,
+        label = "locateButtonBottom",
+    )
+
+    Box(modifier.clipToBounds()) {
+        AndroidView(
+            factory = { mapView },
+            modifier = Modifier.fillMaxSize().clipToBounds(),
+        )
 
         Surface(
             onClick = { mapView.controller.animateTo(GeoPoint(userLatitude, userLongitude)) },
             shape = CircleShape,
             color = CardWhite,
             shadowElevation = 4.dp,
-            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp).size(44.dp),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 14.dp, bottom = buttonBottom)
+                .size(44.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(Icons.Filled.MyLocation, contentDescription = "Centrar en mi ubicación", tint = Primary)
@@ -255,18 +309,21 @@ private fun MapView.render(
         },
     )
 
-    // El seleccionado va al final para quedar por encima de los demás.
     businesses.sortedBy { it.id == selectedId }.forEach { business ->
         val isSelected = business.id == selectedId
         overlays.add(
             Marker(this).apply {
                 position = GeoPoint(business.latitude, business.longitude)
-                icon = when {
-                    isSelected -> circle(context, sizeDp = 38, fill = Ink.toArgb())
-                    business.open -> circle(context, sizeDp = 28, fill = Primary.toArgb())
-                    else -> circle(context, sizeDp = 28, fill = MutedLabel.toArgb())
-                }
-                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                icon = pin(
+                    context,
+                    widthDp = if (isSelected) 46 else 34,
+                    fill = when {
+                        isSelected -> Ink.toArgb()
+                        business.open -> Primary.toArgb()
+                        else -> MutedLabel.toArgb()
+                    },
+                )
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                 setInfoWindow(null)
                 setOnMarkerClickListener { _, _ ->
                     onSelect(business.id)
@@ -452,3 +509,47 @@ private fun NoLocationMap(onEditLocation: () -> Unit, modifier: Modifier = Modif
 
 private fun String.toAbsolutePhotoUrl(): String =
     if (startsWith("http://") || startsWith("https://")) this else "${BASE_URL.trimEnd('/')}/${trimStart('/')}"
+
+
+private fun pin(context: Context, widthDp: Int, fill: Int): BitmapDrawable {
+    val d = context.resources.displayMetrics.density
+    val w = (widthDp * d)
+    val h = w * 1.3f
+    val shadow = 3 * d
+    val bmp = Bitmap.createBitmap((w + shadow * 2).toInt(), (h + shadow * 2).toInt(), Bitmap.Config.ARGB_8888)
+    val c = Canvas(bmp)
+    val ox = shadow
+    val oy = shadow / 2
+    val r = w / 2f
+    val cx = ox + r
+    val cy = oy + r
+
+    // Gota: círculo + punta
+    val drop = Path().apply {
+        addCircle(cx, cy, r - 1.5f * d, Path.Direction.CW)
+        moveTo(cx - r * 0.62f, cy + r * 0.62f)
+        lineTo(cx, oy + h - 1.5f * d)
+        lineTo(cx + r * 0.62f, cy + r * 0.62f)
+        close()
+    }
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    paint.color = 0x33000000
+    c.save(); c.translate(0f, 1.5f * d); c.drawPath(drop, paint); c.restore()
+    paint.color = fill
+    c.drawPath(drop, paint)
+    paint.style = Paint.Style.STROKE
+    paint.strokeWidth = 2.5f * d
+    paint.color = 0xFFFFFFFF.toInt()
+    c.drawPath(drop, paint)
+
+    // Tienda blanca: toldo + cuerpo
+    paint.style = Paint.Style.FILL
+    paint.color = 0xFFFFFFFF.toInt()
+    val s = r * 0.52f
+    c.drawRoundRect(RectF(cx - s, cy - s * 0.85f, cx + s, cy - s * 0.15f), 2 * d, 2 * d, paint)
+    c.drawRect(RectF(cx - s * 0.8f, cy - s * 0.05f, cx + s * 0.8f, cy + s * 0.8f), paint)
+    paint.color = fill
+    c.drawRect(RectF(cx - s * 0.2f, cy + s * 0.25f, cx + s * 0.2f, cy + s * 0.8f), paint)
+
+    return BitmapDrawable(context.resources, bmp)
+}

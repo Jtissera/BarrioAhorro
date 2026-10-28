@@ -1,6 +1,9 @@
 package com.barrioahorro.app.ui.screens.client.explore
 
 import android.widget.Toast
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,9 +12,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -55,6 +60,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -284,30 +290,69 @@ private fun CategoryChips(
 
 @Composable
 private fun ModeToggle(mode: ExploreMode, onChange: (ExploreMode) -> Unit) {
+    val options = listOf(ExploreMode.MAP to "Mapa", ExploreMode.LIST to "Lista")
+    val optionWidth = 84.dp
+    val selectedIndex = options.indexOfFirst { it.first == mode }
+
+    val indicatorOffset by animateDpAsState(
+        targetValue = optionWidth * selectedIndex,
+        animationSpec = spring(dampingRatio = 0.75f, stiffness = 500f),
+        label = "modeIndicator",
+    )
+
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Surface(shape = RoundedCornerShape(50), color = SurfaceFieldAlt) {
-            Row(Modifier.padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                ModeOption("Mapa", mode == ExploreMode.MAP) { onChange(ExploreMode.MAP) }
-                ModeOption("Lista", mode == ExploreMode.LIST) { onChange(ExploreMode.LIST) }
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(SurfaceFieldAlt)
+                .padding(2.dp),
+        ) {
+            // Pastilla blanca que se desliza
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = CardWhite,
+                shadowElevation = 2.dp,
+                modifier = Modifier
+                    .offset(x = indicatorOffset)
+                    .size(width = optionWidth, height = 30.dp),
+            ) {}
+
+            Row {
+                options.forEach { (value, label) ->
+                    ModeOption(
+                        label = label,
+                        selected = mode == value,
+                        onClick = { onChange(value) },
+                        modifier = Modifier.size(width = optionWidth, height = 30.dp),
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ModeOption(label: String, selected: Boolean, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(50),
-        color = if (selected) CardWhite else SurfaceFieldAlt,
-        shadowElevation = if (selected) 2.dp else 0.dp,
+private fun ModeOption(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val textColor by animateColorAsState(
+        targetValue = if (selected) Primary else WarmGray,
+        label = "modeTextColor",
+    )
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            color = if (selected) Primary else WarmGray,
-            modifier = Modifier.padding(horizontal = 22.dp, vertical = 8.dp),
+            color = textColor,
         )
     }
 }

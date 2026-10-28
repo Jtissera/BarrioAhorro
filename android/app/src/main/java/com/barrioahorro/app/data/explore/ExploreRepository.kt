@@ -40,6 +40,10 @@ class ExploreRepository @Inject constructor(
         )
     }
 
+    suspend fun getFavorites(latitude: Double?, longitude: Double?, page: Int): Result<ExploreOffersPageDto> = call {
+        api.getFavorites(latitude = latitude, longitude = longitude, page = page, size = FAVORITES_PAGE_SIZE)
+    }
+
     suspend fun getSummary(): Result<ClientSummaryDto> = call { api.getSummary() }
 
     suspend fun getCategories(): Result<List<ExploreCategory>> = call {
@@ -101,5 +105,9 @@ class ExploreRepository @Inject constructor(
                 text = query.text,
             )
         }
+    }
+
+    private companion object {
+        const val FAVORITES_PAGE_SIZE = 50
     }
 }

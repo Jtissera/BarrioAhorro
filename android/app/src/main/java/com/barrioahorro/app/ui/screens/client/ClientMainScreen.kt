@@ -29,13 +29,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.barrioahorro.app.ui.screens.client.explore.ExploreScreen
+import com.barrioahorro.app.ui.screens.client.explore.FavoritesScreen
+import com.barrioahorro.app.ui.screens.client.forum.ForumFeedScreen
 import com.barrioahorro.app.ui.theme.Cream
 import com.barrioahorro.app.ui.theme.InkBlack
 import com.barrioahorro.app.ui.theme.OnPrimary
 import com.barrioahorro.app.ui.theme.Primary
 import com.barrioahorro.app.ui.theme.WarmGray
-
-import com.barrioahorro.app.ui.screens.client.forum.ForumFeedScreen
 
 @Composable
 fun ClientMainScreen(
@@ -65,7 +65,7 @@ fun ClientMainScreen(
         ) {
             when (selectedTab) {
                 ClientTab.EXPLORAR -> ExploreScreen(onEditLocation = onEditLocation)
-                ClientTab.FAVORITOS -> ComingSoon("Favoritos")
+                ClientTab.FAVORITOS -> FavoritesScreen()
                 ClientTab.FORO -> ForumFeedScreen(
                     onCreatePost = onCreatePost,
                     onPostClick = onPostClick,

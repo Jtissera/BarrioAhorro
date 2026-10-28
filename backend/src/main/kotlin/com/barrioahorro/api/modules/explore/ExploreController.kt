@@ -52,6 +52,23 @@ class ExploreController(
     ): List<ExploreBusinessResponse> =
         service.businesses(userId(auth), filters(lat, lng, radioKm, rubros, tipos, q))
 
+    @GetMapping("/favoritos")
+    fun favorites(
+        auth: Authentication,
+        @RequestParam(required = false) lat: Double?,
+        @RequestParam(required = false) lng: Double?,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "50") size: Int,
+    ): ExploreOffersPage {
+        if (page < 0) bad("La página no es válida")
+        if (size !in 1..ExploreService.MAX_PAGE_SIZE) bad("El tamaño de página debe estar entre 1 y ${ExploreService.MAX_PAGE_SIZE}")
+        if ((lat == null) != (lng == null)) bad("Enviá latitud y longitud juntas")
+        if (lat != null && lng != null && (lat !in -90.0..90.0 || lng !in -180.0..180.0)) {
+            bad("La ubicación no es válida")
+        }
+        return service.favorites(userId(auth), lat, lng, page, size)
+    }
+
     @PutMapping("/favoritos/{offerId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun addFavorite(auth: Authentication, @PathVariable offerId: Long) =

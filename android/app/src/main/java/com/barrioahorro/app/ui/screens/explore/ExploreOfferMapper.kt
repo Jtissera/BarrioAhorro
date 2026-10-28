@@ -31,6 +31,7 @@ object ExploreOfferMapper {
             tipoOferta = d.type,
             vigenciaTipo = d.validityType,
             vigenteHasta = d.validUntil,
+            vigente = d.live,
             detalle2x1 = if (d.type == "DOS_POR_UNO" && d.take != null && d.pay != null) {
                 Offer2x1DetailResponseDto(d.pay.toShort(), d.take.toShort(), d.price)
             } else null,

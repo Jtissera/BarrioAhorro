@@ -26,6 +26,8 @@ data class ExploreOfferDto(
     val distanceMeters: Int?,
     val confirmations: Int,
     val favorite: Boolean,
+    /** false si la oferta ya terminó. */
+    val live: Boolean = true,
 )
 
 data class ExploreOffersPageDto(

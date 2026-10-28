@@ -3,6 +3,10 @@ package com.barrioahorro.api.modules.explore
 import java.math.BigDecimal
 import java.time.OffsetDateTime
 
+data class ClientSummaryResponse(
+    val points: Int,
+)
+
 data class ExploreOfferResponse(
     val id: Long,
     val productName: String,
@@ -11,7 +15,6 @@ data class ExploreOfferResponse(
     val type: String,
     val validityType: String,
     val validUntil: OffsetDateTime?,
-    /** Último cierre del comercio hoy ("20:00"), o null si hoy no abre. */
     val closesToday: String?,
     val businessId: Long,
     val businessName: String?,
@@ -25,10 +28,11 @@ data class ExploreOfferResponse(
     val requiredQuantity: Int?,
     val lastUnitDiscount: Int?,
     val minQuantity: Int?,
-    /** null si el vecino no compartió su ubicación. */
     val distanceMeters: Int?,
     val confirmations: Int,
     val favorite: Boolean,
+    /** false si la oferta ya terminó (desactivada o vencida). */
+    val live: Boolean = true,
 )
 
 data class ExploreOffersPage(
@@ -50,5 +54,3 @@ data class ExploreBusinessResponse(
     val activeOffers: Int,
     val photoUrl: String?,
 )
-
-data class ClientSummaryResponse(val points: Int)

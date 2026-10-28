@@ -102,6 +102,42 @@ class ExploreService(
         )
     }
 
+    /**
+     * Ofertas guardadas por el vecino, las más recientes primero. Incluye las finalizadas
+     * y las de comercios restringidos: el vecino tiene que ver todo lo que guardó.
+     */
+    @Transactional(readOnly = true)
+    fun favorites(userId: Long, lat: Double?, lng: Double?, page: Int, size: Int): ExploreOffersPage {
+        requireClient(userId)
+
+        val hasLocation = lat != null && lng != null
+        val filters = ExploreFilters(lat, lng, null, emptyList(), emptyList(), null)
+        val params = baseParams(filters, userId)
+        val distance = if (hasLocation) DISTANCE_EXPR else "CAST(NULL AS double precision)"
+        val from = "$OFFER_FROM JOIN favoritos fav ON fav.oferta_id = o.id AND fav.cliente_id = :clientId"
+
+        val total = jdbc.queryForObject("SELECT COUNT(*) FROM $from", params, Long::class.java) ?: 0L
+
+        params.addValue("limit", size).addValue("offset", page.toLong() * size)
+        val items = jdbc.query(
+            """
+            SELECT ${selectColumns(distance)}
+            FROM $from
+            ORDER BY fav.created_at DESC, o.id
+            LIMIT :limit OFFSET :offset
+            """.trimIndent(),
+            params,
+        ) { rs, _ -> rs.toOffer() }
+
+        return ExploreOffersPage(
+            items = items,
+            total = total,
+            page = page,
+            size = size,
+            hasMore = (page.toLong() + 1) * size < total,
+        )
+    }
+
     // ---- Lista de ofertas -----------------------------------------------------------
 
     @Transactional(readOnly = true)
@@ -129,23 +165,7 @@ class ExploreService(
         params.addValue("limit", size).addValue("offset", page.toLong() * size)
         val items = jdbc.query(
             """
-            SELECT o.id, o.nombre_producto, o.foto_url,
-                   o.tipo_oferta::text AS tipo, o.vigencia_tipo::text AS vigencia_tipo, o.vigente_hasta,
-                   pc.usuario_id AS comercio_id, pc.nombre_negocio, r.nombre AS rubro,
-                   COALESCE(op.precio_final, d.precio_unitario, oc.precio_unitario, om.precio_unitario_mayorista) AS precio,
-                   op.precio_original AS precio_original,
-                   op.porcentaje_descuento AS porcentaje,
-                   d.unidades_a_llevar AS llevar, d.unidades_a_pagar AS pagar,
-                   oc.cantidad_requerida AS cantidad_requerida,
-                   oc.porcentaje_descuento_ultima_unidad AS descuento_ultima,
-                   om.cantidad_minima AS cantidad_minima,
-                   $distance AS distancia_m,
-                   (SELECT COUNT(*) FROM validaciones_comunitarias_oferta v
-                     WHERE v.oferta_id = o.id AND v.sigue_vigente) AS confirmaciones,
-                   EXISTS (SELECT 1 FROM favoritos fv WHERE fv.oferta_id = o.id AND fv.cliente_id = :clientId) AS favorita,
-                   ($BUSINESS_IS_OPEN) AS abierto,
-                   (SELECT to_char(MAX(h.hora_fin), 'HH24:MI') FROM horarios_atencion h
-                     WHERE h.comercio_id = pc.usuario_id AND h.activo AND h.dia_semana = :isoDow) AS cierra_hoy
+            SELECT ${selectColumns(distance)}
             FROM $OFFER_FROM
             WHERE $where
             ORDER BY $orderBy
@@ -246,6 +266,28 @@ class ExploreService(
 
     private val DISTANCE_EXPR = "ST_Distance(pc.ubicacion, $POINT_EXPR)"
 
+    /** Columnas de una oferta de la lista; las comparten Explorar y Favoritos. */
+    private fun selectColumns(distance: String) = """
+        o.id, o.nombre_producto, o.foto_url,
+        o.tipo_oferta::text AS tipo, o.vigencia_tipo::text AS vigencia_tipo, o.vigente_hasta,
+        pc.usuario_id AS comercio_id, pc.nombre_negocio, r.nombre AS rubro,
+        COALESCE(op.precio_final, d.precio_unitario, oc.precio_unitario, om.precio_unitario_mayorista) AS precio,
+        op.precio_original AS precio_original,
+        op.porcentaje_descuento AS porcentaje,
+        d.unidades_a_llevar AS llevar, d.unidades_a_pagar AS pagar,
+        oc.cantidad_requerida AS cantidad_requerida,
+        oc.porcentaje_descuento_ultima_unidad AS descuento_ultima,
+        om.cantidad_minima AS cantidad_minima,
+        $distance AS distancia_m,
+        (SELECT COUNT(*) FROM validaciones_comunitarias_oferta v
+          WHERE v.oferta_id = o.id AND v.sigue_vigente) AS confirmaciones,
+        EXISTS (SELECT 1 FROM favoritos fv WHERE fv.oferta_id = o.id AND fv.cliente_id = :clientId) AS favorita,
+        ($BUSINESS_IS_OPEN) AS abierto,
+        (SELECT to_char(MAX(h.hora_fin), 'HH24:MI') FROM horarios_atencion h
+          WHERE h.comercio_id = pc.usuario_id AND h.activo AND h.dia_semana = :isoDow) AS cierra_hoy,
+        ($OFFER_IS_LIVE) AS vigente
+    """.trimIndent()
+
     private fun baseParams(f: ExploreFilters, userId: Long): MapSqlParameterSource {
         val now = LocalDateTime.now(ZONE)
         return MapSqlParameterSource()
@@ -320,6 +362,7 @@ class ExploreService(
             distanceMeters = distance,
             confirmations = getInt("confirmaciones"),
             favorite = getBoolean("favorita"),
+            live = getBoolean("vigente"),
         )
     }
 }

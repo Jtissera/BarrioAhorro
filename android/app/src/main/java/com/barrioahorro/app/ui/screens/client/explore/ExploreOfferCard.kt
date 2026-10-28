@@ -84,9 +84,11 @@ fun ExploreOfferCard(
                                 Icon(Icons.Outlined.Image, contentDescription = null, tint = MutedLabel, modifier = Modifier.size(32.dp))
                             }
 
+                            // Corazón: círculo blanco; vacío y oscuro, o lleno y rojo si está guardada.
                             Surface(
                                 shape = CircleShape,
-                                color = Color.Black.copy(alpha = 0.4f),
+                                color = Color.White.copy(alpha = 0.92f),
+                                shadowElevation = 2.dp,
                                 modifier = Modifier
                                     .size(28.dp)
                                     .align(Alignment.TopEnd)
@@ -97,7 +99,7 @@ fun ExploreOfferCard(
                                 Icon(
                                     imageVector = if (item.favorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                                     contentDescription = if (item.favorite) "Quitar de favoritos" else "Guardar en favoritos",
-                                    tint = if (item.favorite) Primary else Color.White,
+                                    tint = if (item.favorite) Primary else Ink,
                                     modifier = Modifier.padding(4.dp),
                                 )
                             }

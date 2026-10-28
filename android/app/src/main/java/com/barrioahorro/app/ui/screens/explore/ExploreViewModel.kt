@@ -2,6 +2,7 @@ package com.barrioahorro.app.ui.screens.client.explore
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.barrioahorro.app.data.explore.ExploreBusinessDto
 import com.barrioahorro.app.data.explore.ExploreCategory
 import com.barrioahorro.app.data.explore.ExploreQuery
 import com.barrioahorro.app.data.explore.ExploreRepository
@@ -17,7 +18,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.barrioahorro.app.data.explore.ExploreBusinessDto
 
 enum class ExploreMode { MAP, LIST }
 
@@ -88,6 +88,7 @@ private const val SEARCH_DEBOUNCE_MILLIS = 400L
 class ExploreViewModel @Inject constructor(
     private val repository: ExploreRepository,
     private val locationStore: ClientLocationDataStore,
+    private val favoritesSync: FavoritesSync,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ExploreUiState())
@@ -106,6 +107,14 @@ class ExploreViewModel @Inject constructor(
             locationStore.location.distinctUntilChanged().collect { location ->
                 _state.update { it.copy(location = location) }
                 reload()
+            }
+        }
+        // Favoritos cambiados desde otra pestaña: se reflejan en el corazón de esta lista.
+        viewModelScope.launch {
+            favoritesSync.changes.collect { changes ->
+                _state.update { s ->
+                    s.copy(offers = s.offers.map { o -> changes[o.id]?.let { o.copy(favorite = it) } ?: o })
+                }
             }
         }
     }
@@ -305,10 +314,12 @@ class ExploreViewModel @Inject constructor(
 
         val target = !offer.favorite
         setFavoriteLocally(offerId, target)
+        favoritesSync.set(offerId, target)
 
         viewModelScope.launch {
             repository.setFavorite(offerId, target).onFailure { e ->
                 setFavoriteLocally(offerId, !target)
+                favoritesSync.set(offerId, !target)
                 _state.update { it.copy(message = e.message) }
             }
             favoritesInFlight.remove(offerId)
