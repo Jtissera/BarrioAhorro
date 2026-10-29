@@ -224,6 +224,7 @@ fun PostDetailScreen(
                             comment = focusedComment,
                             replyCount = directReplies.size,
                             onReply = { viewModel.onReplyToComment(focusedComment) },
+                            onUpvote = { viewModel.toggleCommentUpvote(focusedComment.id) },
                         )
                     }
 
@@ -301,6 +302,7 @@ fun PostDetailScreen(
                                     onReply = { viewModel.onReplyToComment(child) },
                                     onOpenThread = { viewModel.focusComment(child.id) },
                                     onEdit = { viewModel.startEditComment(child) },
+                                    onUpvote = { viewModel.toggleCommentUpvote(child.id) },
                                 )
                             }
 
@@ -314,6 +316,7 @@ fun PostDetailScreen(
                                         onReply = { viewModel.onReplyToComment(firstSub) },
                                         onOpenThread = { viewModel.focusComment(firstSub.id) },
                                         onEdit = { viewModel.startEditComment(firstSub) },
+                                        onUpvote = { viewModel.toggleCommentUpvote(firstSub.id) },
                                     )
                                 }
 
@@ -370,6 +373,7 @@ fun PostDetailScreen(
                                 } else {
                                     null
                                 },
+                                onUpvote = { viewModel.togglePostUpvote() },
                             )
                         }
 
@@ -417,6 +421,7 @@ fun PostDetailScreen(
                                         viewModel.focusComment(rootComment.id)
                                     },
                                     onEdit = { viewModel.startEditComment(rootComment) },
+                                    onUpvote = { viewModel.toggleCommentUpvote(rootComment.id) },
                                 )
                             }
 
@@ -431,6 +436,7 @@ fun PostDetailScreen(
                                         onReply = { viewModel.onReplyToComment(reply) },
                                         onOpenThread = { viewModel.focusComment(reply.id) },
                                         onEdit = { viewModel.startEditComment(reply) },
+                                        onUpvote = { viewModel.toggleCommentUpvote(reply.id) },
                                     )
                                 }
                             }
@@ -503,7 +509,11 @@ fun PostDetailScreen(
 }
 
 @Composable
-private fun PostDetailHeaderCard(post: ForumPostDto, onEdit: (() -> Unit)?) {
+private fun PostDetailHeaderCard(
+    post: ForumPostDto,
+    onEdit: (() -> Unit)?,
+    onUpvote: () -> Unit,
+) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = CardWhite),
@@ -687,27 +697,13 @@ private fun PostDetailHeaderCard(post: ForumPostDto, onEdit: (() -> Unit)?) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(top = 4.dp),
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(LightSalmon)
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
-                    ) {
-                        Text(
-                            text = "↑",
-                            fontWeight = FontWeight.Bold,
-                            color = Primary,
-                            fontSize = 13.sp,
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${post.upvotesCount}",
-                            fontWeight = FontWeight.Bold,
-                            color = Primary,
-                            fontSize = 12.sp,
-                        )
-                    }
+                    UpvoteButton(
+                        count = post.upvotesCount,
+                        upvoted = post.upvotedByMe,
+                        own = post.esUsuarioActual,
+                        onClick = onUpvote,
+                        chip = true,
+                    )
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -741,6 +737,7 @@ private fun FocusedPrincipalCommentCard(
     comment: ForumCommentDto,
     replyCount: Int,
     onReply: () -> Unit,
+    onUpvote: () -> Unit,
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -875,27 +872,13 @@ private fun FocusedPrincipalCommentCard(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.padding(top = 4.dp),
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFF7F3EE))
-                            .padding(horizontal = 10.dp, vertical = 4.dp),
-                    ) {
-                        Text(
-                            text = "↑",
-                            fontWeight = FontWeight.Bold,
-                            color = WarmGray,
-                            fontSize = 13.sp,
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${comment.upvotesCount}",
-                            fontWeight = FontWeight.SemiBold,
-                            color = WarmGray,
-                            fontSize = 12.sp,
-                        )
-                    }
+                    UpvoteButton(
+                        count = comment.upvotesCount,
+                        upvoted = comment.upvotedByMe,
+                        own = comment.esUsuarioActual,
+                        onClick = onUpvote,
+                        chip = true,
+                    )
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -944,6 +927,7 @@ private fun CommentRowItem(
     onReply: () -> Unit,
     onOpenThread: () -> Unit,
     onEdit: () -> Unit,
+    onUpvote: () -> Unit,
 ) {
     Card(
         shape = RoundedCornerShape(14.dp),
@@ -1056,21 +1040,13 @@ private fun CommentRowItem(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.padding(top = 2.dp),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "↑",
-                        fontWeight = FontWeight.Bold,
-                        color = WarmGray,
-                        fontSize = 13.sp,
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "${comment.upvotesCount}",
-                        color = WarmGray,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
+                UpvoteButton(
+                    count = comment.upvotesCount,
+                    upvoted = comment.upvotedByMe,
+                    own = comment.esUsuarioActual,
+                    onClick = onUpvote,
+                    chip = false,
+                )
 
                 if (replyCount > 0) {
                     Row(
@@ -1119,6 +1095,7 @@ private fun ReplyCommentRowItem(
     onReply: () -> Unit,
     onOpenThread: () -> Unit,
     onEdit: () -> Unit,
+    onUpvote: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -1210,15 +1187,15 @@ private fun ReplyCommentRowItem(
                                     .clip(RoundedCornerShape(6.dp))
                                     .background(Color(0xFFFFF3E0))
                                     .padding(horizontal = 6.dp, vertical = 2.dp),
-                                ) {
-                                    Text(
-                                        text = "Vos",
-                                        color = Color(0xFFE65100),
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                    )
-                                }
+                            ) {
+                                Text(
+                                    text = "Vos",
+                                    color = Color(0xFFE65100),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                )
                             }
+                        }
 
                         Text(
                             text = " • ${formatRelativeTime(comment.createdAt)}",
@@ -1246,21 +1223,13 @@ private fun ReplyCommentRowItem(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.padding(top = 2.dp),
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "↑",
-                            fontWeight = FontWeight.Bold,
-                            color = WarmGray,
-                            fontSize = 13.sp,
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "${comment.upvotesCount}",
-                            color = WarmGray,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
+                    UpvoteButton(
+                        count = comment.upvotesCount,
+                        upvoted = comment.upvotedByMe,
+                        own = comment.esUsuarioActual,
+                        onClick = onUpvote,
+                        chip = false,
+                    )
 
                     if (replyCount > 0) {
                         Row(
@@ -1472,6 +1441,43 @@ private fun CommentInputBottomBar(
                 }
             }
         }
+    }
+}
+
+/**
+ * Botón de upvote. chip = true: con fondo (publicación y comentario enfocado).
+ * chip = false: solo flecha y número (comentarios de la lista), como en el mock.
+ */
+@Composable
+private fun UpvoteButton(
+    count: Int,
+    upvoted: Boolean,
+    own: Boolean,
+    onClick: () -> Unit,
+    chip: Boolean,
+) {
+    val color = when {
+        upvoted -> Primary
+        own -> WarmGray
+        else -> Ink
+    }
+    val shape = RoundedCornerShape(if (chip) 12.dp else 8.dp)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(shape)
+            .then(if (chip) Modifier.background(if (upvoted) LightSalmon else Color(0xFFF7F3EE)) else Modifier)
+            .clickable(enabled = !own, onClick = onClick)
+            .padding(horizontal = if (chip) 10.dp else 4.dp, vertical = 4.dp),
+    ) {
+        Text(text = "↑", fontWeight = FontWeight.Bold, color = color, fontSize = 13.sp)
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = "$count",
+            fontWeight = if (chip) FontWeight.Bold else FontWeight.SemiBold,
+            color = color,
+            fontSize = 12.sp,
+        )
     }
 }
 
