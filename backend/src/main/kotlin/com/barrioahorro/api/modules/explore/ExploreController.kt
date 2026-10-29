@@ -103,4 +103,23 @@ class ExploreController(
     private fun userId(auth: Authentication): Long =
         auth.name.toLongOrNull()
             ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sesión inválida")
+
+
+    @GetMapping("/ofertas/{offerId}")
+    fun offerDetail(
+        auth: Authentication,
+        @PathVariable offerId: Long,
+        @RequestParam(required = false) lat: Double?,
+        @RequestParam(required = false) lng: Double?,
+    ): OfferDetailResponse {
+        if ((lat == null) != (lng == null)) bad("Enviá latitud y longitud juntas")
+        if (lat != null && lng != null && (lat !in -90.0..90.0 || lng !in -180.0..180.0)) {
+            bad("La ubicación no es válida")
+        }
+        val userId = userId(auth)
+        val detail = service.offerDetail(userId, offerId, lat, lng)
+        // Registrar la vista nunca debe romper la pantalla.
+        runCatching { service.recordOfferView(userId, offerId) }
+        return detail
+    }
 }

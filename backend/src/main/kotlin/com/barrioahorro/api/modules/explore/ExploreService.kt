@@ -281,6 +281,85 @@ class ExploreService(
         ) { rs, _ -> rs.toOffer() }
     }
 
+    // ---- Detalle de oferta ----------------------------------------------------------
+
+    /**
+     * Una oferta, vigente o finalizada. Si el comercio no es visible (restringido, sin onboarding
+     * o sin ubicación) devuelve 404: sus ofertas no se muestran.
+     */
+    @Transactional(readOnly = true)
+    fun offerDetail(userId: Long, offerId: Long, lat: Double?, lng: Double?): OfferDetailResponse {
+        requireClient(userId)
+
+        val hasLocation = lat != null && lng != null
+        val params = baseParams(ExploreFilters(lat, lng, null, emptyList(), emptyList(), null), userId)
+            .addValue("offerId", offerId)
+        val distance = if (hasLocation) DISTANCE_EXPR else "CAST(NULL AS double precision)"
+
+        val row = jdbc.query(
+            """
+            SELECT ${selectColumns(distance)},
+                   pc.direccion AS direccion,
+                   (SELECT ph.url FROM fotos_comercio ph WHERE ph.comercio_id = pc.usuario_id
+                     ORDER BY ph.orden, ph.id LIMIT 1) AS foto_comercio,
+                   CASE WHEN o.activa THEN o.vigente_hasta
+                        ELSE LEAST(COALESCE(o.vigente_hasta, o.updated_at), o.updated_at) END AS finalizo
+            FROM $OFFER_FROM
+            WHERE o.id = :offerId AND (${BUSINESS_IS_VISIBLE.trimIndent()})
+            """.trimIndent(),
+            params,
+        ) { rs, _ ->
+            Triple(
+                rs.toOffer(),
+                rs.getString("direccion") to rs.getString("foto_comercio"),
+                rs.getObject("finalizo", OffsetDateTime::class.java),
+            )
+        }.firstOrNull() ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Esta oferta ya no está disponible")
+
+        val (offer, extras, finishedAt) = row
+
+        val last = jdbc.query(
+            """
+            SELECT v.updated_at, u.email
+            FROM validaciones_comunitarias_oferta v
+            JOIN usuarios u ON u.id = v.cliente_id
+            WHERE v.oferta_id = :offerId AND v.sigue_vigente
+            ORDER BY v.updated_at DESC
+            LIMIT 1
+            """.trimIndent(),
+            MapSqlParameterSource("offerId", offerId),
+        ) { rs, _ ->
+            LastConfirmation(
+                at = rs.getObject("updated_at", OffsetDateTime::class.java),
+                by = rs.getString("email").substringBefore('@'),
+            )
+        }.firstOrNull()
+
+        return OfferDetailResponse(
+            offer = offer,
+            businessPhotoUrl = extras.second,
+            businessAddress = extras.first,
+            endedAt = if (offer.live) null else finishedAt,
+            lastConfirmation = last,
+        )
+    }
+
+    /** Una vista por vecino y oferta cada 30 minutos, para que refrescar no infle el contador. */
+    @Transactional
+    fun recordOfferView(userId: Long, offerId: Long) {
+        jdbc.update(
+            """
+            INSERT INTO visualizaciones_oferta (oferta_id, usuario_id)
+            SELECT CAST(:o AS bigint), CAST(:u AS bigint)
+            WHERE NOT EXISTS (
+                SELECT 1 FROM visualizaciones_oferta
+                WHERE oferta_id = :o AND usuario_id = :u AND created_at > now() - interval '30 minutes'
+            )
+            """.trimIndent(),
+            MapSqlParameterSource().addValue("o", offerId).addValue("u", userId),
+        )
+    }
+
     // ---- Helpers --------------------------------------------------------------------
 
     private val OFFER_FROM = """

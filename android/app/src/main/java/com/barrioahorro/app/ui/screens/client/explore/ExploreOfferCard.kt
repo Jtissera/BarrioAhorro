@@ -57,10 +57,12 @@ fun ExploreOfferCard(
     item: ExploreOfferUi,
     onToggleFavorite: () -> Unit,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
 ) {
     val offer = item.card
 
     Card(
+        onClick = onClick,
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),

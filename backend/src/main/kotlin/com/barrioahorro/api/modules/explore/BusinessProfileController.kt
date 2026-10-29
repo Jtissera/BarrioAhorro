@@ -30,7 +30,10 @@ class BusinessProfileController(
         @RequestParam(required = false) lng: Double?,
     ): BusinessProfileResponse {
         checkLocation(lat, lng)
-        return service.profile(userId(auth), id, lat, lng)
+        val userId = userId(auth)
+        val profile = service.profile(userId, id, lat, lng)
+        runCatching { service.recordView(userId, id) }
+        return profile
     }
 
     @GetMapping("/{id}/ofertas")

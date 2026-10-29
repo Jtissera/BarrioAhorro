@@ -51,6 +51,8 @@ import com.barrioahorro.app.ui.screens.client.ClientEntryScreen
 import com.barrioahorro.app.ui.screens.client.ClientMainScreen
 import com.barrioahorro.app.ui.screens.client.location.ClientLocationScreen
 import com.barrioahorro.app.ui.screens.client.business.ClientBusinessProfileScreen
+import com.barrioahorro.app.ui.screens.client.ClientTab
+import com.barrioahorro.app.ui.screens.client.offer.OfferDetailScreen
 
 @Composable
 fun AppNavigation(
@@ -471,6 +473,7 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
             requestedTab = requestedTab,
             onRequestedTabConsumed = { entry.savedStateHandle["tab"] = null },
             onOpenBusiness = { id -> navController.navigate(ClientRoutes.businessProfile(id)) },
+            onOpenOffer = { id -> navController.navigate(ClientRoutes.offerDetail(id)) },
         )
     }
 
@@ -488,13 +491,19 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
     ) {
         ClientBusinessProfileScreen(
             onBack = { navController.popBackStack() },
-            // Cualquier pestaña de la barra (Explorar incluida) vuelve al home en esa pestaña.
-            // El home sigue en el back stack, así que Explorar conserva lista/mapa y filtros.
-            onTabSelected = { tab ->
-                runCatching { navController.getBackStackEntry(ClientRoutes.HOME) }
-                    .getOrNull()?.savedStateHandle?.set("tab", tab.name)
-                navController.popBackStack(ClientRoutes.HOME, inclusive = false)
-            },
+            onTabSelected = navController::backToClientTab,
+            onOpenOffer = { id -> navController.navigate(ClientRoutes.offerDetail(id)) },
+        )
+    }
+
+    composable(
+        route = ClientRoutes.OFFER_DETAIL,
+        arguments = listOf(navArgument("offerId") { type = NavType.LongType }),
+    ) {
+        OfferDetailScreen(
+            onBack = { navController.popBackStack() },
+            onOpenBusiness = { id -> navController.navigate(ClientRoutes.businessProfile(id)) },
+            onTabSelected = navController::backToClientTab,
         )
     }
 
@@ -585,4 +594,10 @@ fun NavHostController.navigateAfterLogout() {
         popUpTo(graph.id) { inclusive = true }
         launchSingleTop = true
     }
+}
+
+fun NavHostController.backToClientTab(tab: ClientTab) {
+    runCatching { getBackStackEntry(ClientRoutes.HOME) }
+        .getOrNull()?.savedStateHandle?.set("tab", tab.name)
+    popBackStack(ClientRoutes.HOME, inclusive = false)
 }

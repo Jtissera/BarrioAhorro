@@ -53,3 +53,13 @@ data class ExploreBusinessDto(
     val activeOffers: Int,
     val photoUrl: String?,
 )
+
+data class LastConfirmationDto(val at: String, val by: String)
+
+data class OfferDetailDto(
+    val offer: ExploreOfferDto,
+    val businessPhotoUrl: String?,
+    val businessAddress: String?,
+    val endedAt: String?,
+    val lastConfirmation: LastConfirmationDto?,
+)

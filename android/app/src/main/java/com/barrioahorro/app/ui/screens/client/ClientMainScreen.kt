@@ -49,6 +49,7 @@ fun ClientMainScreen(
     requestedTab: String? = null,
     onRequestedTabConsumed: () -> Unit = {},
     onOpenBusiness: (Long) -> Unit = {},
+    onOpenOffer: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ClientTab.EXPLORAR) }
@@ -74,8 +75,12 @@ fun ClientMainScreen(
                 .consumeWindowInsets(padding),
         ) {
             when (selectedTab) {
-                ClientTab.EXPLORAR -> ExploreScreen(onEditLocation = onEditLocation, onViewBusiness = onOpenBusiness)
-                ClientTab.FAVORITOS -> FavoritesScreen()
+                ClientTab.EXPLORAR -> ExploreScreen(
+                    onEditLocation = onEditLocation,
+                    onViewBusiness = onOpenBusiness,
+                    onOpenOffer = onOpenOffer,
+                )
+                ClientTab.FAVORITOS -> FavoritesScreen(onOpenOffer = onOpenOffer)
                 ClientTab.FORO -> ForumFeedScreen(
                     onCreatePost = onCreatePost,
                     onPostClick = onPostClick,

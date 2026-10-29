@@ -32,6 +32,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -72,10 +75,12 @@ private val SHEET_SHAPE = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
 fun ClientBusinessProfileScreen(
     onBack: () -> Unit,
     onTabSelected: (ClientTab) -> Unit,
+    onOpenOffer: (Long) -> Unit,
     viewModel: ClientBusinessProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var confirmDelete by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -86,7 +91,6 @@ fun ClientBusinessProfileScreen(
 
     Scaffold(
         containerColor = Cream,
-        // La portada llega hasta arriba de todo, detrás de la barra de estado.
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = { ClientBottomBar(selectedTab = ClientTab.EXPLORAR, onTabSelected = onTabSelected) },
     ) { padding ->
@@ -103,7 +107,12 @@ fun ClientBusinessProfileScreen(
                     PrimaryPillButton(text = "Reintentar", onClick = viewModel::load, height = 48.dp)
                 }
 
-                else -> ProfileContent(state = state, viewModel = viewModel)
+                else -> ProfileContent(
+                    state = state,
+                    viewModel = viewModel,
+                    onOpenOffer = onOpenOffer,
+                    onDeleteRequest = { confirmDelete = true },
+                )
             }
 
             BackButton(onBack, Modifier.align(Alignment.TopStart))
@@ -111,21 +120,41 @@ fun ClientBusinessProfileScreen(
     }
 
     if (state.showReviewForm) {
-        ReviewFormDialog(
+        ReviewSheet(
+            businessName = state.businessName,
+            categoryName = state.categoryName,
+            photoUrl = state.photoUrl,
             initialRating = state.myReview?.rating ?: 0,
             initialComment = state.myReview?.comment.orEmpty(),
             isEdit = state.myReview != null,
             isSaving = state.isSavingReview,
             serverError = state.reviewFormError,
             onSave = viewModel::saveReview,
+            onDelete = { confirmDelete = true },
             onDismiss = viewModel::closeReviewForm,
+        )
+    }
+
+    if (confirmDelete) {
+        DeleteReviewDialog(
+            businessName = state.businessName,
+            onConfirm = {
+                confirmDelete = false
+                viewModel.closeReviewForm()
+                viewModel.deleteReview()
+            },
+            onDismiss = { confirmDelete = false },
         )
     }
 }
 
 @Composable
-private fun ProfileContent(state: ClientBusinessProfileUiState, viewModel: ClientBusinessProfileViewModel) {
-    // Columna sin lazy: cada pestaña tiene pocas tarjetas (ofertas vigentes o una página de reseñas).
+private fun ProfileContent(
+    state: ClientBusinessProfileUiState,
+    viewModel: ClientBusinessProfileViewModel,
+    onOpenOffer: (Long) -> Unit,
+    onDeleteRequest: () -> Unit,
+) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Box(Modifier.fillMaxWidth()) {
             Cover(state.photoUrl)
@@ -143,12 +172,13 @@ private fun ProfileContent(state: ClientBusinessProfileUiState, viewModel: Clien
                     state = state,
                     onToggleFavorite = viewModel::toggleFavorite,
                     onRetry = viewModel::retryOffers,
+                    onOpenOffer = onOpenOffer,
                 )
 
                 ProfileTab.REVIEWS -> ClientReviewsTab(
                     state = state,
                     onWriteReview = viewModel::openReviewForm,
-                    onDeleteReview = viewModel::deleteReview,
+                    onDeleteRequest = onDeleteRequest,
                     onLoadMore = viewModel::loadMoreReviews,
                     onRetry = viewModel::retryReviews,
                 )

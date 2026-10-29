@@ -28,7 +28,7 @@ class BusinessProfileService(
     companion object {
         const val MAX_PAGE_SIZE = 50
         const val MIN_COMMENT = 10
-        const val MAX_COMMENT = 500
+        const val MAX_COMMENT = 300
         private const val MAX_STARS = 5
         private val TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm")
         private const val POINT_EXPR = "CAST(ST_SetSRID(ST_MakePoint(:lng, :lat), 4326) AS geography)"
@@ -214,4 +214,21 @@ class BusinessProfileService(
     private fun bad(message: String): Nothing = throw ResponseStatusException(HttpStatus.BAD_REQUEST, message)
 
     private fun notFound() = ResponseStatusException(HttpStatus.NOT_FOUND, "Este comercio ya no está disponible")
+
+
+    /** Una vista por vecino y comercio cada 30 minutos (alimenta "Visualizaciones" del dashboard). */
+    @Transactional
+    fun recordView(userId: Long, businessId: Long) {
+        jdbc.update(
+            """
+            INSERT INTO visualizaciones_comercio (comercio_id, usuario_id)
+            SELECT CAST(:b AS bigint), CAST(:u AS bigint)
+            WHERE NOT EXISTS (
+                SELECT 1 FROM visualizaciones_comercio
+                WHERE comercio_id = :b AND usuario_id = :u AND created_at > now() - interval '30 minutes'
+            )
+            """.trimIndent(),
+            MapSqlParameterSource().addValue("b", businessId).addValue("u", userId),
+        )
+    }
 }

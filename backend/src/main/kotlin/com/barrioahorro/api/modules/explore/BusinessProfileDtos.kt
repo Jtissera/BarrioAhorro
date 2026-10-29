@@ -6,6 +6,7 @@ import com.barrioahorro.api.modules.business.dto.ScheduleSlotResponse
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotNull
+import java.time.OffsetDateTime
 
 data class BusinessProfileResponse(
     val id: Long,
@@ -43,4 +44,19 @@ data class WriteReviewRequest(
 
     @field:NotNull(message = "Escribí tu reseña")
     val comment: String? = null,
+)
+
+data class LastConfirmation(
+    val at: OffsetDateTime,
+    /** Parte del mail antes del @. */
+    val by: String,
+)
+
+data class OfferDetailResponse(
+    val offer: ExploreOfferResponse,
+    val businessPhotoUrl: String?,
+    val businessAddress: String?,
+    /** Solo si la oferta ya terminó (vencida o desactivada). */
+    val endedAt: OffsetDateTime?,
+    val lastConfirmation: LastConfirmation?,
 )

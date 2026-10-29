@@ -48,4 +48,11 @@ interface ExploreApi {
         @Query("tipos") types: List<String>?,
         @Query("q") text: String?,
     ): List<ExploreBusinessDto>
+
+    @GET("api/ofertas/{id}")
+    suspend fun getOfferDetail(
+        @Path("id") offerId: Long,
+        @Query("lat") latitude: Double?,
+        @Query("lng") longitude: Double?,
+    ): OfferDetailDto
 }

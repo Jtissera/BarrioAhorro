@@ -73,7 +73,7 @@ import com.barrioahorro.app.ui.theme.Tertiary
 import com.barrioahorro.app.ui.theme.WarmGray
 
 private const val MIN_COMMENT = 10
-private const val MAX_COMMENT = 500
+private const val MAX_COMMENT = 300
 
 // ---- Ofertas ---------------------------------------------------------------------
 
@@ -82,7 +82,8 @@ internal fun ClientOffersTab(
     state: ClientBusinessProfileUiState,
     onToggleFavorite: (Long) -> Unit,
     onRetry: () -> Unit,
-) {
+    onOpenOffer: (Long) -> Unit,
+    ) {
     val offers = state.offers
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -135,7 +136,11 @@ internal fun ClientOffersTab(
             }
 
             else -> offers.forEach { offer ->
-                ExploreOfferCard(item = offer, onToggleFavorite = { onToggleFavorite(offer.id) })
+                ExploreOfferCard(
+                    item = offer,
+                    onToggleFavorite = { onToggleFavorite(offer.id) },
+                    onClick = { onOpenOffer(offer.id) },
+                )
             }
         }
     }
@@ -147,12 +152,11 @@ internal fun ClientOffersTab(
 internal fun ClientReviewsTab(
     state: ClientBusinessProfileUiState,
     onWriteReview: () -> Unit,
-    onDeleteReview: () -> Unit,
+    onDeleteRequest: () -> Unit,
     onLoadMore: () -> Unit,
     onRetry: () -> Unit,
 ) {
     val summary = state.reviewsSummary
-    var confirmDelete by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         when {
@@ -213,7 +217,7 @@ internal fun ClientReviewsTab(
                         isMine = true,
                         busy = state.isDeletingReview,
                         onEdit = onWriteReview,
-                        onDelete = { confirmDelete = true },
+                        onDelete = onDeleteRequest,
                     )
                 }
                 state.reviews.forEach { review ->
@@ -240,31 +244,6 @@ internal fun ClientReviewsTab(
                 }
             }
         }
-    }
-
-    if (confirmDelete) {
-        AlertDialog(
-            onDismissRequest = { confirmDelete = false },
-            containerColor = CardWhite,
-            shape = RoundedCornerShape(16.dp),
-            title = { Text("¿Eliminar tu reseña?", style = MaterialTheme.typography.titleMedium, color = Ink) },
-            text = {
-                Text(
-                    "Dejará de verse en el perfil del comercio. Después podés escribir otra.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = WarmGray,
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmDelete = false
-                    onDeleteReview()
-                }) { Text("Eliminar", color = ErrorRed, fontWeight = FontWeight.Bold) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmDelete = false }) { Text("Cancelar", color = WarmGray) }
-            },
-        )
     }
 }
 
@@ -337,104 +316,7 @@ private fun OwnReviewMenu(enabled: Boolean, onEdit: () -> Unit, onDelete: () -> 
     }
 }
 
-/** Alta / edición de la reseña propia: estrellas + texto (10 a 500 caracteres). */
-@Composable
-internal fun ReviewFormDialog(
-    initialRating: Int,
-    initialComment: String,
-    isEdit: Boolean,
-    isSaving: Boolean,
-    serverError: String?,
-    onSave: (rating: Int, comment: String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var rating by remember { mutableIntStateOf(initialRating) }
-    var comment by remember { mutableStateOf(initialComment) }
-    var localError by remember { mutableStateOf<String?>(null) }
 
-    AlertDialog(
-        onDismissRequest = { if (!isSaving) onDismiss() },
-        containerColor = CardWhite,
-        shape = RoundedCornerShape(20.dp),
-        title = {
-            Text(
-                text = if (isEdit) "Editar tu reseña" else "Escribir reseña",
-                style = MaterialTheme.typography.titleLarge,
-                color = Ink,
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    (1..5).forEach { star ->
-                        Icon(
-                            imageVector = if (star <= rating) Icons.Filled.Star else Icons.Outlined.StarOutline,
-                            contentDescription = if (star == 1) "1 estrella" else "$star estrellas",
-                            tint = if (star <= rating) Tertiary else MutedLabel,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .clickable(enabled = !isSaving) {
-                                    rating = star
-                                    localError = null
-                                }
-                                .padding(4.dp),
-                        )
-                    }
-                }
-                OutlinedTextField(
-                    value = comment,
-                    onValueChange = {
-                        if (it.length <= MAX_COMMENT) comment = it
-                        localError = null
-                    },
-                    enabled = !isSaving,
-                    placeholder = { Text("Contales a tus vecinos cómo te fue", color = MutedLabel) },
-                    minLines = 3,
-                    maxLines = 6,
-                    supportingText = {
-                        Text("${comment.trim().length}/$MAX_COMMENT", color = WarmGray)
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = CardWhite,
-                        unfocusedContainerColor = CardWhite,
-                        disabledContainerColor = CardWhite,
-                        focusedTextColor = Ink,
-                        unfocusedTextColor = Ink,
-                        focusedIndicatorColor = Primary,
-                        unfocusedIndicatorColor = SurfaceMuted,
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                (localError ?: serverError)?.let { ErrorHint(text = it) }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = !isSaving,
-                onClick = {
-                    val trimmed = comment.trim()
-                    localError = when {
-                        rating == 0 -> "Elegí cuántas estrellas le das al comercio"
-                        trimmed.length < MIN_COMMENT -> "Contanos un poco más: la reseña necesita al menos $MIN_COMMENT caracteres"
-                        else -> null
-                    }
-                    if (localError == null) onSave(rating, trimmed)
-                },
-            ) {
-                if (isSaving) {
-                    CircularProgressIndicator(color = Primary, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
-                } else {
-                    Text(if (isEdit) "Guardar" else "Publicar", color = Primary, fontWeight = FontWeight.Bold)
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(enabled = !isSaving, onClick = onDismiss) { Text("Cancelar", color = WarmGray) }
-        },
-    )
-}
 
 // ---- Info ------------------------------------------------------------------------
 

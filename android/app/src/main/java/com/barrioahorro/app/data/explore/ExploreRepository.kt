@@ -107,6 +107,9 @@ class ExploreRepository @Inject constructor(
         }
     }
 
+    suspend fun getOfferDetail(offerId: Long, latitude: Double?, longitude: Double?): Result<OfferDetailDto> =
+        call { api.getOfferDetail(offerId, latitude, longitude) }
+
     private companion object {
         const val FAVORITES_PAGE_SIZE = 50
     }

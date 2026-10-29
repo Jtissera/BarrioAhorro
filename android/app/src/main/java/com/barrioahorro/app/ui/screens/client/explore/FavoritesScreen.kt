@@ -52,7 +52,7 @@ import com.barrioahorro.app.ui.theme.WarmGray
 import androidx.compose.ui.graphics.Color
 
 @Composable
-fun FavoritesScreen(viewModel: FavoritesViewModel = hiltViewModel()) {
+fun FavoritesScreen(onOpenOffer: (Long) -> Unit = {}, viewModel: FavoritesViewModel = hiltViewModel()){
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
@@ -137,7 +137,11 @@ fun FavoritesScreen(viewModel: FavoritesViewModel = hiltViewModel()) {
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 items(state.visible, key = { it.id }) { offer ->
-                    ExploreOfferCard(item = offer, onToggleFavorite = { viewModel.toggleFavorite(offer.id) })
+                    ExploreOfferCard(
+                        item = offer,
+                        onToggleFavorite = { viewModel.toggleFavorite(offer.id) },
+                        onClick = { onOpenOffer(offer.id) },
+                    )
                 }
             }
         }

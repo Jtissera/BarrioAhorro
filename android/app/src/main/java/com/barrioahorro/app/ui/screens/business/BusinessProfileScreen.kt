@@ -33,6 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,9 +76,18 @@ fun BusinessProfileScreen(
     onLogout: () -> Unit,
     isLoggingOut: Boolean,
     readOnly: Boolean = false,
+    requestedTab: ProfileTab? = null,
+    onRequestedTabConsumed: () -> Unit = {},
     viewModel: BusinessProfileViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(requestedTab) {
+        if (requestedTab != null) {
+            viewModel.selectTab(requestedTab)
+            onRequestedTabConsumed()
+        }
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {

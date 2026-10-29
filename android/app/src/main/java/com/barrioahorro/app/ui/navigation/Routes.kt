@@ -65,6 +65,7 @@ object ClientRoutes {
     const val POST_DETAIL = "client/forum/post/{postId}"
     const val MY_POSTS = "client/forum/mine"
     const val EDIT_POST = "client/forum/post/{postId}/edit"
+    const val OFFER_DETAIL = "client/offer/{offerId}"
 
     const val BUSINESS_PROFILE = "client/business/{businessId}"
 
@@ -73,6 +74,8 @@ object ClientRoutes {
     fun editPost(postId: Long): String = "client/forum/post/$postId/edit"
 
     fun businessProfile(businessId: Long): String = "client/business/$businessId"
+
+    fun offerDetail(offerId: Long): String = "client/offer/$offerId"
 }
 
 object AdminRoutes {

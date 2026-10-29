@@ -91,6 +91,7 @@ import com.barrioahorro.app.ui.theme.WarmGray
 fun ExploreScreen(
     onEditLocation: () -> Unit,
     onViewBusiness: (Long) -> Unit,
+    onOpenOffer: (Long) -> Unit,
     viewModel: ExploreViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -145,6 +146,7 @@ fun ExploreScreen(
                 onSortSelected = viewModel::onSortSelected,
                 onClearFilters = viewModel::clearAllFilters,
                 onEditLocation = onEditLocation,
+                onOpenOffer = onOpenOffer,
                 modifier = Modifier.weight(1f),
             )
 
@@ -369,6 +371,7 @@ private fun OffersList(
     onSortSelected: (ExploreSort) -> Unit,
     onClearFilters: () -> Unit,
     onEditLocation: () -> Unit,
+    onOpenOffer: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -422,7 +425,11 @@ private fun OffersList(
                         item { EmptyState(state.hasActiveFilters, onClearFilters) }
                     } else {
                         items(state.offers, key = { it.id }) { offer ->
-                            ExploreOfferCard(item = offer, onToggleFavorite = { onToggleFavorite(offer.id) })
+                            ExploreOfferCard(
+                                item = offer,
+                                onToggleFavorite = { onToggleFavorite(offer.id) },
+                                onClick = { onOpenOffer(offer.id) },
+                            )
                         }
                     }
 

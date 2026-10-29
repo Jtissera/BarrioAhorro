@@ -51,6 +51,7 @@ fun BusinessMainScreen(
     accessViewModel: MyContributionViewModel = hiltViewModel(),
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(initialTab) }
+    var profileTabRequest by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(requestedTab) {
         val tab = requestedTab?.let { name -> BusinessTab.entries.firstOrNull { it.name == name } }
@@ -111,11 +112,8 @@ fun BusinessMainScreen(
                         onAddOffer = onNavigateToCreateOffer,
                         onSeeAllOffers = { selectedTab = BusinessTab.OFERTAS },
                         onSeeAllReviews = {
-                            Toast.makeText(
-                                context,
-                                "La pantalla de todas las reseñas todavía no está disponible",
-                                Toast.LENGTH_SHORT,
-                            ).show()
+                            profileTabRequest = ProfileTab.REVIEWS.name
+                            selectedTab = BusinessTab.PERFIL
                         },
                     )
                 }
@@ -150,6 +148,8 @@ fun BusinessMainScreen(
                     onLogout = onLogout,
                     isLoggingOut = isLoggingOut,
                     readOnly = !canEdit,
+                    requestedTab = profileTabRequest?.let { name -> ProfileTab.entries.firstOrNull { it.name == name } },
+                    onRequestedTabConsumed = { profileTabRequest = null },
                 )
             }
         }
