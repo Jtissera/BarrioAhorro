@@ -52,6 +52,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import com.barrioahorro.app.data.forum.ForumPostDto
 import com.barrioahorro.app.ui.components.ToldoConFranjas
 import com.barrioahorro.app.ui.theme.BorderGray
@@ -79,6 +81,14 @@ fun ForumFeedScreen(
     viewModel: ForumViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val context = LocalContext.current
+    LaunchedEffect(state.upvoteError) {
+        state.upvoteError?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.onUpvoteErrorShown()
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadFeed()
@@ -157,6 +167,7 @@ fun ForumFeedScreen(
                         ForumPostCard(
                             post = post,
                             onClick = { onPostClick(post.id) },
+                            onUpvote = { viewModel.toggleUpvote(post.id) },
                         )
                     }
                     item {
@@ -172,6 +183,7 @@ fun ForumFeedScreen(
 private fun ForumPostCard(
     post: ForumPostDto,
     onClick: () -> Unit,
+    onUpvote: () -> Unit,
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -357,24 +369,32 @@ private fun ForumPostCard(
                     modifier = Modifier.padding(top = 4.dp),
                 ) {
                     // Chip Upvotes
+                    val upvoted = post.upvotedByMe
+                    val own = post.esUsuarioActual
+                    val upvoteColor = when {
+                        upvoted -> Primary
+                        own -> WarmGray
+                        else -> Ink
+                    }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
-                            .background(LightSalmon)
+                            .background(if (upvoted) LightSalmon else Color(0xFFF7F3EE))
+                            .clickable(enabled = !own, onClick = onUpvote)
                             .padding(horizontal = 10.dp, vertical = 4.dp),
                     ) {
                         Text(
                             text = "↑",
                             fontWeight = FontWeight.Bold,
-                            color = Primary,
+                            color = upvoteColor,
                             fontSize = 13.sp,
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "${post.upvotesCount}",
                             fontWeight = FontWeight.Bold,
-                            color = Primary,
+                            color = upvoteColor,
                             fontSize = 12.sp,
                         )
                     }

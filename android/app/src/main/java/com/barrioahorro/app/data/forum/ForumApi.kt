@@ -5,6 +5,7 @@ import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.DELETE
 
 interface ForumApi {
 
@@ -40,4 +41,16 @@ interface ForumApi {
         @Path("id") id: Long,
         @Body body: UpdateCommentDto,
     ): ForumCommentDto
+
+    @POST("api/foro/publicaciones/{id}/upvote")
+    suspend fun upvotePost(@Path("id") id: Long): UpvoteDto
+
+    @DELETE("api/foro/publicaciones/{id}/upvote")
+    suspend fun removePostUpvote(@Path("id") id: Long): UpvoteDto
+
+    @POST("api/foro/comentarios/{id}/upvote")
+    suspend fun upvoteComment(@Path("id") id: Long): UpvoteDto
+
+    @DELETE("api/foro/comentarios/{id}/upvote")
+    suspend fun removeCommentUpvote(@Path("id") id: Long): UpvoteDto
 }
