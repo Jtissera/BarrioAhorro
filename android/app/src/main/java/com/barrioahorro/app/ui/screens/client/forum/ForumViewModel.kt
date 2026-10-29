@@ -17,6 +17,7 @@ data class ForumFeedUiState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
+    val upvoteError: String? = null,
 )
 
 @HiltViewModel
@@ -26,6 +27,7 @@ class ForumViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ForumFeedUiState())
     val uiState: StateFlow<ForumFeedUiState> = _uiState.asStateFlow()
+    private val pendingUpvotes = mutableSetOf<Long>()
 
     init {
         loadFeed()
@@ -67,4 +69,45 @@ class ForumViewModel @Inject constructor(
                 }
         }
     }
+
+    fun toggleUpvote(postId: Long) {
+        val post = _uiState.value.posts.find { it.id == postId } ?: return
+        if (post.esUsuarioActual || postId in pendingUpvotes) return
+        pendingUpvotes += postId
+
+        val wasUpvoted = post.upvotedByMe
+        updatePost(postId) {
+            it.copy(
+                upvotedByMe = !wasUpvoted,
+                upvotesCount = it.upvotesCount + if (wasUpvoted) -1 else 1,
+            )
+        }
+
+        viewModelScope.launch {
+            forumRepository.togglePostUpvote(postId, wasUpvoted)
+                .onSuccess { result ->
+                    updatePost(postId) {
+                        it.copy(upvotesCount = result.upvotesCount, upvotedByMe = result.upvotedByMe)
+                    }
+                }
+                .onFailure { error ->
+                    updatePost(postId) {
+                        it.copy(upvotesCount = post.upvotesCount, upvotedByMe = wasUpvoted)
+                    }
+                    _uiState.update { it.copy(upvoteError = error.message ?: "No pudimos registrar tu voto") }
+                }
+            pendingUpvotes -= postId
+        }
+    }
+
+    fun onUpvoteErrorShown() {
+        _uiState.update { it.copy(upvoteError = null) }
+    }
+
+    private fun updatePost(id: Long, transform: (ForumPostDto) -> ForumPostDto) {
+        _uiState.update { state ->
+            state.copy(posts = state.posts.map { if (it.id == id) transform(it) else it })
+        }
+    }
+
 }

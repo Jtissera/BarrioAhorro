@@ -46,6 +46,14 @@ class ForumRepository @Inject constructor(
         forumApi.updateComment(id, UpdateCommentDto(texto))
     }
 
+    suspend fun togglePostUpvote(id: Long, currentlyUpvoted: Boolean): Result<UpvoteDto> = call {
+        if (currentlyUpvoted) forumApi.removePostUpvote(id) else forumApi.upvotePost(id)
+    }
+
+    suspend fun toggleCommentUpvote(id: Long, currentlyUpvoted: Boolean): Result<UpvoteDto> = call {
+        if (currentlyUpvoted) forumApi.removeCommentUpvote(id) else forumApi.upvoteComment(id)
+    }
+
     private suspend fun <T> call(block: suspend () -> T): Result<T> =
         try {
             Result.success(block())
@@ -73,6 +81,7 @@ class ForumRepository @Inject constructor(
             401 -> "Tu sesión venció. Volvé a iniciar sesión."
             403 -> "No tenés permisos para realizar esta acción."
             404 -> serverMessage ?: "No se encontró el recurso solicitado."
+            409 -> serverMessage ?: "No se pudo completar la acción."
             else -> "Error del servidor (${e.code()}). Intentá nuevamente."
         }
     }

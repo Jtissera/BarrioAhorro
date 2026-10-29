@@ -24,6 +24,7 @@ data class ForumPostDto(
     val upvotesCount: Int,
     val comentariosCount: Int,
     val esUsuarioActual: Boolean = false,
+    val upvotedByMe: Boolean = false,
     val createdAt: String,
 )
 
@@ -56,6 +57,7 @@ data class ForumCommentDto(
     val respuestasCount: Int = 0,
     val esAutorDePublicacion: Boolean,
     val esUsuarioActual: Boolean,
+    val upvotedByMe: Boolean = false,
     val createdAt: String,
 )
 
@@ -74,4 +76,9 @@ data class MyForumActivityDto(
     val puntos: Int = 0,
     val publicaciones: List<ForumPostDto>,
     val comentarios: List<MyForumCommentDto>,
+)
+
+data class UpvoteDto(
+    val upvotesCount: Int,
+    val upvotedByMe: Boolean,
 )

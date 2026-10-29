@@ -13,5 +13,6 @@ data class ForumCommentResponse(
     val respuestasCount: Int = 0,
     val esAutorDePublicacion: Boolean,
     val esUsuarioActual: Boolean,
+    val upvotedByMe: Boolean = false,
     val createdAt: OffsetDateTime,
 )
