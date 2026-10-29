@@ -115,7 +115,7 @@ class ForumPostService(
     }
 
     @Transactional(readOnly = true)
-    fun getFeed(): List<ForumPostResponse> {
+    fun getFeed(currentUserId: Long): List<ForumPostResponse> {
         val posts = forumPostRepository.findByEliminadoEnIsNullOrderByCreatedAtDesc()
         if (posts.isEmpty()) return emptyList()
 
@@ -126,7 +126,7 @@ class ForumPostService(
         val users = userRepository.findAllById(userIds).associateBy { it.id }
 
         return posts.map { post ->
-            toPostResponse(post, businesses[post.comercioId], users[post.autorId])
+            toPostResponse(post, businesses[post.comercioId], users[post.autorId], currentUserId)
         }
     }
 
@@ -223,6 +223,7 @@ class ForumPostService(
                 respuestasCount = respuestasCount,
                 esAutorDePublicacion = (post.autorId == comment.autorId),
                 esUsuarioActual = (currentUserId == comment.autorId),
+                upvotedByMe = forumCommentRepository.hasUpvoted(comment.id, currentUserId),
                 createdAt = comment.createdAt,
             )
         }
@@ -344,6 +345,7 @@ class ForumPostService(
             upvotesCount = forumPostRepository.countUpvotesByPostId(post.id),
             comentariosCount = forumPostRepository.countCommentsByPostId(post.id),
             esUsuarioActual = (currentUserId == post.autorId),
+            upvotedByMe = currentUserId?.let { forumPostRepository.hasUpvoted(post.id, it) } ?: false,
             createdAt = post.createdAt,
         )
     }

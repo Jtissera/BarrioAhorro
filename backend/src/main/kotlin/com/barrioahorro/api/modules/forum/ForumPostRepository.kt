@@ -14,4 +14,10 @@ interface ForumPostRepository : JpaRepository<ForumPostEntity, Long> {
 
     @Query(value = "SELECT COUNT(1) FROM foro_publicacion_upvotes WHERE publicacion_id = :postId", nativeQuery = true)
     fun countUpvotesByPostId(@Param("postId") postId: Long): Int
+
+    @Query(
+        value = "SELECT EXISTS (SELECT 1 FROM foro_publicacion_upvotes WHERE publicacion_id = :postId AND usuario_id = :userId)",
+        nativeQuery = true,
+    )
+    fun hasUpvoted(@Param("postId") postId: Long, @Param("userId") userId: Long): Boolean
 }

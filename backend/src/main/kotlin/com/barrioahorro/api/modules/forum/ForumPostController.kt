@@ -7,6 +7,7 @@ import com.barrioahorro.api.modules.forum.dto.ForumPostResponse
 import com.barrioahorro.api.modules.forum.dto.MyForumActivityResponse
 import com.barrioahorro.api.modules.forum.dto.UpdateCommentRequest
 import com.barrioahorro.api.modules.forum.dto.UpdateForumPostRequest
+import com.barrioahorro.api.modules.forum.dto.UpvoteResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -18,11 +19,13 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.DeleteMapping
 
 @RestController
 @RequestMapping("/api/foro")
 class ForumPostController(
     private val forumPostService: ForumPostService,
+    private val forumUpvoteService: ForumUpvoteService,
 ) {
 
     @PostMapping("/publicaciones")
@@ -36,9 +39,9 @@ class ForumPostController(
     }
 
     @GetMapping("/publicaciones")
-    fun getFeed(): ResponseEntity<List<ForumPostResponse>> {
-        val feed = forumPostService.getFeed()
-        return ResponseEntity.ok(feed)
+    fun getFeed(authentication: Authentication): ResponseEntity<List<ForumPostResponse>> {
+        val userId = authentication.principal as Long
+        return ResponseEntity.ok(forumPostService.getFeed(userId))
     }
 
     @GetMapping("/mis-publicaciones")
@@ -95,4 +98,21 @@ class ForumPostController(
         val userId = authentication.principal as Long
         return ResponseEntity.ok(forumPostService.updateComment(userId, id, request))
     }
+
+    @PostMapping("/publicaciones/{id}/upvote")
+    fun upvotePost(authentication: Authentication, @PathVariable id: Long): ResponseEntity<UpvoteResponse> =
+        ResponseEntity.ok(forumUpvoteService.upvotePost(authentication.principal as Long, id))
+
+    @DeleteMapping("/publicaciones/{id}/upvote")
+    fun removePostUpvote(authentication: Authentication, @PathVariable id: Long): ResponseEntity<UpvoteResponse> =
+        ResponseEntity.ok(forumUpvoteService.removePostUpvote(authentication.principal as Long, id))
+
+    @PostMapping("/comentarios/{id}/upvote")
+    fun upvoteComment(authentication: Authentication, @PathVariable id: Long): ResponseEntity<UpvoteResponse> =
+        ResponseEntity.ok(forumUpvoteService.upvoteComment(authentication.principal as Long, id))
+
+    @DeleteMapping("/comentarios/{id}/upvote")
+    fun removeCommentUpvote(authentication: Authentication, @PathVariable id: Long): ResponseEntity<UpvoteResponse> =
+        ResponseEntity.ok(forumUpvoteService.removeCommentUpvote(authentication.principal as Long, id))
+
 }
