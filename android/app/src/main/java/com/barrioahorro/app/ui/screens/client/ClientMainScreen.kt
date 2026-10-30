@@ -79,6 +79,7 @@ fun ClientMainScreen(
                     onEditLocation = onEditLocation,
                     onViewBusiness = onOpenBusiness,
                     onOpenOffer = onOpenOffer,
+                    onOpenCoupons = { selectedTab = ClientTab.CUPONES },
                 )
                 ClientTab.FAVORITOS -> FavoritesScreen(onOpenOffer = onOpenOffer)
                 ClientTab.FORO -> ForumFeedScreen(

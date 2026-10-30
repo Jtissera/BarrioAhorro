@@ -92,6 +92,7 @@ fun ExploreScreen(
     onEditLocation: () -> Unit,
     onViewBusiness: (Long) -> Unit,
     onOpenOffer: (Long) -> Unit,
+    onOpenCoupons: () -> Unit = {},
     viewModel: ExploreViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -120,7 +121,7 @@ fun ExploreScreen(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Header(state, onEditLocation)
+            Header(state, onEditLocation, onOpenCoupons)
             SearchRow(
                 query = state.query,
                 filterCount = state.activeFilterCount,
@@ -180,7 +181,7 @@ fun ExploreScreen(
 // ---- Cabecera, búsqueda, chips ---------------------------------------------------
 
 @Composable
-private fun Header(state: ExploreUiState, onEditLocation: () -> Unit) {
+private fun Header(state: ExploreUiState, onEditLocation: () -> Unit, onOpenCoupons: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(
@@ -208,7 +209,7 @@ private fun Header(state: ExploreUiState, onEditLocation: () -> Unit) {
             }
         }
         state.points?.let { points ->
-            Surface(shape = RoundedCornerShape(50), color = BadgeYellow) {
+            Surface(onClick = onOpenCoupons, shape = RoundedCornerShape(50), color = BadgeYellow) {
                 Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Star, contentDescription = null, tint = Tertiary, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.width(4.dp))
