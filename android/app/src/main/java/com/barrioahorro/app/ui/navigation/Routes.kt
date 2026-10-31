@@ -67,13 +67,16 @@ object ClientRoutes {
     const val EDIT_POST = "client/forum/post/{postId}/edit"
     const val OFFER_DETAIL = "client/offer/{offerId}"
 
-    const val BUSINESS_PROFILE = "client/business/{businessId}"
+    const val BUSINESS_PROFILE = "client/business/{businessId}?tab={tab}"
+
+    const val MY_REVIEWS = "client/reviews/mine"
 
     fun editLocation(): String = "client/location?edit=true"
     fun postDetail(postId: Long): String = "client/forum/post/$postId"
     fun editPost(postId: Long): String = "client/forum/post/$postId/edit"
 
-    fun businessProfile(businessId: Long): String = "client/business/$businessId"
+    fun businessProfile(businessId: Long, tab: String? = null): String =
+        if (tab == null) "client/business/$businessId" else "client/business/$businessId?tab=$tab"
 
     fun offerDetail(offerId: Long): String = "client/offer/$offerId"
 }

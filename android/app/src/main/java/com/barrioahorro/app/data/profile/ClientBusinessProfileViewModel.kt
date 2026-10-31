@@ -80,7 +80,12 @@ class ClientBusinessProfileViewModel @Inject constructor(
 
     private val businessId: Long = checkNotNull(savedStateHandle.get<Long>("businessId"))
 
-    private val _state = MutableStateFlow(ClientBusinessProfileUiState())
+    private val initialTab: ProfileTab = savedStateHandle.get<String>("tab")
+        ?.let { name -> ProfileTab.entries.firstOrNull { it.name == name } }
+        ?: ProfileTab.OFFERS
+
+    private val _state = MutableStateFlow(ClientBusinessProfileUiState(selectedTab = initialTab))
+
     val state: StateFlow<ClientBusinessProfileUiState> = _state.asStateFlow()
 
     private var loadJob: Job? = null

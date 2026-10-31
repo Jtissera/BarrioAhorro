@@ -39,7 +39,7 @@ class ExploreService(
         private const val OFFER_IS_LIVE =
             "o.activa AND (o.vigente_hasta IS NULL OR o.vigente_hasta > now())"
 
-        private const val BUSINESS_IS_VISIBLE = """
+        const val BUSINESS_IS_VISIBLE = """
             pc.onboarding_completado
             AND pc.ubicacion IS NOT NULL
             AND NOT COALESCE(
@@ -103,8 +103,7 @@ class ExploreService(
     }
 
     /**
-     * Ofertas guardadas por el vecino, las más recientes primero. Incluye las finalizadas
-     * y las de comercios restringidos: el vecino tiene que ver todo lo que guardó.
+     * Ofertas guardadas por el vecino, las más recientes primero. Incluye las finalizadas.
      */
     @Transactional(readOnly = true)
     fun favorites(userId: Long, lat: Double?, lng: Double?, page: Int, size: Int): ExploreOffersPage {
@@ -114,7 +113,8 @@ class ExploreService(
         val filters = ExploreFilters(lat, lng, null, emptyList(), emptyList(), null)
         val params = baseParams(filters, userId)
         val distance = if (hasLocation) DISTANCE_EXPR else "CAST(NULL AS double precision)"
-        val from = "$OFFER_FROM JOIN favoritos fav ON fav.oferta_id = o.id AND fav.cliente_id = :clientId"
+        val from = "$OFFER_FROM JOIN favoritos fav ON fav.oferta_id = o.id AND fav.cliente_id = :clientId " +
+                "WHERE (${BUSINESS_IS_VISIBLE.trimIndent()})"
 
         val total = jdbc.queryForObject("SELECT COUNT(*) FROM $from", params, Long::class.java) ?: 0L
 

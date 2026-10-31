@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Storefront
@@ -29,8 +30,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,7 +54,11 @@ import com.barrioahorro.app.ui.theme.MutedLabel
 import com.barrioahorro.app.ui.theme.Primary
 import com.barrioahorro.app.ui.theme.SecondaryContainer
 import com.barrioahorro.app.ui.theme.SurfaceFieldAlt
+import com.barrioahorro.app.ui.theme.SurfaceMuted
 import com.barrioahorro.app.ui.theme.WarmGray
+
+private val EndedCardColor = Color(0xFFF2F0ED)
+private val GrayFilter = ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
 
 @Composable
 fun ExploreOfferCard(
@@ -60,16 +68,24 @@ fun ExploreOfferCard(
     onClick: () -> Unit = {},
 ) {
     val offer = item.card
+    // Una oferta finalizada (vencida o desactivada) se ve apagada sin entrar al detalle.
+    val ended = !offer.isVigente
+    val cardColor = if (ended) EndedCardColor else CardWhite
 
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = CardWhite),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
         Column {
-            ToldoConFranjas(stripes = 20, height = 10.dp)
+            ToldoConFranjas(
+                stripes = 20,
+                height = 10.dp,
+                altColor = cardColor,
+                stripeColor = if (ended) MutedLabel else Primary,
+            )
 
             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row {
@@ -80,6 +96,8 @@ fun ExploreOfferCard(
                                     model = offer.photoUrl.toAbsoluteUrl(),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
+                                    colorFilter = if (ended) GrayFilter else null,
+                                    alpha = if (ended) 0.8f else 1f,
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             } else {
@@ -90,7 +108,6 @@ fun ExploreOfferCard(
                             Surface(
                                 shape = CircleShape,
                                 color = Color.White.copy(alpha = 0.92f),
-                                shadowElevation = 2.dp,
                                 modifier = Modifier
                                     .size(28.dp)
                                     .align(Alignment.TopEnd)
@@ -110,7 +127,10 @@ fun ExploreOfferCard(
 
                     Spacer(Modifier.width(12.dp))
 
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(
+                        modifier = Modifier.weight(1f).alpha(if (ended) 0.6f else 1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -118,11 +138,19 @@ fun ExploreOfferCard(
                         ) {
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = if (offer.isYellowBadge) BadgeYellow else BadgeOrange,
+                                color = when {
+                                    ended -> SurfaceMuted
+                                    offer.isYellowBadge -> BadgeYellow
+                                    else -> BadgeOrange
+                                },
                             ) {
                                 Text(
                                     text = offer.badgeText,
-                                    color = if (offer.isYellowBadge) BadgeYellowText else Primary,
+                                    color = when {
+                                        ended -> WarmGray
+                                        offer.isYellowBadge -> BadgeYellowText
+                                        else -> Primary
+                                    },
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.ExtraBold,
                                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
@@ -172,26 +200,45 @@ fun ExploreOfferCard(
                             }
                             Icon(Icons.Outlined.Schedule, contentDescription = null, tint = WarmGray, modifier = Modifier.size(12.dp))
                             Spacer(Modifier.width(3.dp))
-                            Text(offer.vigenciaText, style = MaterialTheme.typography.labelSmall, color = WarmGray)
+                            Text(
+                                text = if (ended) "Finalizada" else offer.vigenciaText,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = WarmGray,
+                            )
                         }
                     }
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Surface(shape = RoundedCornerShape(12.dp), color = SecondaryContainer) {
+                if (ended) {
+                    Surface(shape = RoundedCornerShape(12.dp), color = SurfaceMuted) {
                         Row(Modifier.padding(horizontal = 8.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Outlined.Check, contentDescription = null, tint = BadgeGreenDot, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Outlined.History, contentDescription = null, tint = WarmGray, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                text = offer.confirmedCountText,
+                                text = "Finalizada",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = BadgeGreenText,
+                                color = WarmGray,
                                 fontWeight = FontWeight.Bold,
                             )
                         }
                     }
-                    if (!item.businessOpen) {
-                        Text("Cerrado ahora", style = MaterialTheme.typography.labelSmall, color = WarmGray)
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Surface(shape = RoundedCornerShape(12.dp), color = SecondaryContainer) {
+                            Row(Modifier.padding(horizontal = 8.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.Check, contentDescription = null, tint = BadgeGreenDot, modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = offer.confirmedCountText,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = BadgeGreenText,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                        }
+                        if (!item.businessOpen) {
+                            Text("Cerrado ahora", style = MaterialTheme.typography.labelSmall, color = WarmGray)
+                        }
                     }
                 }
             }

@@ -53,6 +53,7 @@ import com.barrioahorro.app.ui.screens.client.location.ClientLocationScreen
 import com.barrioahorro.app.ui.screens.client.business.ClientBusinessProfileScreen
 import com.barrioahorro.app.ui.screens.client.ClientTab
 import com.barrioahorro.app.ui.screens.client.offer.OfferDetailScreen
+import com.barrioahorro.app.ui.screens.client.profile.MyReviewsScreen
 
 @Composable
 fun AppNavigation(
@@ -474,6 +475,7 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
             onRequestedTabConsumed = { entry.savedStateHandle["tab"] = null },
             onOpenBusiness = { id -> navController.navigate(ClientRoutes.businessProfile(id)) },
             onOpenOffer = { id -> navController.navigate(ClientRoutes.offerDetail(id)) },
+            onMyReviews = { navController.navigate(ClientRoutes.MY_REVIEWS) },
         )
     }
 
@@ -487,12 +489,27 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
 
     composable(
         route = ClientRoutes.BUSINESS_PROFILE,
-        arguments = listOf(navArgument("businessId") { type = NavType.LongType }),
+        arguments = listOf(
+            navArgument("businessId") { type = NavType.LongType },
+            navArgument("tab") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            },
+        ),
     ) {
         ClientBusinessProfileScreen(
             onBack = { navController.popBackStack() },
             onTabSelected = navController::backToClientTab,
             onOpenOffer = { id -> navController.navigate(ClientRoutes.offerDetail(id)) },
+        )
+    }
+
+    composable(ClientRoutes.MY_REVIEWS) {
+        MyReviewsScreen(
+            onBack = { navController.popBackStack() },
+            // Abre el perfil del comercio directo en la pestaña Reseñas, donde se puede editar o borrar.
+            onOpenBusiness = { id -> navController.navigate(ClientRoutes.businessProfile(id, tab = "REVIEWS")) },
         )
     }
 
