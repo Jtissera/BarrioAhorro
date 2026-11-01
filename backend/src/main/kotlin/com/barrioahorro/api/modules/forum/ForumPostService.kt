@@ -4,6 +4,7 @@ import com.barrioahorro.api.modules.business.BusinessEntity
 import com.barrioahorro.api.modules.business.BusinessRepository
 import com.barrioahorro.api.modules.forum.dto.CreateCommentRequest
 import com.barrioahorro.api.modules.forum.dto.CreateForumPostRequest
+import com.barrioahorro.api.modules.forum.dto.ForumBusinessResponse
 import com.barrioahorro.api.modules.forum.dto.ForumCommentResponse
 import com.barrioahorro.api.modules.forum.dto.ForumPostResponse
 import com.barrioahorro.api.modules.forum.dto.MyForumActivityResponse
@@ -114,10 +115,16 @@ class ForumPostService(
         return toPostResponse(saved, business, user, userId)
     }
 
+    // ---------- Feed con filtros ----------
+
     @Transactional(readOnly = true)
-    fun getFeed(currentUserId: Long): List<ForumPostResponse> {
-        val posts = forumPostRepository.findByEliminadoEnIsNullOrderByCreatedAtDesc()
-        if (posts.isEmpty()) return emptyList()
+    fun getFeed(currentUserId: Long, filters: ForumFeedFilters = ForumFeedFilters()): List<ForumPostResponse> {
+        val ids = findFeedIds(filters)
+        if (ids.isEmpty()) return emptyList()
+
+        // findAllById no garantiza orden: se reordena según el SQL (más nuevas primero).
+        val postsById = forumPostRepository.findAllById(ids).associateBy { it.id }
+        val posts = ids.mapNotNull { postsById[it] }
 
         val businessIds = posts.map { it.comercioId }.distinct()
         val userIds = posts.map { it.autorId }.distinct()
@@ -128,6 +135,57 @@ class ForumPostService(
         return posts.map { post ->
             toPostResponse(post, businesses[post.comercioId], users[post.autorId], currentUserId)
         }
+    }
+
+    /** Comercios que tienen al menos una publicación activa (para el selector de filtro). */
+    @Transactional(readOnly = true)
+    fun getFeedBusinesses(): List<ForumBusinessResponse> {
+        val ids = forumPostRepository.findActiveBusinessIds()
+        if (ids.isEmpty()) return emptyList()
+        return businessRepository.findAllById(ids)
+            .map {
+                ForumBusinessResponse(
+                    id = it.usuarioId,
+                    nombre = it.nombreNegocio ?: "Comercio del barrio",
+                    rubro = it.rubro?.nombre,
+                )
+            }
+            .sortedBy { it.nombre.lowercase() }
+    }
+
+    private fun findFeedIds(f: ForumFeedFilters): List<Long> {
+        val where = mutableListOf("p.eliminado_en IS NULL")
+        val params = MapSqlParameterSource()
+
+        f.comercioId?.let {
+            where += "p.comercio_id = :comercioId"
+            params.addValue("comercioId", it)
+        }
+
+        f.dias?.let {
+            if (it <= 0) {
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "El rango de días debe ser mayor a cero")
+            }
+            where += "p.created_at >= now() - (:dias * interval '1 day')"
+            params.addValue("dias", it)
+        }
+
+        if ((f.lat == null) != (f.lng == null)) {
+            throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Para filtrar por cercanía se necesitan latitud y longitud",
+            )
+        }
+        if (f.lat != null && f.lng != null) {
+            where += "p.ubicacion_observada IS NOT NULL"
+            where += "ST_DWithin(p.ubicacion_observada, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, :radioMetros)"
+            params.addValue("lat", f.lat)
+            params.addValue("lng", f.lng)
+            params.addValue("radioMetros", f.radioKm.coerceIn(0.1, 50.0) * 1000)
+        }
+
+        val sql = "SELECT p.id FROM foro_publicaciones p WHERE ${where.joinToString(" AND ")} ORDER BY p.created_at DESC"
+        return jdbc.queryForList(sql, params, Long::class.javaObjectType) as List<Long>
     }
 
     @Transactional(readOnly = true)
@@ -162,6 +220,9 @@ class ForumPostService(
             if (padre.publicacionId != postId) {
                 throw ResponseStatusException(HttpStatus.BAD_REQUEST, "El comentario padre pertenece a otra publicación")
             }
+            if (padre.eliminadoEn != null) {
+                throw ResponseStatusException(HttpStatus.NOT_FOUND, "El comentario al que responde fue eliminado")
+            }
         }
 
         val user = userRepository.findById(userId).orElseThrow {
@@ -193,9 +254,7 @@ class ForumPostService(
 
     @Transactional(readOnly = true)
     fun getComments(postId: Long, currentUserId: Long): List<ForumCommentResponse> {
-        val post = forumPostRepository.findById(postId).orElseThrow {
-            ResponseStatusException(HttpStatus.NOT_FOUND, "La publicación no existe")
-        }
+        val post = findActivePost(postId)
 
         val comments = forumCommentRepository.findByPublicacionIdAndEliminadoEnIsNullOrderByCreatedAtAsc(postId)
         if (comments.isEmpty()) return emptyList()

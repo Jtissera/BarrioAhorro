@@ -1,11 +1,12 @@
 package com.barrioahorro.app.data.forum
 
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
-import retrofit2.http.DELETE
+import retrofit2.http.Query
 
 interface ForumApi {
 
@@ -13,7 +14,16 @@ interface ForumApi {
     suspend fun createPost(@Body body: CreateForumPostDto): ForumPostDto
 
     @GET("api/foro/publicaciones")
-    suspend fun getFeed(): List<ForumPostDto>
+    suspend fun getFeed(
+        @Query("comercioId") comercioId: Long?,
+        @Query("lat") lat: Double?,
+        @Query("lng") lng: Double?,
+        @Query("radioKm") radioKm: Double?,
+        @Query("dias") dias: Int?,
+    ): List<ForumPostDto>
+
+    @GET("api/foro/comercios")
+    suspend fun getFeedBusinesses(): List<ForumBusinessDto>
 
     @GET("api/foro/mis-publicaciones")
     suspend fun getMyActivity(): MyForumActivityDto

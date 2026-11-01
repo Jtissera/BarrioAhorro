@@ -18,8 +18,18 @@ class ForumRepository @Inject constructor(
         forumApi.createPost(dto)
     }
 
-    suspend fun getFeed(): Result<List<ForumPostDto>> = call {
-        forumApi.getFeed()
+    suspend fun getFeed(filters: ForumFeedFilters = ForumFeedFilters()): Result<List<ForumPostDto>> = call {
+        forumApi.getFeed(
+            comercioId = filters.comercioId,
+            lat = filters.lat,
+            lng = filters.lng,
+            radioKm = if (filters.cercaActivo) filters.radioKm else null,
+            dias = filters.dias,
+        )
+    }
+
+    suspend fun getFeedBusinesses(): Result<List<ForumBusinessDto>> = call {
+        forumApi.getFeedBusinesses()
     }
 
     suspend fun getMyActivity(): Result<MyForumActivityDto> = call {
@@ -70,16 +80,18 @@ class ForumRepository @Inject constructor(
         }
 
     private fun httpMessage(e: HttpException): String {
+        // Spring devuelve el texto en "message" (con include-message=always); se cae a "error".
         val serverMessage = runCatching {
-            e.response()?.errorBody()?.string()
-                ?.let { JSONObject(it).optString("error") }
-                ?.takeIf { it.isNotBlank() }
+            e.response()?.errorBody()?.string()?.let { body ->
+                val json = JSONObject(body)
+                json.optString("message").ifBlank { json.optString("error") }
+            }?.takeIf { it.isNotBlank() }
         }.getOrNull()
 
         return when (e.code()) {
             400 -> serverMessage ?: "Revisá los datos ingresados."
             401 -> "Tu sesión venció. Volvé a iniciar sesión."
-            403 -> "No tenés permisos para realizar esta acción."
+            403 -> serverMessage ?: "No tenés permisos para realizar esta acción."
             404 -> serverMessage ?: "No se encontró el recurso solicitado."
             409 -> serverMessage ?: "No se pudo completar la acción."
             else -> "Error del servidor (${e.code()}). Intentá nuevamente."

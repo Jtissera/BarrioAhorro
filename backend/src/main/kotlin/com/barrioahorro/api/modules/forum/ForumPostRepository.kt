@@ -9,6 +9,9 @@ interface ForumPostRepository : JpaRepository<ForumPostEntity, Long> {
 
     fun findByAutorIdAndEliminadoEnIsNullOrderByCreatedAtDesc(autorId: Long): List<ForumPostEntity>
 
+    @Query("SELECT DISTINCT p.comercioId FROM ForumPostEntity p WHERE p.eliminadoEn IS NULL")
+    fun findActiveBusinessIds(): List<Long>
+
     @Query(value = "SELECT COUNT(1) FROM foro_comentarios WHERE publicacion_id = :postId AND eliminado_en IS NULL", nativeQuery = true)
     fun countCommentsByPostId(@Param("postId") postId: Long): Int
 

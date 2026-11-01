@@ -1,5 +1,6 @@
 package com.barrioahorro.app.ui.screens.client.forum
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,11 +19,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Refresh
@@ -33,27 +37,34 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
+import com.barrioahorro.app.data.forum.ForumBusinessDto
+import com.barrioahorro.app.data.forum.ForumFeedFilters
 import com.barrioahorro.app.data.forum.ForumPostDto
 import com.barrioahorro.app.ui.components.ToldoConFranjas
 import com.barrioahorro.app.ui.theme.BorderGray
@@ -73,6 +84,12 @@ private val PillBeige = Color(0xFFF5EFE9)
 private val PillBeigeText = Color(0xFF7A685D)
 private val CommercePillBg = Color(0xFFFBF4ED)
 
+private val DIAS_OPTIONS = listOf(
+    1 to "Últimas 24 h",
+    7 to "Últimos 7 días",
+    30 to "Últimos 30 días",
+)
+
 @Composable
 fun ForumFeedScreen(
     onCreatePost: () -> Unit,
@@ -81,12 +98,18 @@ fun ForumFeedScreen(
     viewModel: ForumViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-
     val context = LocalContext.current
+
     LaunchedEffect(state.upvoteError) {
         state.upvoteError?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
             viewModel.onUpvoteErrorShown()
+        }
+    }
+    LaunchedEffect(state.locationError) {
+        state.locationError?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.onLocationErrorShown()
         }
     }
 
@@ -148,6 +171,15 @@ fun ForumFeedScreen(
                 }
             }
 
+            ForumFiltersBar(
+                filters = state.filters,
+                businesses = state.businesses,
+                onComercioSelected = viewModel::onComercioSelected,
+                onCercaClick = viewModel::onCercaToggled,
+                onDiasSelected = viewModel::onDiasSelected,
+                onClearAll = viewModel::clearFilters,
+            )
+
             if (state.isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -156,7 +188,11 @@ fun ForumFeedScreen(
                     CircularProgressIndicator(color = Primary)
                 }
             } else if (state.posts.isEmpty()) {
-                EmptyFeedView(onCreatePost = onCreatePost)
+                if (state.filters.hayFiltros) {
+                    NoResultsView(onClearFilters = viewModel::clearFilters)
+                } else {
+                    EmptyFeedView(onCreatePost = onCreatePost)
+                }
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
@@ -178,6 +214,191 @@ fun ForumFeedScreen(
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Filtros
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun ForumFiltersBar(
+    filters: ForumFeedFilters,
+    businesses: List<ForumBusinessDto>,
+    onComercioSelected: (Long?, String?) -> Unit,
+    onCercaClick: () -> Unit,
+    onDiasSelected: (Int?) -> Unit,
+    onClearAll: () -> Unit,
+) {
+    var comercioMenu by remember { mutableStateOf(false) }
+    var fechaMenu by remember { mutableStateOf(false) }
+
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(bottom = 10.dp),
+    ) {
+        // Comercio
+        item {
+            Box {
+                FilterPill(
+                    label = filters.comercioNombre ?: "Comercio",
+                    active = filters.comercioId != null,
+                    hasMenu = true,
+                    onClick = { comercioMenu = true },
+                    onClear = { onComercioSelected(null, null) },
+                )
+                DropdownMenu(expanded = comercioMenu, onDismissRequest = { comercioMenu = false }) {
+                    if (businesses.isEmpty()) {
+                        DropdownMenuItem(
+                            text = { Text("Sin comercios todavía") },
+                            onClick = { comercioMenu = false },
+                        )
+                    }
+                    businesses.forEach { b ->
+                        DropdownMenuItem(
+                            text = { Text(b.nombre) },
+                            onClick = {
+                                onComercioSelected(b.id, b.nombre)
+                                comercioMenu = false
+                            },
+                        )
+                    }
+                }
+            }
+        }
+
+        // Cercanía
+        item {
+            FilterPill(
+                label = "Cerca tuyo",
+                active = filters.cercaActivo,
+                hasMenu = false,
+                onClick = onCercaClick,
+                onClear = onCercaClick,
+            )
+        }
+
+        // Fecha
+        item {
+            Box {
+                FilterPill(
+                    label = DIAS_OPTIONS.firstOrNull { it.first == filters.dias }?.second ?: "Fecha",
+                    active = filters.dias != null,
+                    hasMenu = true,
+                    onClick = { fechaMenu = true },
+                    onClear = { onDiasSelected(null) },
+                )
+                DropdownMenu(expanded = fechaMenu, onDismissRequest = { fechaMenu = false }) {
+                    DIAS_OPTIONS.forEach { (dias, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = {
+                                onDiasSelected(dias)
+                                fechaMenu = false
+                            },
+                        )
+                    }
+                }
+            }
+        }
+
+        if (filters.hayFiltros) {
+            item {
+                Text(
+                    text = "Quitar filtros",
+                    color = Primary,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable(onClick = onClearAll)
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FilterPill(
+    label: String,
+    active: Boolean,
+    hasMenu: Boolean,
+    onClick: () -> Unit,
+    onClear: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (active) Primary else CardWhite)
+            .border(1.dp, if (active) Primary else BorderGray, RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+    ) {
+        Text(
+            text = label,
+            color = if (active) Color.White else Ink,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 13.sp,
+        )
+        when {
+            active -> {
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Quitar filtro",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clickable(onClick = onClear),
+                )
+            }
+            hasMenu -> {
+                Icon(
+                    imageVector = Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    tint = WarmGray,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NoResultsView(onClearFilters: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            text = "No hay publicaciones con estos filtros",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Ink,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Probá con otro comercio, una zona más amplia o un rango de fechas mayor.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = WarmGray,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.height(20.dp))
+        OutlinedButton(onClick = onClearFilters, shape = RoundedCornerShape(20.dp)) {
+            Text("Quitar filtros", color = Primary, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Tarjeta de publicación
+// ---------------------------------------------------------------------------
 
 @Composable
 private fun ForumPostCard(
@@ -222,7 +443,6 @@ private fun ForumPostCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    // Avatar con iniciales
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier = Modifier
@@ -253,7 +473,6 @@ private fun ForumPostCard(
                         )
                     }
 
-                    // Badge "Aporte de vecino"
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
@@ -368,7 +587,6 @@ private fun ForumPostCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(top = 4.dp),
                 ) {
-                    // Chip Upvotes
                     val upvoted = post.upvotedByMe
                     val own = post.esUsuarioActual
                     val upvoteColor = when {
@@ -399,7 +617,6 @@ private fun ForumPostCard(
                         )
                     }
 
-                    // Chip Comentarios
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier

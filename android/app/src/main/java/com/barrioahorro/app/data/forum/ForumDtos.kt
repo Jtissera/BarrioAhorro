@@ -82,3 +82,22 @@ data class UpvoteDto(
     val upvotesCount: Int,
     val upvotedByMe: Boolean,
 )
+
+
+data class ForumBusinessDto(
+    val id: Long,
+    val nombre: String,
+    val rubro: String? = null,
+)
+
+data class ForumFeedFilters(
+    val comercioId: Long? = null,
+    val comercioNombre: String? = null,
+    val lat: Double? = null,
+    val lng: Double? = null,
+    val radioKm: Double = 2.0,
+    val dias: Int? = null,
+) {
+    val cercaActivo: Boolean get() = lat != null && lng != null
+    val hayFiltros: Boolean get() = comercioId != null || cercaActivo || dias != null
+}

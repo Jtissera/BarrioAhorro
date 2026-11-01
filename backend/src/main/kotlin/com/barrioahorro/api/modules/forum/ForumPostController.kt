@@ -2,6 +2,7 @@ package com.barrioahorro.api.modules.forum
 
 import com.barrioahorro.api.modules.forum.dto.CreateCommentRequest
 import com.barrioahorro.api.modules.forum.dto.CreateForumPostRequest
+import com.barrioahorro.api.modules.forum.dto.ForumBusinessResponse
 import com.barrioahorro.api.modules.forum.dto.ForumCommentResponse
 import com.barrioahorro.api.modules.forum.dto.ForumPostResponse
 import com.barrioahorro.api.modules.forum.dto.MyForumActivityResponse
@@ -12,14 +13,15 @@ import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.bind.annotation.DeleteMapping
 
 @RestController
 @RequestMapping("/api/foro")
@@ -39,10 +41,22 @@ class ForumPostController(
     }
 
     @GetMapping("/publicaciones")
-    fun getFeed(authentication: Authentication): ResponseEntity<List<ForumPostResponse>> {
+    fun getFeed(
+        authentication: Authentication,
+        @RequestParam(required = false) comercioId: Long?,
+        @RequestParam(required = false) lat: Double?,
+        @RequestParam(required = false) lng: Double?,
+        @RequestParam(required = false, defaultValue = "2") radioKm: Double,
+        @RequestParam(required = false) dias: Int?,
+    ): ResponseEntity<List<ForumPostResponse>> {
         val userId = authentication.principal as Long
-        return ResponseEntity.ok(forumPostService.getFeed(userId))
+        val filters = ForumFeedFilters(comercioId, lat, lng, radioKm, dias)
+        return ResponseEntity.ok(forumPostService.getFeed(userId, filters))
     }
+
+    @GetMapping("/comercios")
+    fun getFeedBusinesses(): ResponseEntity<List<ForumBusinessResponse>> =
+        ResponseEntity.ok(forumPostService.getFeedBusinesses())
 
     @GetMapping("/mis-publicaciones")
     fun getMyActivity(authentication: Authentication): ResponseEntity<MyForumActivityResponse> {
@@ -114,5 +128,4 @@ class ForumPostController(
     @DeleteMapping("/comentarios/{id}/upvote")
     fun removeCommentUpvote(authentication: Authentication, @PathVariable id: Long): ResponseEntity<UpvoteResponse> =
         ResponseEntity.ok(forumUpvoteService.removeCommentUpvote(authentication.principal as Long, id))
-
 }
