@@ -26,6 +26,8 @@ class ExploreRepository @Inject constructor(
     private val categoryApi: CategoryApiService,
 ) {
 
+    // ---- Ofertas ----------------------------------------------------------------
+
     suspend fun getOffers(query: ExploreQuery, page: Int, size: Int): Result<ExploreOffersPageDto> = call {
         api.getOffers(
             latitude = query.latitude,
@@ -57,6 +59,60 @@ class ExploreRepository @Inject constructor(
         if (!response.isSuccessful) throw HttpException(response)
     }
 
+    suspend fun getBusinesses(query: ExploreQuery): Result<List<ExploreBusinessDto>> {
+        val lat = query.latitude
+        val lng = query.longitude
+        if (lat == null || lng == null) {
+            return Result.failure(ExploreException("Necesitamos tu ubicación para mostrar el mapa."))
+        }
+        return call {
+            api.getBusinesses(
+                latitude = lat,
+                longitude = lng,
+                radiusKm = query.radiusKm,
+                categoryIds = query.categoryIds.takeIf { it.isNotEmpty() },
+                types = query.types.takeIf { it.isNotEmpty() },
+                text = query.text,
+            )
+        }
+    }
+
+    suspend fun getOfferDetail(offerId: Long, latitude: Double?, longitude: Double?): Result<OfferDetailDto> =
+        call { api.getOfferDetail(offerId, latitude, longitude) }
+
+    // ---- Cupones y canjes -------------------------------------------------------
+
+    suspend fun getCoupons(query: CouponQuery, page: Int, size: Int): Result<CouponsPageDto> = call {
+        api.getCoupons(
+            latitude = query.latitude,
+            longitude = query.longitude,
+            radiusKm = query.radiusKm,
+            categoryIds = query.categoryIds.takeIf { it.isNotEmpty() },
+            text = query.text,
+            order = query.order,
+            page = page,
+            size = size,
+        )
+    }
+
+    suspend fun redeemCoupon(couponId: Long): Result<RedemptionDto> =
+        call { api.redeemCoupon(RedeemCouponRequestDto(couponId)) }
+
+    suspend fun getRedemptions(): Result<List<RedemptionDto>> = call { api.getRedemptions() }
+
+    suspend fun getRedemption(id: Long): Result<RedemptionDto> = call { api.getRedemption(id) }
+
+    suspend fun cancelRedemption(id: Long): Result<RedemptionDto> = call { api.cancelRedemption(id) }
+
+    suspend fun getFeedback(id: Long): Result<FeedbackStatusDto> = call { api.getFeedback(id) }
+
+    suspend fun confirmReceipt(id: Long): Result<FeedbackStatusDto> = call { api.confirmReceipt(id) }
+
+    suspend fun reportRedemption(id: Long, reason: String, description: String): Result<FeedbackStatusDto> =
+        call { api.reportRedemption(id, ReportRedemptionRequestDto(reason, description)) }
+
+    // ---- Infra ------------------------------------------------------------------
+
     private suspend fun <T> call(block: suspend () -> T): Result<T> =
         try {
             Result.success(block())
@@ -81,34 +137,14 @@ class ExploreRepository @Inject constructor(
         }.getOrNull()
 
         return when (e.code()) {
-            400 -> serverMessage ?: "Revisá los filtros e intentá de nuevo."
+            400 -> serverMessage ?: "Revisá los datos e intentá de nuevo."
             401 -> "Tu sesión venció. Volvé a iniciar sesión."
             403 -> serverMessage ?: "No tenés permiso para hacer esta acción."
             404 -> serverMessage ?: "No encontramos lo que buscabas."
+            409 -> serverMessage ?: "No se pudo completar la acción. Intentá de nuevo."
             else -> "Error del servidor (${e.code()}). Intentá de nuevo."
         }
     }
-
-    suspend fun getBusinesses(query: ExploreQuery): Result<List<ExploreBusinessDto>> {
-        val lat = query.latitude
-        val lng = query.longitude
-        if (lat == null || lng == null) {
-            return Result.failure(ExploreException("Necesitamos tu ubicación para mostrar el mapa."))
-        }
-        return call {
-            api.getBusinesses(
-                latitude = lat,
-                longitude = lng,
-                radiusKm = query.radiusKm,
-                categoryIds = query.categoryIds.takeIf { it.isNotEmpty() },
-                types = query.types.takeIf { it.isNotEmpty() },
-                text = query.text,
-            )
-        }
-    }
-
-    suspend fun getOfferDetail(offerId: Long, latitude: Double?, longitude: Double?): Result<OfferDetailDto> =
-        call { api.getOfferDetail(offerId, latitude, longitude) }
 
     private companion object {
         const val FAVORITES_PAGE_SIZE = 50

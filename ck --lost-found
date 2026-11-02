@@ -1,0 +1,40 @@
+[33m7877849[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: reset: moving to HEAD
+[33m7877849[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{1}: reset: moving to 787784936575a20f59a94c06e26628f09ef86dab
+[33m7877849[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{2}: commit: Flujo cuponera
+[33m6b36424[m HEAD@{3}: commit: Filtrado para el foro
+[33mcc1f0b0[m HEAD@{4}: pull: Fast-forward
+[33mf5e993a[m HEAD@{5}: commit: Agrego perfil del comerciante visto desde el cliente
+[33mdb50d5e[m HEAD@{6}: commit: Correcciones panel principal vecino y agrego favoritos
+[33m5e9f28e[m HEAD@{7}: commit: Correcciones visuales admin y agregar foto a los sorteos
+[33m6cc4209[m HEAD@{8}: pull: Fast-forward
+[33m40e9883[m HEAD@{9}: commit: cambio expiracion token
+[33m0c3c27f[m HEAD@{10}: pull --no-rebase origin main: Merge made by the 'ort' strategy.
+[33md89669e[m HEAD@{11}: commit: perfil
+[33m3ccc103[m HEAD@{12}: pull: Fast-forward
+[33m404dc40[m HEAD@{13}: commit: Estandarizo colores
+[33mc4f40bc[m HEAD@{14}: commit: Pantalla principal
+[33m813b0e1[m HEAD@{15}: reset: moving to origin/main
+[33m9c4c2b0[m[33m ([m[1;32mrespaldo-main-local[m[33m)[m HEAD@{16}: reset: moving to HEAD
+[33m9c4c2b0[m[33m ([m[1;32mrespaldo-main-local[m[33m)[m HEAD@{17}: reset: moving to HEAD
+[33m9c4c2b0[m[33m ([m[1;32mrespaldo-main-local[m[33m)[m HEAD@{18}: commit: visual dashboard comerciante
+[33m48a45c5[m HEAD@{19}: commit: redireccion bien
+[33me112acc[m HEAD@{20}: commit (merge): merge
+[33m14016cc[m HEAD@{21}: commit: Reconexion y error de ingreso
+[33m348084e[m HEAD@{22}: commit: Redireccion corregida
+[33m166c976[m HEAD@{23}: commit: Agrego sacar foto
+[33m1412580[m HEAD@{24}: pull --no-rebase origin main: Merge made by the 'ort' strategy.
+[33m96ef8aa[m HEAD@{25}: commit: Arreglo mapa direccion
+[33m9c296a7[m HEAD@{26}: commit: Cuponera Repository
+[33m3306ae8[m HEAD@{27}: commit: Cuponera sin camara y autorizacion
+[33m1c7dacd[m HEAD@{28}: commit: Horarios y compromiso, no guarda aun los datos
+[33mb7d2bda[m HEAD@{29}: reset: moving to HEAD
+[33mb7d2bda[m HEAD@{30}: commit: onboarding hasta geolocalizacion fix visual
+[33m2e1a5a6[m HEAD@{31}: commit: Iniciar sesion y registro visual fix
+[33md5b1a4e[m HEAD@{32}: commit: Agrego fuentes
+[33m87817c6[m HEAD@{33}: commit: Fix selector y registro
+[33m590cb32[m HEAD@{34}: commit: SplashScreen
+[33m68eeaa2[m HEAD@{35}: commit: Correccion en ingreso direccion manual
+[33mb70334a[m HEAD@{36}: commit: Mapa interactivo
+[33m1589438[m HEAD@{37}: pull: Fast-forward
+[33m8cb20d2[m HEAD@{38}: commit: Onbording profesional
+[33md2d7afe[m HEAD@{39}: clone: from github.com:Jtissera/BarrioAhorro.git

@@ -68,6 +68,8 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.mlkit.barcode.scanning)
 
+    implementation("com.google.zxing:core:3.5.3")
+
 
 
 

@@ -76,11 +76,12 @@ import com.barrioahorro.app.ui.theme.WarmGray
 fun ClientProfileScreen(
     onMyPosts: () -> Unit,
     onMyReviews: () -> Unit,
+    onRedemptionsHistory: () -> Unit,
     onEditLocation: () -> Unit,
     onLogout: () -> Unit,
     isLoggingOut: Boolean,
     viewModel: ClientProfileViewModel = hiltViewModel(),
-) {
+){
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
@@ -146,8 +147,9 @@ fun ClientProfileScreen(
                             MenuRow(
                                 icon = Icons.Outlined.ReceiptLong,
                                 title = "Historial de canjes",
-                                onClick = { comingSoon("Próximamente vas a poder ver tu historial de canjes") },
+                                onClick = onRedemptionsHistory,
                             )
+
                             MenuDivider()
                             MenuRow(
                                 icon = Icons.Outlined.ConfirmationNumber,

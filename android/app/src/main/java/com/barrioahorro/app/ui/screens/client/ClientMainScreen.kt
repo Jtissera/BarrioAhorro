@@ -1,35 +1,25 @@
 package com.barrioahorro.app.ui.screens.client
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
+import com.barrioahorro.app.ui.screens.client.coupons.CouponsScreen
 import com.barrioahorro.app.ui.screens.client.explore.ExploreScreen
 import com.barrioahorro.app.ui.screens.client.explore.FavoritesScreen
 import com.barrioahorro.app.ui.screens.client.forum.ForumFeedScreen
 import com.barrioahorro.app.ui.screens.client.profile.ClientProfileScreen
 import com.barrioahorro.app.ui.theme.Cream
-import com.barrioahorro.app.ui.theme.InkBlack
-import com.barrioahorro.app.ui.theme.WarmGray
 
 @Composable
 fun ClientMainScreen(
@@ -45,6 +35,9 @@ fun ClientMainScreen(
     requestedTab: String? = null,
     onRequestedTabConsumed: () -> Unit = {},
     modifier: Modifier = Modifier,
+    onOpenRedemption: (Long) -> Unit = {},
+    onMyRedemptions: () -> Unit = {},
+    onRedemptionsHistory: () -> Unit = {},
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ClientTab.EXPLORAR) }
 
@@ -84,34 +77,21 @@ fun ClientMainScreen(
                     onPostClick = onPostClick,
                 )
 
-                ClientTab.CUPONES -> ComingSoon("Cupones")
+                ClientTab.CUPONES -> CouponsScreen(
+                    modifier = Modifier.statusBarsPadding(),
+                    onOpenRedemption = onOpenRedemption,
+                    onMyRedemptions = onMyRedemptions,
+                )
 
                 ClientTab.PERFIL -> ClientProfileScreen(
                     onMyPosts = onMyPosts,
                     onMyReviews = onMyReviews,
+                    onRedemptionsHistory = onRedemptionsHistory,
                     onEditLocation = onEditLocation,
                     onLogout = onLogout,
                     isLoggingOut = isLoggingOut,
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun ComingSoon(title: String) {
-    Column(
-        modifier = Modifier.fillMaxSize().background(Cream).statusBarsPadding().padding(28.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(title, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold, color = InkBlack)
-        Text(
-            text = "Esta sección estará disponible muy pronto.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = WarmGray,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp),
-        )
     }
 }

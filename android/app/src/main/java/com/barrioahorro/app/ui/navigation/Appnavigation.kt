@@ -54,6 +54,8 @@ import com.barrioahorro.app.ui.screens.client.business.ClientBusinessProfileScre
 import com.barrioahorro.app.ui.screens.client.ClientTab
 import com.barrioahorro.app.ui.screens.client.offer.OfferDetailScreen
 import com.barrioahorro.app.ui.screens.client.profile.MyReviewsScreen
+import com.barrioahorro.app.ui.screens.client.coupons.MyRedemptionsScreen
+import com.barrioahorro.app.ui.screens.client.coupons.RedemptionDetailScreen
 
 @Composable
 fun AppNavigation(
@@ -69,6 +71,7 @@ fun AppNavigation(
         onboardingGraph(navController = navController)
         businessGraph(navController = navController)
         clientGraph(navController = navController)
+        feedbackGraph(navController = navController)
         adminGraph(navController = navController)
     }
 }
@@ -366,7 +369,6 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
         )
     }
 
-
     composable(BusinessRoutes.EDIT_PROFILE) {
         val viewModel: EditBusinessProfileViewModel = hiltViewModel()
         val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -409,7 +411,6 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
             onRetryLoad = viewModel::loadPhotos,
             onBack = { navController.popBackStack() },
         )
-
     }
 
     composable(CuponeraRoutes.RAFFLE) {
@@ -422,8 +423,6 @@ fun NavGraphBuilder.businessGraph(navController: NavHostController) {
     composable(CuponeraRoutes.SCANNER) {
         QrScannerScreen(onBack = { navController.popBackStack() })
     }
-
-
 }
 
 fun NavGraphBuilder.clientGraph(navController: NavHostController) {
@@ -457,6 +456,31 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
         )
     }
 
+    composable(ClientRoutes.MY_REDEMPTIONS) {
+        MyRedemptionsScreen(
+            onBack = { navController.popBackStack() },
+            onOpen = { id -> navController.navigate(ClientRoutes.redemptionDetail(id)) },
+        )
+    }
+
+    composable(ClientRoutes.REDEMPTIONS_HISTORY) {
+        MyRedemptionsScreen(
+            onBack = { navController.popBackStack() },
+            onOpen = { id -> navController.navigate(ClientRoutes.redemptionDetail(id)) },
+            historyOnly = true,
+        )
+    }
+
+    composable(
+        route = ClientRoutes.REDEMPTION_DETAIL,
+        arguments = listOf(navArgument("redemptionId") { type = NavType.LongType }),
+    ) {
+        RedemptionDetailScreen(
+            onBack = { navController.popBackStack() },
+            onOpenReceipt = { id -> navController.navigate(FeedbackRoutes.receipt(id)) },
+        )
+    }
+
     composable(ClientRoutes.HOME) { entry ->
         val sessionViewModel: SessionViewModel = hiltViewModel()
         val isLoggingOut by sessionViewModel.isLoggingOut.collectAsStateWithLifecycle()
@@ -476,7 +500,10 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
             onOpenBusiness = { id -> navController.navigate(ClientRoutes.businessProfile(id)) },
             onOpenOffer = { id -> navController.navigate(ClientRoutes.offerDetail(id)) },
             onMyReviews = { navController.navigate(ClientRoutes.MY_REVIEWS) },
-        )
+            onOpenRedemption = { id -> navController.navigate(ClientRoutes.redemptionDetail(id)) },
+            onMyRedemptions = { navController.navigate(ClientRoutes.MY_REDEMPTIONS) },
+            onRedemptionsHistory = { navController.navigate(ClientRoutes.REDEMPTIONS_HISTORY) },
+            )
     }
 
     composable(ClientRoutes.MY_POSTS) {
@@ -588,6 +615,7 @@ fun UserType.homeRoute(): String = when (this) {
     UserType.CLIENTE -> ClientRoutes.ENTRY
     UserType.ADMIN -> AdminRoutes.LIST
 }
+
 fun NavHostController.navigateAfterAuth(userType: UserType) {
     navigate(userType.homeRoute()) {
         popUpTo(AuthRoutes.ROLE_SELECTION) { inclusive = true }
@@ -604,7 +632,6 @@ fun NavHostController.finishRatification() {
         }
     }
 }
-
 
 fun NavHostController.navigateAfterLogout() {
     navigate(AuthRoutes.ROLE_SELECTION) {

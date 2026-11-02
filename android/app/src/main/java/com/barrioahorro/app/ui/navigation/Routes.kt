@@ -71,6 +71,10 @@ object ClientRoutes {
 
     const val MY_REVIEWS = "client/reviews/mine"
 
+    const val MY_REDEMPTIONS = "client/redemptions"
+    const val REDEMPTIONS_HISTORY = "client/redemptions/history"
+    const val REDEMPTION_DETAIL = "client/redemption/{redemptionId}"
+
     fun editLocation(): String = "client/location?edit=true"
     fun postDetail(postId: Long): String = "client/forum/post/$postId"
     fun editPost(postId: Long): String = "client/forum/post/$postId/edit"
@@ -79,6 +83,8 @@ object ClientRoutes {
         if (tab == null) "client/business/$businessId" else "client/business/$businessId?tab=$tab"
 
     fun offerDetail(offerId: Long): String = "client/offer/$offerId"
+
+    fun redemptionDetail(id: Long): String = "client/redemption/$id"
 }
 
 object AdminRoutes {
