@@ -37,10 +37,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -72,6 +76,7 @@ import com.barrioahorro.app.ui.theme.WarmGray
 import java.text.NumberFormat
 import java.util.Locale
 
+
 private enum class MyPostsTab(val label: String) {
     PUBLICACIONES("Publicaciones"),
     COMENTARIOS("Comentarios"),
@@ -87,6 +92,15 @@ fun MyPostsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTab by rememberSaveable { mutableStateOf(MyPostsTab.PUBLICACIONES) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Escucha el mensaje de borrado del ViewModel y lo muestra
+    LaunchedEffect(state.feedbackMessage) {
+        state.feedbackMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearFeedbackMessage()
+        }
+    }
 
     // Al volver de editar (u otra pantalla) se recarga la actividad.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshOnResume() }
@@ -103,6 +117,7 @@ fun MyPostsScreen(
 
     Scaffold(
         containerColor = Cream,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = modifier.fillMaxSize(),
     ) { padding ->
         Column(
@@ -192,6 +207,7 @@ fun MyPostsScreen(
                                     post = post,
                                     onClick = { onPostClick(post.id) },
                                     onEdit = { onEditPost(post.id) },
+                                    onDelete = { viewModel.deletePost(post.id) },
                                 )
                             }
 
@@ -200,6 +216,7 @@ fun MyPostsScreen(
                                     comment = comment,
                                     onClick = { onPostClick(comment.publicacionId) },
                                     onEdit = { viewModel.startEditComment(comment) },
+                                    onDelete = { viewModel.deleteComment(comment.id) },
                                 )
                             }
                         }
@@ -320,6 +337,7 @@ private fun PointsSummaryCard(puntos: Int) {
 @Composable
 private fun MyActivityCard(
     onClick: () -> Unit,
+    onDelete: () -> Unit,
     content: @Composable () -> Unit,
 ) {
     Card(
@@ -341,7 +359,7 @@ private fun MyActivityCard(
 
 /** Fila superior: chip del comercio + fecha relativa + menú "⋯". */
 @Composable
-private fun MyActivityHeader(comercioNombre: String, createdAt: String, onEdit: () -> Unit) {
+private fun MyActivityHeader(comercioNombre: String, createdAt: String, onEdit: () -> Unit, onDelete: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         // Chip + fecha ocupan todo el ancho libre; el chip solo se recorta si el nombre no entra.
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
@@ -379,7 +397,7 @@ private fun MyActivityHeader(comercioNombre: String, createdAt: String, onEdit: 
             )
         }
         Spacer(modifier = Modifier.width(8.dp))
-        ForumOptionsMenu(onEdit = onEdit, circular = true)
+        ForumOptionsMenu(onEdit = onEdit, onDelete = onDelete, circular = true)
     }
 }
 
@@ -388,9 +406,10 @@ private fun MyPostCard(
     post: ForumPostDto,
     onClick: () -> Unit,
     onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
-    MyActivityCard(onClick = onClick) {
-        MyActivityHeader(comercioNombre = post.comercioNombre, createdAt = post.createdAt, onEdit = onEdit)
+    MyActivityCard(onClick = onClick, onDelete = onDelete) {
+        MyActivityHeader(comercioNombre = post.comercioNombre, createdAt = post.createdAt, onEdit = onEdit, onDelete = onDelete)
 
         Text(
             text = post.texto,
@@ -435,9 +454,10 @@ private fun MyCommentCard(
     comment: MyForumCommentDto,
     onClick: () -> Unit,
     onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
-    MyActivityCard(onClick = onClick) {
-        MyActivityHeader(comercioNombre = comment.comercioNombre, createdAt = comment.createdAt, onEdit = onEdit)
+    MyActivityCard(onClick = onClick, onDelete = onDelete ) {
+        MyActivityHeader(comercioNombre = comment.comercioNombre, createdAt = comment.createdAt, onEdit = onEdit, onDelete = onDelete)
 
         Text(
             text = comment.texto,

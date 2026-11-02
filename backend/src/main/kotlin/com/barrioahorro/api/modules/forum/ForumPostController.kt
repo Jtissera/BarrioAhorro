@@ -128,4 +128,24 @@ class ForumPostController(
     @DeleteMapping("/comentarios/{id}/upvote")
     fun removeCommentUpvote(authentication: Authentication, @PathVariable id: Long): ResponseEntity<UpvoteResponse> =
         ResponseEntity.ok(forumUpvoteService.removeCommentUpvote(authentication.principal as Long, id))
+
+    @DeleteMapping("/publicaciones/{id}")
+    fun deletePost(
+        authentication: Authentication,
+        @PathVariable id: Long,
+    ): ResponseEntity<Void> {
+        forumPostService.deletePost(authentication.principal as Long, id)
+        return ResponseEntity.noContent().build()
+    }
+
+    @DeleteMapping("/comentarios/{id}")
+    fun deleteComment(
+        authentication: Authentication,
+        @PathVariable id: Long,
+    ): ResponseEntity<Void> {
+        forumPostService.deleteComment(authentication.principal as Long, id)
+        return ResponseEntity.noContent().build()
+    }
+
 }
+

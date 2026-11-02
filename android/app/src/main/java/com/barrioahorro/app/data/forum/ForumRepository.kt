@@ -64,6 +64,14 @@ class ForumRepository @Inject constructor(
         if (currentlyUpvoted) forumApi.removeCommentUpvote(id) else forumApi.upvoteComment(id)
     }
 
+    suspend fun deletePost(id: Long): Result<Unit> = call {
+        forumApi.deletePost(id)
+    }
+
+    suspend fun deleteComment(id: Long): Result<Unit> = call {
+        forumApi.deleteComment(id)
+    }
+
     private suspend fun <T> call(block: suspend () -> T): Result<T> =
         try {
             Result.success(block())

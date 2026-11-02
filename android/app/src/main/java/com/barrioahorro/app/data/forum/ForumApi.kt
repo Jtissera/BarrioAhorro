@@ -63,4 +63,14 @@ interface ForumApi {
 
     @DELETE("api/foro/comentarios/{id}/upvote")
     suspend fun removeCommentUpvote(@Path("id") id: Long): UpvoteDto
+<<<<<<< Updated upstream
 }
+=======
+
+    @DELETE("api/foro/publicaciones/{id}")
+    suspend fun deletePost(@Path("id") id: Long)
+
+    @DELETE("api/foro/comentarios/{id}")
+    suspend fun deleteComment(@Path("id") id: Long)
+}
+>>>>>>> Stashed changes
