@@ -413,4 +413,36 @@ class ForumPostService(
         val username = email.substringBefore("@")
         return username.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
     }
+
+    @Transactional
+    fun deletePost(userId: Long, postId: Long) {
+        val post = findActivePost(postId)
+        if (post.autorId != userId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Solo el autor puede eliminar la publicación")
+        }
+
+        val now = java.time.OffsetDateTime.now()
+        post.eliminadoEn = now
+        forumPostRepository.save(post)
+
+        val comentarios = forumCommentRepository.findByPublicacionIdAndEliminadoEnIsNull(postId)
+        if (comentarios.isNotEmpty()) {
+            comentarios.forEach { it.eliminadoEn = now }
+            forumCommentRepository.saveAll(comentarios)
+        }
+    }
+
+    @Transactional
+    fun deleteComment(userId: Long, commentId: Long) {
+        val comment = forumCommentRepository.findById(commentId)
+            .filter { it.eliminadoEn == null }
+            .orElseThrow { ResponseStatusException(HttpStatus.NOT_FOUND, "El comentario no existe o ya fue eliminado") }
+
+        if (comment.autorId != userId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Solo el autor puede eliminar el comentario")
+        }
+
+        comment.eliminadoEn = java.time.OffsetDateTime.now()
+        forumCommentRepository.save(comment)
+    }
 }

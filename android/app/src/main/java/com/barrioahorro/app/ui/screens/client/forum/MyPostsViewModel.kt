@@ -19,6 +19,7 @@ data class MyPostsUiState(
     val comments: List<MyForumCommentDto> = emptyList(),
     val isLoading: Boolean = true,
     val errorMessage: String? = null,
+    val feedbackMessage: String? = null,
     val editingComment: MyForumCommentDto? = null,
     val isSavingComment: Boolean = false,
     val editCommentError: String? = null,
@@ -74,6 +75,47 @@ class MyPostsViewModel @Inject constructor(
         }
     }
 
+    fun deletePost(postId: Long) {
+        viewModelScope.launch {
+            forumRepository.deletePost(postId)
+                .onSuccess {
+                    _uiState.update { current ->
+                        current.copy(
+                            posts = current.posts.filterNot { it.id == postId },
+                            feedbackMessage = "Publicación eliminada",
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(feedbackMessage = error.message ?: "No se pudo eliminar la publicación")
+                    }
+                }
+        }
+    }
+
+    fun deleteComment(commentId: Long) {
+        viewModelScope.launch {
+            forumRepository.deleteComment(commentId)
+                .onSuccess {
+                    _uiState.update { current ->
+                        current.copy(
+                            comments = current.comments.filterNot { it.id == commentId },
+                            feedbackMessage = "Comentario eliminado",
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(feedbackMessage = error.message ?: "No se pudo eliminar el comentario")
+                    }
+                }
+        }
+    }
+
+    fun clearFeedbackMessage() {
+        _uiState.update { it.copy(feedbackMessage = null) }
+    }
     fun startEditComment(comment: MyForumCommentDto) {
         _uiState.update { it.copy(editingComment = comment, editCommentError = null) }
     }

@@ -282,4 +282,55 @@ class PostDetailViewModel @Inject constructor(
             state.copy(comments = state.comments.map { if (it.id == id) transform(it) else it })
         }
     }
+
+    fun deletePost(postId: Long, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            forumRepository.deletePost(postId)
+                .onSuccess {
+                    onSuccess()
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(errorMessage = error.message ?: "No se pudo eliminar la publicación")
+                    }
+                }
+        }
+    }
+
+    fun deleteComment(commentId: Long) {
+        viewModelScope.launch {
+            forumRepository.deleteComment(commentId)
+                .onSuccess {
+                    _uiState.update { current ->
+                        // Si estábamos dentro del hilo del comentario eliminado, volvemos atrás
+                        val newStack = if (current.focusedCommentStack.contains(commentId)) {
+                            current.focusedCommentStack.takeWhile { it != commentId }
+                        } else {
+                            current.focusedCommentStack
+                        }
+
+                        // Removemos el comentario y sus respuestas asociadas
+                        val updatedComments = current.comments.filterNot {
+                            it.id == commentId || it.comentarioPadreId == commentId
+                        }
+
+                        val updatedPost = current.post?.copy(
+                            comentariosCount = maxOf(0, current.post.comentariosCount - (current.comments.size - updatedComments.size))
+                        )
+
+                        current.copy(
+                            post = updatedPost,
+                            comments = updatedComments,
+                            focusedCommentStack = newStack,
+                            replyingTo = if (current.replyingTo?.id == commentId) null else current.replyingTo,
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(errorMessage = error.message ?: "No se pudo eliminar el comentario")
+                    }
+                }
+        }
+    }
 }

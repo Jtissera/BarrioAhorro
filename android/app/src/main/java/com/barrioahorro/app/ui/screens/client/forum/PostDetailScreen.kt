@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -302,6 +301,7 @@ fun PostDetailScreen(
                                     onReply = { viewModel.onReplyToComment(child) },
                                     onOpenThread = { viewModel.focusComment(child.id) },
                                     onEdit = { viewModel.startEditComment(child) },
+                                    onDelete = { viewModel.deleteComment(child.id) },
                                     onUpvote = { viewModel.toggleCommentUpvote(child.id) },
                                 )
                             }
@@ -316,6 +316,7 @@ fun PostDetailScreen(
                                         onReply = { viewModel.onReplyToComment(firstSub) },
                                         onOpenThread = { viewModel.focusComment(firstSub.id) },
                                         onEdit = { viewModel.startEditComment(firstSub) },
+                                        onDelete = { viewModel.deleteComment(firstSub.id) },
                                         onUpvote = { viewModel.toggleCommentUpvote(firstSub.id) },
                                     )
                                 }
@@ -373,6 +374,11 @@ fun PostDetailScreen(
                                 } else {
                                     null
                                 },
+                                onDelete = if (post.esUsuarioActual) {
+                                    { viewModel.deletePost(post.id, onSuccess = onNavigateBack) }
+                                } else {
+                                    null
+                                },
                                 onUpvote = { viewModel.togglePostUpvote() },
                             )
                         }
@@ -421,6 +427,7 @@ fun PostDetailScreen(
                                         viewModel.focusComment(rootComment.id)
                                     },
                                     onEdit = { viewModel.startEditComment(rootComment) },
+                                    onDelete = { viewModel.deleteComment(rootComment.id) },
                                     onUpvote = { viewModel.toggleCommentUpvote(rootComment.id) },
                                 )
                             }
@@ -436,6 +443,7 @@ fun PostDetailScreen(
                                         onReply = { viewModel.onReplyToComment(reply) },
                                         onOpenThread = { viewModel.focusComment(reply.id) },
                                         onEdit = { viewModel.startEditComment(reply) },
+                                        onDelete = { viewModel.deleteComment(reply.id) },
                                         onUpvote = { viewModel.toggleCommentUpvote(reply.id) },
                                     )
                                 }
@@ -512,6 +520,7 @@ fun PostDetailScreen(
 private fun PostDetailHeaderCard(
     post: ForumPostDto,
     onEdit: (() -> Unit)?,
+    onDelete: (() -> Unit)?,
     onUpvote: () -> Unit,
 ) {
     Card(
@@ -592,9 +601,13 @@ private fun PostDetailHeaderCard(
                         )
                     }
 
-                    if (onEdit != null) {
+                    if (onEdit != null && onDelete != null) {
                         Spacer(modifier = Modifier.width(8.dp))
-                        ForumOptionsMenu(onEdit = onEdit, circular = true)
+                        ForumOptionsMenu(
+                            onEdit = onEdit,
+                            onDelete = onDelete,
+                            circular = true,
+                        )
                     }
                 }
 
@@ -927,6 +940,7 @@ private fun CommentRowItem(
     onReply: () -> Unit,
     onOpenThread: () -> Unit,
     onEdit: () -> Unit,
+    onDelete: () -> Unit,
     onUpvote: () -> Unit,
 ) {
     Card(
@@ -1022,7 +1036,12 @@ private fun CommentRowItem(
                 }
 
                 if (comment.esUsuarioActual) {
-                    ForumOptionsMenu(onEdit = onEdit)
+                    ForumOptionsMenu(
+                        onEdit = onEdit,
+                        onDelete = onDelete,
+                        deleteDialogTitle = "¿Eliminar comentario?",
+                        deleteDialogDescription = "¿Estás seguro de que querés retirar este comentario?",
+                    )
                 }
             }
 
@@ -1095,6 +1114,7 @@ private fun ReplyCommentRowItem(
     onReply: () -> Unit,
     onOpenThread: () -> Unit,
     onEdit: () -> Unit,
+    onDelete: () -> Unit,
     onUpvote: () -> Unit,
 ) {
     Row(
@@ -1205,7 +1225,11 @@ private fun ReplyCommentRowItem(
                     }
 
                     if (comment.esUsuarioActual) {
-                        ForumOptionsMenu(onEdit = onEdit)
+                        ForumOptionsMenu(
+                            onEdit = onEdit,
+                            onDelete = onDelete,
+                            deleteDialogTitle = "¿Eliminar comentario?",
+                            deleteDialogDescription = "¿Estás seguro de que querés retirar este comentario?",)
                     }
                 }
 

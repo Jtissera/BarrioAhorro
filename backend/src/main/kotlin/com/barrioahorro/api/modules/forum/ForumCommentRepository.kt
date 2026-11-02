@@ -19,4 +19,6 @@ interface ForumCommentRepository : JpaRepository<ForumCommentEntity, Long> {
         nativeQuery = true,
     )
     fun hasUpvoted(@Param("commentId") commentId: Long, @Param("userId") userId: Long): Boolean
+
+    fun findByPublicacionIdAndEliminadoEnIsNull(publicacionId: Long): List<ForumCommentEntity>
 }
