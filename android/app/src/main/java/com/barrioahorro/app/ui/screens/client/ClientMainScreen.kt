@@ -14,7 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.barrioahorro.app.ui.screens.client.coupons.CouponsScreen
+import com.barrioahorro.app.ui.screens.client.coupons.CouponsTabScreen
 import com.barrioahorro.app.ui.screens.client.explore.ExploreScreen
 import com.barrioahorro.app.ui.screens.client.explore.FavoritesScreen
 import com.barrioahorro.app.ui.screens.client.forum.ForumFeedScreen
@@ -77,8 +77,9 @@ fun ClientMainScreen(
                     onPostClick = onPostClick,
                 )
 
-                ClientTab.CUPONES -> CouponsScreen(
+                ClientTab.CUPONES -> CouponsTabScreen(
                     modifier = Modifier.statusBarsPadding(),
+                    onGoToForum = { selectedTab = ClientTab.FORO },
                     onOpenRedemption = onOpenRedemption,
                     onMyRedemptions = onMyRedemptions,
                 )
