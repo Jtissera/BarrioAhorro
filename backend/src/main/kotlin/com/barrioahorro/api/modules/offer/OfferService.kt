@@ -14,8 +14,10 @@ import com.barrioahorro.api.modules.offer.dto.OfferPhotoUploadResponse
 import com.barrioahorro.api.modules.offer.dto.OfferPorMayorDetailResponse
 import com.barrioahorro.api.modules.offer.dto.OfferPorcentajeDetailResponse
 import com.barrioahorro.api.modules.offer.dto.OfferResponse
+import com.barrioahorro.api.modules.offer.dto.OfferValidationSummaryDto
 import com.barrioahorro.api.modules.offer.enum.TipoBeneficio
 import com.barrioahorro.api.modules.offer.enum.TipoVigencia
+import com.barrioahorro.api.modules.user.enum.TipoUsuario
 import org.springframework.http.HttpStatus
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
@@ -291,6 +293,50 @@ class OfferService(
         return mapOfferToResponse(offerRepository.save(offer))
     }
 
+
+    // ------------------------------------------------------------------
+    // Validacion de vigencia para las ofertas
+    // ------------------------------------------------------------------
+
+    @Transactional
+    fun validateOffer(userId: Long, offerId: Long): OfferValidationSummaryDto {
+
+        if (!offerRepository.existsById(offerId)) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Oferta no encontrada")
+        }
+
+        if (!offerConfirmationQueries.isClientUser(userId)) {
+            throw ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "Solo los clientes pueden validar la vigencia de ofertas"
+            )
+        }
+
+        offerConfirmationQueries.upsertValidation(
+            offerId = offerId,
+            clientId = userId,
+            sigueVigente = true
+        )
+
+        val total = offerConfirmationQueries.countValidations(offerId)
+        return OfferValidationSummaryDto(
+            totalValidations = total,
+            validatedByMe = true
+        )
+    }
+
+    @Transactional(readOnly = true)
+    fun getOfferValidationStatus(offerId: Long, userId: Long?): OfferValidationSummaryDto {
+        if (!offerRepository.existsById(offerId)) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Oferta no encontrada")
+        }
+
+        val total = offerConfirmationQueries.countValidations(offerId)
+        val validatedByMe = userId?.let { offerConfirmationQueries.isValidatedByClient(offerId, it) } ?: false
+
+        return OfferValidationSummaryDto(totalValidations = total, validatedByMe = validatedByMe)
+    }
+
     // ------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------
@@ -382,11 +428,14 @@ class OfferService(
             offerPorcentajeRepository.findById(offer.id).orElse(null)
         } else null
 
+        val totalValidaciones = offerConfirmationQueries.countValidations(offer.id)
+
         return offer.toResponse(
             detail2x1 = detail2x1,
             detailPorMayor = detailPorMayor,
             detailCantidad = detailCantidad,
             detailPorcentaje = detailPorcentaje,
+            totalValidaciones = totalValidaciones,
         )
     }
 
@@ -413,6 +462,7 @@ class OfferService(
         detailPorMayor: OfferPorMayorEntity? = null,
         detailCantidad: OfferCantidadEntity? = null,
         detailPorcentaje: OfferPorcentajeEntity? = null,
+        totalValidaciones: Long = 0L,
     ): OfferResponse {
         val now = OffsetDateTime.now()
         val esVigente = activa && (vigenteHasta == null || vigenteHasta!!.isAfter(now))
@@ -428,6 +478,7 @@ class OfferService(
             activa = activa,
             vigente = esVigente,
             createdAt = createdAt,
+            totalValidaciones = totalValidaciones,
             detalle2x1 = detail2x1?.let {
                 Offer2x1DetailResponse(it.unidadesAPagar, it.unidadesALlevar, it.precioUnitario)
             },
@@ -439,7 +490,7 @@ class OfferService(
             },
             detallePorcentaje = detailPorcentaje?.let {
                 OfferPorcentajeDetailResponse(
-                    precioOriginal = it.precioOriginal,
+                      precioOriginal = it.precioOriginal,
                     porcentajeDescuento = it.porcentajeDescuento,
                     precioFinal = requireNotNull(it.precioFinal) { "El precio final no debe ser nulo" },
                 )

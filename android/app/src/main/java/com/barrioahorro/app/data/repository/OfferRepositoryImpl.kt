@@ -8,6 +8,7 @@ import com.barrioahorro.app.data.remote.dto.CreateOfferPorMayorRequestDto
 import com.barrioahorro.app.data.remote.dto.CreateOfferPorcentajeRequestDto
 import com.barrioahorro.app.data.remote.dto.OfferCreatedDto
 import com.barrioahorro.app.data.remote.dto.OfferResponseDto
+import com.barrioahorro.app.data.remote.dto.OfferValidationSummaryDto
 import com.barrioahorro.app.domain.model.NewOffer
 import com.barrioahorro.app.domain.model.OfferError
 import com.barrioahorro.app.domain.repository.IOfferRepository
@@ -122,6 +123,36 @@ class OfferRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun validateOffer(id: Long): Result<OfferValidationSummaryDto, OfferError> =
+        try {
+            val response = offerApiService.validateOffer(id)
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                Result.Success(body)
+            } else {
+                Result.Failure(response.toError("No pudimos registrar la validación"))
+            }
+        } catch (e: IOException) {
+            Result.Failure(OfferError.NoConnection)
+        } catch (e: Exception) {
+            Result.Failure(OfferError.Unknown(e.message))
+        }
+
+    override suspend fun getOfferValidations(id: Long): Result<OfferValidationSummaryDto, OfferError> =
+        try {
+            val response = offerApiService.getOfferValidations(id)
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                Result.Success(body)
+            } else {
+                Result.Failure(response.toError("No pudimos obtener las validaciones"))
+            }
+        } catch (e: IOException) {
+            Result.Failure(OfferError.NoConnection)
+        } catch (e: Exception) {
+            Result.Failure(OfferError.Unknown(e.message))
+        }
+
     // ---- helpers ----
 
     private fun Response<OfferCreatedDto>.toResult(): Result<Long, OfferError> {
@@ -190,4 +221,5 @@ class OfferRepositoryImpl @Inject constructor(
         precioUnitarioRegular = regularPrice,
         fotoUrl = photoUrl,
     )
+
 }

@@ -51,22 +51,26 @@ class MyPostsViewModel @Inject constructor(
 
     fun loadMyActivity(showLoading: Boolean = true) {
         viewModelScope.launch {
-            if (showLoading) _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            if (showLoading && _uiState.value.posts.isEmpty() && _uiState.value.comments.isEmpty()) {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            }
+
             forumRepository.getMyActivity()
                 .onSuccess { activity ->
-                    _uiState.update {
-                        it.copy(
+                    _uiState.update { current ->
+                        current.copy(
                             puntos = activity.puntos,
                             posts = activity.publicaciones,
                             comments = activity.comentarios,
                             isLoading = false,
                             errorMessage = null,
+                            feedbackMessage = current.feedbackMessage
                         )
                     }
                 }
                 .onFailure { error ->
-                    _uiState.update {
-                        it.copy(
+                    _uiState.update { current ->
+                        current.copy(
                             isLoading = false,
                             errorMessage = error.message ?: "No pudimos cargar tus publicaciones",
                         )
@@ -76,20 +80,21 @@ class MyPostsViewModel @Inject constructor(
     }
 
     fun deletePost(postId: Long) {
+        println(">>> BARRIO: 1. Entró a deletePost()")
         viewModelScope.launch {
             forumRepository.deletePost(postId)
                 .onSuccess {
+                    println(">>> BARRIO: 2. Backend respondió OK")
                     _uiState.update { current ->
                         current.copy(
                             posts = current.posts.filterNot { it.id == postId },
                             feedbackMessage = "Publicación eliminada",
                         )
                     }
+                    println(">>> BARRIO: 3. uiState actualizado con feedbackMessage")
                 }
                 .onFailure { error ->
-                    _uiState.update {
-                        it.copy(feedbackMessage = error.message ?: "No se pudo eliminar la publicación")
-                    }
+                    println(">>> BARRIO: Error al eliminar: ${error.message}")
                 }
         }
     }
@@ -101,13 +106,15 @@ class MyPostsViewModel @Inject constructor(
                     _uiState.update { current ->
                         current.copy(
                             comments = current.comments.filterNot { it.id == commentId },
-                            feedbackMessage = "Comentario eliminado",
+                            feedbackMessage = "Comentario eliminado", // <<< Así se muestra el banner
                         )
                     }
                 }
                 .onFailure { error ->
-                    _uiState.update {
-                        it.copy(feedbackMessage = error.message ?: "No se pudo eliminar el comentario")
+                    _uiState.update { current ->
+                        current.copy(
+                            errorMessage = error.message ?: "No se pudo eliminar el comentario",
+                        )
                     }
                 }
         }

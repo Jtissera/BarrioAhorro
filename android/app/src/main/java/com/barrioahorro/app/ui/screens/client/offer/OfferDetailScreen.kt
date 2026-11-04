@@ -1,7 +1,7 @@
 package com.barrioahorro.app.ui.screens.client.offer
 
 import android.widget.Toast
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -98,8 +98,8 @@ fun OfferDetailScreen(
     val context = LocalContext.current
 
     LaunchedEffect(state.message) {
-        state.message?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+        if (state.message != null) {
+            kotlinx.coroutines.delay(4000)
             viewModel.onMessageShown()
         }
     }
@@ -126,13 +126,7 @@ fun OfferDetailScreen(
                 else -> OfferContent(
                     offer = offer,
                     onOpenBusiness = { onOpenBusiness(offer.businessId) },
-                    onConfirm = {
-                        Toast.makeText(
-                            context,
-                            "Próximamente vas a poder confirmar que la oferta sigue vigente",
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                    },
+                    onConfirm = viewModel::confirmValidity, // <-- Conexión directa a la acción real
                 )
             }
 
@@ -148,6 +142,55 @@ fun OfferDetailScreen(
                         tint = if (offer.favorite) Primary else Ink,
                         onClick = viewModel::toggleFavorite,
                     )
+                }
+            }
+
+            state.message?.let { msg ->
+                Surface(
+                    shape = RoundedCornerShape(28.dp),
+                    color = androidx.compose.ui.graphics.Color(0xFF2C2A29),
+                    shadowElevation = 8.dp,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 20.dp, vertical = 14.dp)
+                        .fillMaxWidth()
+                        .height(54.dp),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // Corazón verde menta
+                        Icon(
+                            imageVector = Icons.Filled.Favorite,
+                            contentDescription = null,
+                            tint = androidx.compose.ui.graphics.Color(0xFF7AE3B3),
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        // Texto: "¡Gracias por ayudar al barrio!"
+                        Text(
+                            text = msg,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = androidx.compose.ui.graphics.Color.White,
+                            modifier = Modifier.weight(1f),
+                        )
+                        // Cruz para cerrar
+                        androidx.compose.material3.IconButton(
+                            onClick = viewModel::onMessageShown,
+                            modifier = Modifier.size(28.dp),
+                        ) {
+                            Icon(
+                                imageVector = androidx.compose.material.icons.Icons.Default.Close,
+                                contentDescription = "Cerrar",
+                                tint = androidx.compose.ui.graphics.Color(0xFFB0AEA5),
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -439,10 +482,21 @@ private fun BusinessSection(offer: OfferDetailUi, onOpenBusiness: () -> Unit) {
 
 @Composable
 private fun ConfirmationsCard(offer: OfferDetailUi, onConfirm: () -> Unit) {
-    Surface(shape = RoundedCornerShape(20.dp), color = BadgeGreenSoft, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = BadgeGreenSoft,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Cabecera con ícono y conteo
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(36.dp).background(ForestGreen, CircleShape), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier.size(36.dp).background(ForestGreen, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(Icons.Filled.Check, null, tint = OnPrimary, modifier = Modifier.size(20.dp))
                 }
                 Spacer(Modifier.width(12.dp))
@@ -462,28 +516,66 @@ private fun ConfirmationsCard(offer: OfferDetailUi, onConfirm: () -> Unit) {
                     }
                 }
             }
-            Surface(
-                onClick = onConfirm,
-                shape = CircleShape,
-                color = CardWhite,
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
+
+            // Botón interactivo condicional según confirmedByMe
+            if (offer.confirmedByMe) {
+                Surface(
+                    shape = CircleShape,
+                    color = ForestGreen,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
                 ) {
-                    Icon(Icons.Outlined.ThumbUp, null, tint = ForestGreen, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Sigue vigente", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Ink)
-                    Spacer(Modifier.width(6.dp))
-                    Icon(Icons.Filled.Check, null, tint = ForestGreen, modifier = Modifier.size(16.dp))
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Filled.Check, null, tint = OnPrimary, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Ya lo confirmaste", // Alineado al diseño
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = OnPrimary
+                        )
+                    }
+                }
+
+                // Texto descriptivo al pie del diseño
+                Text(
+                    text = "Tu aporte mantiene el mapa actualizado para todo el barrio.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = WarmGray,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+                )
+            } else {
+                Surface(
+                    onClick = onConfirm,
+                    shape = CircleShape,
+                    color = CardWhite,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Outlined.ThumbUp, null, tint = ForestGreen, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "Sigue vigente",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Ink
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Icon(Icons.Filled.Check, null, tint = ForestGreen, modifier = Modifier.size(16.dp))
+                    }
                 }
             }
         }
     }
 }
-
 @Composable
 private fun EndedFooter(offer: OfferDetailUi, onOpenBusiness: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {

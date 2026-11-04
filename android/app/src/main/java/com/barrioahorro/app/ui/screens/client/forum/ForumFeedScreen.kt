@@ -100,6 +100,7 @@ fun ForumFeedScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
+
     LaunchedEffect(state.upvoteError) {
         state.upvoteError?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
@@ -110,6 +111,7 @@ fun ForumFeedScreen(
         state.locationError?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
             viewModel.onLocationErrorShown()
+
         }
     }
 
@@ -117,101 +119,104 @@ fun ForumFeedScreen(
         viewModel.loadFeed()
     }
 
-    Scaffold(
-        containerColor = Cream,
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onCreatePost,
-                containerColor = Primary,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(24.dp),
-                icon = { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                text = { Text("+ Publicar", fontWeight = FontWeight.Bold, fontSize = 15.sp) },
-            )
-        },
-        modifier = modifier.fillMaxSize(),
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-        ) {
-            ToldoConFranjas()
-
-            // Header del foro según Figma
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+    Box(modifier = modifier.fillMaxSize()) {
+        Scaffold(
+            containerColor = Cream,
+            floatingActionButton = {
+                ExtendedFloatingActionButton(
+                    onClick = onCreatePost,
+                    containerColor = Primary,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(24.dp),
+                    icon = { Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                    text = { Text("+ Publicar", fontWeight = FontWeight.Bold, fontSize = 15.sp) },
+                )
+            },
+            modifier = Modifier.fillMaxSize(),
+        ) { padding ->
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                    .fillMaxSize()
+                    .padding(padding),
             ) {
-                Column {
-                    Text(
-                        text = "Foro del barrio",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Ink,
-                        fontSize = 22.sp,
-                    )
-                    Text(
-                        text = "Precios y ofertas que ven tus vecinos.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = WarmGray,
-                        fontSize = 14.sp,
-                    )
-                }
+                ToldoConFranjas()
 
-                IconButton(onClick = viewModel::refreshFeed) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Actualizar",
-                        tint = Primary,
-                    )
-                }
-            }
-
-            ForumFiltersBar(
-                filters = state.filters,
-                businesses = state.businesses,
-                onComercioSelected = viewModel::onComercioSelected,
-                onCercaClick = viewModel::onCercaToggled,
-                onDiasSelected = viewModel::onDiasSelected,
-                onClearAll = viewModel::clearFilters,
-            )
-
-            if (state.isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
+                // Header del foro
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
                 ) {
-                    CircularProgressIndicator(color = Primary)
-                }
-            } else if (state.posts.isEmpty()) {
-                if (state.filters.hayFiltros) {
-                    NoResultsView(onClearFilters = viewModel::clearFilters)
-                } else {
-                    EmptyFeedView(onCreatePost = onCreatePost)
-                }
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    items(state.posts, key = { it.id }) { post ->
-                        ForumPostCard(
-                            post = post,
-                            onClick = { onPostClick(post.id) },
-                            onUpvote = { viewModel.toggleUpvote(post.id) },
+                    Column {
+                        Text(
+                            text = "Foro del barrio",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Ink,
+                            fontSize = 22.sp,
+                        )
+                        Text(
+                            text = "Precios y ofertas que ven tus vecinos.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = WarmGray,
+                            fontSize = 14.sp,
                         )
                     }
-                    item {
-                        Spacer(modifier = Modifier.height(80.dp))
+
+                    IconButton(onClick = viewModel::refreshFeed) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Actualizar",
+                            tint = Primary,
+                        )
+                    }
+                }
+
+                ForumFiltersBar(
+                    filters = state.filters,
+                    businesses = state.businesses,
+                    onComercioSelected = viewModel::onComercioSelected,
+                    onCercaClick = viewModel::onCercaToggled,
+                    onDiasSelected = viewModel::onDiasSelected,
+                    onClearAll = viewModel::clearFilters,
+                )
+
+                if (state.isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(color = Primary)
+                    }
+                } else if (state.posts.isEmpty()) {
+                    if (state.filters.hayFiltros) {
+                        NoResultsView(onClearFilters = viewModel::clearFilters)
+                    } else {
+                        EmptyFeedView(onCreatePost = onCreatePost)
+                    }
+                } else {
+                    LazyColumn(
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        items(state.posts, key = { it.id }) { post ->
+                            ForumPostCard(
+                                post = post,
+                                onClick = { onPostClick(post.id) },
+                                onUpvote = { viewModel.toggleUpvote(post.id) },
+                            )
+                        }
+                        item {
+                            Spacer(modifier = Modifier.height(80.dp))
+                        }
                     }
                 }
             }
         }
+
     }
 }
 
@@ -706,3 +711,4 @@ private fun getInitials(name: String): String {
         else -> "${parts[0].first().uppercaseChar()}${parts[1].first().uppercaseChar()}"
     }
 }
+
