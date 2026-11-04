@@ -1,5 +1,6 @@
 package com.barrioahorro.app.ui.screens.client.coupons
 
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -9,6 +10,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,14 +34,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Celebration
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.ThumbUp
@@ -48,6 +55,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -70,6 +78,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
@@ -163,12 +172,15 @@ private fun ToggleItem(
 @Composable
 internal fun RafflesSection(
     onGoToForum: () -> Unit,
+    onMyTickets: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: RafflesViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     var confetti by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = state.purchase != null) { viewModel.dismissPurchase() }
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
@@ -216,10 +228,21 @@ internal fun RafflesSection(
                     UnlockedView(
                         state = state,
                         onBuy = viewModel::requestBuy,
-                        onMyTickets = viewModel::onMyTicketsClick,
+                        onMyTickets = onMyTickets,
                     )
                 }
             }
+        }
+
+        state.purchase?.let { purchase ->
+            PurchaseSuccessView(
+                purchase = purchase,
+                onMyTickets = {
+                    viewModel.dismissPurchase()
+                    onMyTickets()
+                },
+                onBack = viewModel::dismissPurchase,
+            )
         }
 
         SnackbarHost(snackbar, modifier = Modifier.align(Alignment.BottomCenter))
@@ -228,7 +251,9 @@ internal fun RafflesSection(
             BuyTicketSheet(
                 raffle = raffle,
                 balance = state.balance,
+                quantity = state.quantity,
                 isLoading = state.isBuying,
+                onQuantityChange = viewModel::setQuantity,
                 onConfirm = viewModel::confirmBuy,
                 onDismiss = viewModel::dismissBuy,
             )
@@ -587,6 +612,12 @@ private fun RaffleCard(raffle: RaffleUi, balance: Int, onBuy: () -> Unit) {
 
     Surface(shape = RoundedCornerShape(20.dp), color = CardWhite, shadowElevation = 1.dp, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
+            PrizePhoto(
+                photoUrl = raffle.photoUrl,
+                name = raffle.prizeName,
+                modifier = Modifier.fillMaxWidth().height(150.dp),
+            )
+            Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(shape = RoundedCornerShape(50), color = BadgeOrange, modifier = Modifier.weight(1f, fill = false)) {
                     Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -736,57 +767,131 @@ private fun RaffleStatePanel(
 private fun BuyTicketSheet(
     raffle: RaffleUi,
     balance: Int,
+    quantity: Int,
     isLoading: Boolean,
+    onQuantityChange: (Int) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val total = raffle.ticketCost * quantity
+    val missing = (total - balance).coerceAtLeast(0)
+    val canBuy = missing == 0 && !isLoading
+
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = CardWhite) {
         Column(
             modifier = Modifier.padding(horizontal = 20.dp).padding(bottom = 16.dp).navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Confirmar compra", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = InkBlack)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.ConfirmationNumber, contentDescription = null, tint = Primary, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    if (quantity == 1) "Comprar ticket" else "Comprar tickets",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    color = InkBlack,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = onDismiss, enabled = !isLoading, modifier = Modifier.size(32.dp)) {
+                    Box(Modifier.size(28.dp).background(Cream, CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Close, contentDescription = "Cerrar", modifier = Modifier.size(16.dp))
+                    }
+                }
+            }
 
             Surface(shape = RoundedCornerShape(14.dp), color = Cream, modifier = Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     ProductThumb(photoUrl = raffle.photoUrl, name = raffle.prizeName, size = 60.dp)
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Aporta ${raffle.businessName}", fontSize = 12.sp, color = WarmGray)
+                        Surface(shape = RoundedCornerShape(50), color = RaffleGreenSoft) {
+                            Row(Modifier.padding(horizontal = 8.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Storefront, contentDescription = null, tint = RaffleGreenDark, modifier = Modifier.size(11.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    "Aporta ${raffle.businessName}",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = RaffleGreenDark,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
                         Text(raffle.prizeName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = InkBlack)
-                        Text("Se sortea el ${raffle.drawDate}", fontSize = 12.sp, color = WarmGray)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.DateRange, contentDescription = null, tint = WarmGray, modifier = Modifier.size(12.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Se sortea el ${raffle.drawDate}", fontSize = 12.sp, color = WarmGray)
+                        }
                     }
                 }
             }
 
-            TicketRow("Costo del ticket", "${raffle.ticketCost} puntos")
-            TicketRow("Tus puntos", "$balance puntos")
-            TicketRow("Te quedarán", "${(balance - raffle.ticketCost).coerceAtLeast(0)} puntos")
-
-            Surface(shape = RoundedCornerShape(12.dp), color = BadgeOrange, modifier = Modifier.fillMaxWidth()) {
-                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
-                    Icon(Icons.Default.Info, contentDescription = null, tint = Primary, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "Los puntos se descuentan ahora. Más tickets, más chances.",
-                        fontSize = 13.sp,
-                        color = InkBlack,
+            Surface(shape = RoundedCornerShape(14.dp), color = Cream, modifier = Modifier.fillMaxWidth()) {
+                Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Cantidad de tickets", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = InkBlack)
+                        Text("Elegí cuántos querés", fontSize = 12.sp, color = WarmGray)
+                    }
+                    QuantityStepper(
+                        value = quantity,
+                        canDecrement = quantity > 1 && !isLoading,
+                        canIncrement = quantity < MAX_TICKETS_PER_PURCHASE && !isLoading,
+                        onChange = onQuantityChange,
                     )
                 }
             }
 
-            Spacer(Modifier.height(4.dp))
+            Surface(shape = RoundedCornerShape(14.dp), color = Color(0xFFFEF3E8), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    TicketRow("Precio por ticket", "${raffle.ticketCost} puntos")
+                    TicketRow("Total", "$total puntos", valueColor = Primary)
+                    TicketRow("Tus puntos", "$balance puntos")
+                }
+            }
+
+            if (missing > 0) {
+                Surface(shape = RoundedCornerShape(12.dp), color = RaffleRedSoft, modifier = Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
+                        Icon(Icons.Default.Error, contentDescription = null, tint = Primary, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text("No te alcanzan los puntos", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Primary)
+                            Text("Te faltan $missing puntos para completar esta compra.", fontSize = 12.sp, color = InkBlack)
+                        }
+                    }
+                }
+            }
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Info, contentDescription = null, tint = WarmGray, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Los puntos se descuentan al comprar.", fontSize = 12.sp, color = WarmGray)
+            }
+
             Button(
                 onClick = onConfirm,
-                enabled = !isLoading,
+                enabled = canBuy,
                 shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Primary,
+                    disabledContainerColor = Color(0xFFC9BDB5),
+                    disabledContentColor = Color.White,
+                ),
                 modifier = Modifier.fillMaxWidth().height(52.dp),
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
                 } else {
-                    Text("Comprar ticket", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Icon(Icons.Default.ConfirmationNumber, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        if (quantity == 1) "Comprar 1 ticket" else "Comprar $quantity tickets",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                    )
                 }
             }
             TextButton(onClick = onDismiss, enabled = !isLoading, modifier = Modifier.fillMaxWidth()) {
@@ -797,11 +902,173 @@ private fun BuyTicketSheet(
 }
 
 @Composable
-private fun TicketRow(label: String, value: String) {
+private fun QuantityStepper(
+    value: Int,
+    canDecrement: Boolean,
+    canIncrement: Boolean,
+    onChange: (Int) -> Unit,
+) {
+    Row(
+        modifier = Modifier.background(CardWhite, RoundedCornerShape(50)).padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = { onChange(value - 1) }, enabled = canDecrement, modifier = Modifier.size(36.dp)) {
+            Icon(Icons.Default.Remove, contentDescription = "Menos", tint = if (canDecrement) Primary else RaffleDisabled)
+        }
+        Text(
+            "$value",
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 16.sp,
+            color = InkBlack,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.width(28.dp),
+        )
+        IconButton(onClick = { onChange(value + 1) }, enabled = canIncrement, modifier = Modifier.size(36.dp)) {
+            Icon(Icons.Default.Add, contentDescription = "Más", tint = if (canIncrement) Primary else RaffleDisabled)
+        }
+    }
+}
+
+// ---- Compra exitosa ---------------------------------------------------------------
+
+@Composable
+private fun PurchaseSuccessView(
+    purchase: PurchaseResultUi,
+    onMyTickets: () -> Unit,
+    onBack: () -> Unit,
+) {
+    Box(Modifier.fillMaxSize().background(Cream)) {
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Spacer(Modifier.height(24.dp))
+            Box(contentAlignment = Alignment.Center) {
+                Box(Modifier.size(120.dp).background(RaffleGlow, CircleShape))
+                Box(Modifier.size(76.dp).background(RaffleGreenDark, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(40.dp))
+                }
+            }
+            Text(
+                if (purchase.quantity == 1) "¡Ticket comprado!" else "¡Tickets comprados!",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = InkBlack,
+            )
+            Text("Ya estás participando.", fontSize = 14.sp, color = WarmGray)
+
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = CardWhite,
+                shadowElevation = 2.dp,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column {
+                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        ProductThumb(photoUrl = purchase.photoUrl, name = purchase.prizeName, size = 56.dp)
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Surface(shape = RoundedCornerShape(50), color = BadgeOrange) {
+                                Text(
+                                    "Premio Vecinal",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = InkBlack,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                )
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text(purchase.prizeName, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = InkBlack)
+                        }
+                    }
+                    PerforatedDivider()
+                    Row(Modifier.fillMaxWidth().padding(14.dp)) {
+                        Column(Modifier.weight(1f)) {
+                            Text("CANTIDAD", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WarmGray)
+                            Text(
+                                if (purchase.quantity == 1) "1 ticket" else "${purchase.quantity} tickets",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = InkBlack,
+                            )
+                        }
+                        Column(Modifier.weight(1f)) {
+                            Text("FECHA DE SORTEO", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WarmGray)
+                            Text(purchase.drawDate, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = InkBlack)
+                        }
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Cream,
+                        modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+                    ) {
+                        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Check, contentDescription = null, tint = RaffleGreenDark, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                "Comprobante guardado en tu cuenta",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = InkBlack,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text("#${purchase.receiptCode}", fontSize = 11.sp, color = WarmGray)
+                        }
+                    }
+                }
+            }
+
+            Surface(shape = RoundedCornerShape(14.dp), color = RaffleNote, modifier = Modifier.fillMaxWidth()) {
+                Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(34.dp).background(RaffleGreenSoft, CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Info, contentDescription = null, tint = RaffleGreenDark, modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Column {
+                        Text("Aviso automático", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = InkBlack)
+                        Text(
+                            "Te avisaremos directamente por aquí al publicar los resultados.",
+                            fontSize = 12.sp,
+                            color = WarmGray,
+                        )
+                    }
+                }
+            }
+
+            Button(
+                onClick = onMyTickets,
+                colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                shape = RoundedCornerShape(50),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+            ) {
+                Text("Ver mis tickets →", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+            TextButton(onClick = onBack) { Text("Volver a la tienda", color = WarmGray) }
+        }
+        ConfettiOverlay(Modifier.fillMaxSize())
+    }
+}
+
+@Composable
+private fun PerforatedDivider() {
+    Canvas(Modifier.fillMaxWidth().height(1.dp)) {
+        drawLine(
+            color = Color(0xFFE6DDD0),
+            start = Offset(0f, 0f),
+            end = Offset(size.width, 0f),
+            strokeWidth = 1.dp.toPx(),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f)),
+        )
+    }
+}
+
+@Composable
+private fun TicketRow(label: String, value: String, valueColor: Color = InkBlack) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = WarmGray, fontSize = 14.sp, modifier = Modifier.weight(1f))
         Icon(Icons.Default.Star, contentDescription = null, tint = RaffleGold, modifier = Modifier.size(14.dp))
         Spacer(Modifier.width(4.dp))
-        Text(value, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = InkBlack)
+        Text(value, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = valueColor)
     }
 }

@@ -16,7 +16,10 @@ class RaffleRepository @Inject constructor(
 
     suspend fun getRaffles(): Result<RafflesDto> = call { api.getRaffles() }
 
-    suspend fun buyTicket(raffleId: Long): Result<BuyTicketDto> = call { api.buyTicket(raffleId) }
+    suspend fun buyTicket(raffleId: Long, quantity: Int = 1): Result<BuyTicketDto> =
+        call { api.buyTicket(raffleId, BuyTicketRequestDto(quantity)) }
+
+    suspend fun getMyTickets(): Result<MyTicketsDto> = call { api.getMyTickets() }
 
     suspend fun markUnlockSeen(): Result<Unit> = call {
         val response = api.markUnlockSeen()
@@ -44,6 +47,7 @@ class RaffleRepository @Inject constructor(
         }.getOrNull()
 
         return when (e.code()) {
+            400 -> serverMessage ?: "La cantidad de tickets no es válida."
             401 -> "Tu sesión venció. Volvé a iniciar sesión."
             403 -> serverMessage ?: "No tenés permiso para hacer esta acción."
             404 -> serverMessage ?: "No encontramos ese sorteo."

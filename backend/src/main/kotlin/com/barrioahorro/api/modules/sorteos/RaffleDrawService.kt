@@ -13,6 +13,8 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 @Service
 class RaffleDrawService(
@@ -20,13 +22,18 @@ class RaffleDrawService(
     private val tx: TransactionTemplate,
     @Value("\${sorteos.max-por-mes:3}") private val maxPerMonth: Int,
     @Value("\${sorteos.dias-minimos-venta:7}") private val minSaleDays: Long,
+    @Value("\${sorteos.pesos-por-punto:1000}") private val pesosPerPoint: Long,
+    @Value("\${sorteos.costo-ticket-minimo:10}") private val minTicketCost: Int,
+    @Value("\${sorteos.costo-ticket-maximo:200}") private val maxTicketCost: Int,
 ) {
     private val log = LoggerFactory.getLogger(RaffleDrawService::class.java)
     private val random = SecureRandom()
 
     companion object {
         val ZONE: ZoneId = ZoneId.of("America/Argentina/Buenos_Aires")
-        const val TICKET_COST_POINTS = 30
+
+        /** Solo si el premio no declara valor. */
+        const val FALLBACK_TICKET_COST = 30
         private const val CLOSE_HOUR = 20
 
         /** Último día del mes a las 20:00 (hora de Buenos Aires). */
@@ -44,6 +51,17 @@ class RaffleDrawService(
         }
     }
 
+    private data class Candidate(val id: Long, val end: LocalDate, val prizeValue: BigDecimal?)
+
+    /** Puntos por ticket según el valor del premio. */
+    internal fun ticketCostFor(prizeValue: BigDecimal?): Int {
+        if (prizeValue == null || prizeValue.signum() <= 0) return FALLBACK_TICKET_COST
+        val points = prizeValue
+            .divide(BigDecimal(pesosPerPoint), 0, RoundingMode.CEILING)
+            .min(BigDecimal(maxTicketCost))
+            .toInt()
+        return points.coerceIn(minTicketCost, maxTicketCost)
+    }
     // ---- Programación ---------------------------------------------------------------
 
     /**
@@ -72,7 +90,7 @@ class RaffleDrawService(
 
         val candidates = jdbc.query(
             """
-            SELECT cs.id, cs.ciclo_fin
+            SELECT cs.id, cs.ciclo_fin, cs.premio_valor
             FROM compromisos_sorteo cs
             JOIN perfiles_comercio pc ON pc.usuario_id = cs.comercio_id
             WHERE cs.estado = 'RATIFICADO'
@@ -83,13 +101,19 @@ class RaffleDrawService(
             ORDER BY cs.ciclo_fin ASC, cs.id
             """.trimIndent(),
             MapSqlParameterSource("closeDate", close.toLocalDate()),
-        ) { rs, _ -> rs.getLong("id") to rs.getObject("ciclo_fin", LocalDate::class.java) }
+        ) { rs, _ ->
+            Candidate(
+                id = rs.getLong("id"),
+                end = rs.getObject("ciclo_fin", LocalDate::class.java),
+                prizeValue = rs.getBigDecimal("premio_valor"),
+            )
+        }
 
         val urgentBefore = closeAfter.toLocalDate()
-        val selected = candidates.filterIndexed { index, (_, end) -> index < freeSlots || end < urgentBefore }
+        val selected = candidates.filterIndexed { index, c -> index < freeSlots || c.end < urgentBefore }
 
         var created = 0
-        for ((commitmentId, _) in selected) {
+        for (c in selected) {
             created += jdbc.update(
                 """
                 INSERT INTO sorteos (compromiso_sorteo_id, costo_puntos_ticket, fecha_sorteo)
@@ -97,8 +121,8 @@ class RaffleDrawService(
                 ON CONFLICT (compromiso_sorteo_id) DO NOTHING
                 """.trimIndent(),
                 MapSqlParameterSource()
-                    .addValue("id", commitmentId)
-                    .addValue("cost", TICKET_COST_POINTS)
+                    .addValue("id", c.id)
+                    .addValue("cost", ticketCostFor(c.prizeValue))
                     .addValue("close", close.toOffsetDateTime()),
             )
         }

@@ -20,7 +20,6 @@ import com.barrioahorro.app.ui.screens.client.explore.FavoritesScreen
 import com.barrioahorro.app.ui.screens.client.forum.ForumFeedScreen
 import com.barrioahorro.app.ui.screens.client.profile.ClientProfileScreen
 import com.barrioahorro.app.ui.theme.Cream
-
 @Composable
 fun ClientMainScreen(
     onEditLocation: () -> Unit,
@@ -38,6 +37,7 @@ fun ClientMainScreen(
     onOpenRedemption: (Long) -> Unit = {},
     onMyRedemptions: () -> Unit = {},
     onRedemptionsHistory: () -> Unit = {},
+    onMyTickets: () -> Unit = {},
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(ClientTab.EXPLORAR) }
 
@@ -82,12 +82,14 @@ fun ClientMainScreen(
                     onGoToForum = { selectedTab = ClientTab.FORO },
                     onOpenRedemption = onOpenRedemption,
                     onMyRedemptions = onMyRedemptions,
+                    onMyTickets = onMyTickets,
                 )
 
                 ClientTab.PERFIL -> ClientProfileScreen(
                     onMyPosts = onMyPosts,
                     onMyReviews = onMyReviews,
                     onRedemptionsHistory = onRedemptionsHistory,
+                    onMyTickets = onMyTickets,
                     onEditLocation = onEditLocation,
                     onLogout = onLogout,
                     isLoggingOut = isLoggingOut,

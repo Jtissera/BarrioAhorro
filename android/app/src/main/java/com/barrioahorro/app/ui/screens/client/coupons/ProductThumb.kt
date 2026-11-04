@@ -1,3 +1,4 @@
+
 package com.barrioahorro.app.ui.screens.client.coupons
 
 import android.util.Log
@@ -11,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -39,7 +41,9 @@ fun ProductThumb(
             contentDescription = name,
             contentScale = ContentScale.Crop,
             modifier = modifier.size(size).clip(shape),
-            loading = { InitialPlaceholder(name, size, Modifier.fillMaxSize()) },
+            loading = {
+                InitialPlaceholder(name, size, Modifier.fillMaxSize())
+            },
             error = { state ->
                 Log.w("ProductThumb", "No cargó $url", state.result.throwable)
                 InitialPlaceholder(name, size, Modifier.fillMaxSize())
@@ -49,9 +53,47 @@ fun ProductThumb(
 }
 
 @Composable
-private fun InitialPlaceholder(name: String, size: Dp, modifier: Modifier) {
-    val initial = name.trim().firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "🎁"
-    Box(modifier.background(BadgeOrange), contentAlignment = Alignment.Center) {
+fun PrizePhoto(
+    photoUrl: String?,
+    name: String,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(16.dp),
+) {
+    val url = photoUrl?.trim()?.takeIf { it.isNotEmpty() }?.let(::resolvePhotoUrl)
+
+    if (url == null) {
+        InitialPlaceholder(name, 120.dp, modifier.clip(shape))
+    } else {
+        SubcomposeAsyncImage(
+            model = url,
+            contentDescription = name,
+            contentScale = ContentScale.Crop,
+            modifier = modifier.clip(shape),
+            loading = {
+                InitialPlaceholder(name, 120.dp, Modifier.fillMaxSize())
+            },
+            error = {
+                InitialPlaceholder(name, 120.dp, Modifier.fillMaxSize())
+            },
+        )
+    }
+}
+
+@Composable
+private fun InitialPlaceholder(
+    name: String,
+    size: Dp,
+    modifier: Modifier
+) {
+    val initial = name.trim()
+        .firstOrNull { it.isLetterOrDigit() }
+        ?.uppercaseChar()
+        ?.toString() ?: "🎁"
+
+    Box(
+        modifier.background(BadgeOrange),
+        contentAlignment = Alignment.Center
+    ) {
         Text(
             text = initial,
             color = Primary,
@@ -62,6 +104,8 @@ private fun InitialPlaceholder(name: String, size: Dp, modifier: Modifier) {
 }
 
 private fun resolvePhotoUrl(raw: String): String = when {
-    raw.startsWith("http://", ignoreCase = true) || raw.startsWith("https://", ignoreCase = true) -> raw
+    raw.startsWith("http://", ignoreCase = true) ||
+            raw.startsWith("https://", ignoreCase = true) -> raw
+
     else -> BASE_URL.trimEnd('/') + "/" + raw.trimStart('/')
 }

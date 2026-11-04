@@ -19,6 +19,7 @@ fun CouponsTabScreen(
     modifier: Modifier = Modifier,
     onOpenRedemption: (Long) -> Unit = {},
     onMyRedemptions: () -> Unit = {},
+    onMyTickets: () -> Unit = {},
 ) {
     var section by rememberSaveable { mutableStateOf(CouponsSection.CUPONES) }
 
@@ -35,6 +36,7 @@ fun CouponsTabScreen(
 
             CouponsSection.SORTEOS -> RafflesSection(
                 onGoToForum = onGoToForum,
+                onMyTickets = onMyTickets,
                 modifier = Modifier.weight(1f),
             )
         }

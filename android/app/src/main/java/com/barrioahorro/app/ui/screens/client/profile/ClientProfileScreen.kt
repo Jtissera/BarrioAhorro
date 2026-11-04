@@ -71,6 +71,7 @@ import com.barrioahorro.app.ui.theme.SurfaceFieldAlt
 import com.barrioahorro.app.ui.theme.Tertiary
 import com.barrioahorro.app.ui.theme.TertiaryContainer
 import com.barrioahorro.app.ui.theme.WarmGray
+import androidx.compose.material.icons.outlined.ConfirmationNumber
 
 @Composable
 fun ClientProfileScreen(
@@ -81,6 +82,7 @@ fun ClientProfileScreen(
     onLogout: () -> Unit,
     isLoggingOut: Boolean,
     viewModel: ClientProfileViewModel = hiltViewModel(),
+    onMyTickets: () -> Unit = {}
 ){
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -154,7 +156,7 @@ fun ClientProfileScreen(
                             MenuRow(
                                 icon = Icons.Outlined.ConfirmationNumber,
                                 title = "Mis tickets de sorteos",
-                                onClick = { comingSoon("Próximamente vas a poder ver tus tickets de sorteos") },
+                                onClick = onMyTickets,
                             )
                             MenuDivider()
                             MenuRow(
