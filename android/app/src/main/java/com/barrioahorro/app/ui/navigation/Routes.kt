@@ -75,6 +75,8 @@ object ClientRoutes {
     const val REDEMPTIONS_HISTORY = "client/redemptions/history"
     const val REDEMPTION_DETAIL = "client/redemption/{redemptionId}"
 
+    const val MY_TICKETS = "client/tickets"
+
     fun editLocation(): String = "client/location?edit=true"
     fun postDetail(postId: Long): String = "client/forum/post/$postId"
     fun editPost(postId: Long): String = "client/forum/post/$postId/edit"

@@ -105,10 +105,6 @@ fun CouponsScreen(
     }
 
     Column(modifier.fillMaxSize()) {
-        ToldoConFranjas(
-            altColor = com.barrioahorro.app.ui.theme.Cream,
-            modifier = Modifier.fillMaxWidth(),
-        )
 
         Box(Modifier.weight(1f).fillMaxWidth()) {
             LazyColumn(

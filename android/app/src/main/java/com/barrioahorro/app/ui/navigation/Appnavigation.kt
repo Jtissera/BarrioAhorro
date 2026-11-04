@@ -56,7 +56,7 @@ import com.barrioahorro.app.ui.screens.client.offer.OfferDetailScreen
 import com.barrioahorro.app.ui.screens.client.profile.MyReviewsScreen
 import com.barrioahorro.app.ui.screens.client.coupons.MyRedemptionsScreen
 import com.barrioahorro.app.ui.screens.client.coupons.RedemptionDetailScreen
-
+import com.barrioahorro.app.ui.screens.client.coupons.MyTicketsScreen
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
@@ -503,6 +503,7 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
             onOpenRedemption = { id -> navController.navigate(ClientRoutes.redemptionDetail(id)) },
             onMyRedemptions = { navController.navigate(ClientRoutes.MY_REDEMPTIONS) },
             onRedemptionsHistory = { navController.navigate(ClientRoutes.REDEMPTIONS_HISTORY) },
+            onMyTickets = { navController.navigate(ClientRoutes.MY_TICKETS) },
             )
     }
 
@@ -577,6 +578,10 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
             onNavigateBack = { navController.popBackStack() },
             onPostSaved = { navController.popBackStack() },
         )
+    }
+
+    composable(ClientRoutes.MY_TICKETS) {
+        MyTicketsScreen(onBack = { navController.popBackStack() })
     }
 }
 
