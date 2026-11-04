@@ -50,7 +50,7 @@ object ExploreOfferMapper {
             } else null,
         )
 
-        val base = OfferUiMapper.toUi(dto, d.businessName.orEmpty(), d.category.orEmpty(), d.confirmations)
+        val base = OfferUiMapper.toUi(dto, d.businessName.orEmpty(), d.category.orEmpty(), d.confirmations.toLong())
 
         val vigencia = if (d.validityType == "SOLO_HOY" && d.closesToday != null) {
             "Hasta hoy ${d.closesToday}"

@@ -24,7 +24,7 @@ object OfferUiMapper {
         dto: OfferResponseDto,
         businessName: String,
         categoryName: String,
-        confirmationsCount: Int = 0,
+        confirmationsCount: Long = dto.totalValidaciones,
     ): MyOfferItemUi {
         val tipo = dto.tipoOferta.uppercase()
 
@@ -101,8 +101,11 @@ object OfferUiMapper {
         } ?: OfferPriceInfo.Empty
     }
 
-    private fun confirmationsText(count: Int): String =
-        if (count == 1) "1 vecino confirmó" else "$count vecinos confirmaron"
+    private fun confirmationsText(count: Long): String = when (count) {
+        0L -> "Sin validaciones aún"
+        1L -> "1 vecino confirmó vigencia"
+        else -> "$count vecinos confirmaron"
+    }
 
     private fun formatVigencia(vigenciaTipo: String, vigenteHasta: String?): String {
         return when (vigenciaTipo.uppercase()) {

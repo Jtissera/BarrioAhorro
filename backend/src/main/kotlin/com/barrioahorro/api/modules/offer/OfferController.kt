@@ -7,6 +7,8 @@ import com.barrioahorro.api.modules.offer.dto.CreateOfferPorMayorRequest
 import com.barrioahorro.api.modules.offer.dto.CreateOfferPorcentajeRequest
 import com.barrioahorro.api.modules.offer.dto.OfferPhotoUploadResponse
 import com.barrioahorro.api.modules.offer.dto.OfferResponse
+import com.barrioahorro.api.modules.offer.dto.OfferValidationSummaryDto
+import com.barrioahorro.api.modules.user.enum.TipoUsuario
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -143,4 +145,25 @@ class OfferController(
         ResponseEntity.ok(offerService.getOffersByBusiness(businessId))
 
     private fun userId(authentication: Authentication): Long = authentication.principal as Long
+
+
+    @PostMapping("/{offerId}/validations")
+    fun validateOffer(
+        authentication: Authentication,
+        @PathVariable offerId: Long,
+    ): ResponseEntity<OfferValidationSummaryDto> {
+        val userId = authentication.principal as Long
+        val summary = offerService.validateOffer(userId = userId, offerId = offerId)
+        return ResponseEntity.ok(summary)
+    }
+
+    @GetMapping("/{offerId}/validations")
+    fun getOfferValidations(
+        authentication: Authentication?,
+        @PathVariable offerId: Long,
+    ): ResponseEntity<OfferValidationSummaryDto> {
+        val userId = authentication?.principal as? Long
+        val summary = offerService.getOfferValidationStatus(offerId = offerId, userId = userId)
+        return ResponseEntity.ok(summary)
+    }
 }

@@ -84,6 +84,8 @@ data class OfferResponseDto(
     val detallePorMayor: OfferPorMayorDetailResponseDto? = null,
     val detalleCantidad: OfferCantidadDetailResponseDto? = null,
     val detallePorcentaje: OfferPorcentajeDetailResponseDto? = null,
+    val totalValidaciones: Long = 0L,
+    val validadaPorMi: Boolean = false,
 )
 
 data class ApiErrorDto(
@@ -92,4 +94,9 @@ data class ApiErrorDto(
 
 data class OfferPhotoDto(
     val url: String?,
+)
+
+data class OfferValidationSummaryDto(
+    val totalValidations: Long,
+    val validatedByMe: Boolean,
 )

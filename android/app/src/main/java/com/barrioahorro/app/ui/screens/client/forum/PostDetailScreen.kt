@@ -375,7 +375,12 @@ fun PostDetailScreen(
                                     null
                                 },
                                 onDelete = if (post.esUsuarioActual) {
-                                    { viewModel.deletePost(post.id, onSuccess = onNavigateBack) }
+                                    {
+                                        viewModel.deletePost(
+                                            postId = post.id,
+                                            onSuccess = onNavigateBack,
+                                        )
+                                    }
                                 } else {
                                     null
                                 },

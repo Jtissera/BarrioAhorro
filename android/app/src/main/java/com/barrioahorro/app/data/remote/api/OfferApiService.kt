@@ -7,6 +7,7 @@ import com.barrioahorro.app.data.remote.dto.CreateOfferPorcentajeRequestDto
 import com.barrioahorro.app.data.remote.dto.OfferCreatedDto
 import com.barrioahorro.app.data.remote.dto.OfferPhotoDto
 import com.barrioahorro.app.data.remote.dto.OfferResponseDto
+import com.barrioahorro.app.data.remote.dto.OfferValidationSummaryDto
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -56,5 +57,16 @@ interface OfferApiService {
 
     @PUT("api/business/me/offers/{id}/por-mayor")
     suspend fun updatePorMayor(@Path("id") id: Long, @Body body: CreateOfferPorMayorRequestDto): Response<OfferCreatedDto>
+
+    @POST("api/business/{id}/validations")
+    suspend fun validateOffer(
+        @Path("id") id: Long
+    ): Response<OfferValidationSummaryDto>
+
+    @GET("api/business/{id}/validations")
+    suspend fun getOfferValidations(
+        @Path("id") id: Long
+    ): Response<OfferValidationSummaryDto>
+
 }
 

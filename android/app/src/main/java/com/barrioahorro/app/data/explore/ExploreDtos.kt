@@ -25,6 +25,7 @@ data class ExploreOfferDto(
     val minQuantity: Int?,
     val distanceMeters: Int?,
     val confirmations: Int,
+    val validatedByMe: Boolean = false,
     val favorite: Boolean,
     /** false si la oferta ya terminó. */
     val live: Boolean = true,

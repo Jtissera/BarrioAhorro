@@ -1,6 +1,7 @@
 package com.barrioahorro.app.domain.repository
 
 import com.barrioahorro.app.data.remote.dto.OfferResponseDto
+import com.barrioahorro.app.data.remote.dto.OfferValidationSummaryDto
 import com.barrioahorro.app.domain.model.NewOffer
 import com.barrioahorro.app.domain.model.OfferError
 
@@ -11,4 +12,6 @@ interface IOfferRepository {
     suspend fun getOffer(id: Long): Result<OfferResponseDto, OfferError>
     suspend fun updateOffer(id: Long, offer: NewOffer): Result<Long, OfferError>
     suspend fun deleteOffer(id: Long): Result<Unit, OfferError>
+    suspend fun validateOffer(id: Long): Result<OfferValidationSummaryDto, OfferError>
+    suspend fun getOfferValidations(id: Long): Result<OfferValidationSummaryDto, OfferError>
 }
