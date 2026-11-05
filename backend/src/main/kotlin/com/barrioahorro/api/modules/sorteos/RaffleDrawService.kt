@@ -25,7 +25,8 @@ class RaffleDrawService(
     @Value("\${sorteos.pesos-por-punto:1000}") private val pesosPerPoint: Long,
     @Value("\${sorteos.costo-ticket-minimo:10}") private val minTicketCost: Int,
     @Value("\${sorteos.costo-ticket-maximo:200}") private val maxTicketCost: Int,
-) {
+    @Value("\${sorteos.dias-canje:30}") private val claimDays: Int,
+    ) {
     private val log = LoggerFactory.getLogger(RaffleDrawService::class.java)
     private val random = SecureRandom()
 
@@ -193,6 +194,15 @@ class RaffleDrawService(
             WHERE sorteo_id = :id AND estado = 'VIGENTE'
             """.trimIndent(),
             params,
+        )
+        jdbc.update(
+            """
+            INSERT INTO premios_sorteo (ticket_id, sorteo_id, cliente_id, vence_en)
+            SELECT t.id, t.sorteo_id, t.cliente_id, now() + make_interval(days => :days)
+            FROM tickets_sorteo t
+            WHERE t.id = :winner
+            """.trimIndent(),
+            params.addValue("days", claimDays),
         )
         jdbc.update(
             """

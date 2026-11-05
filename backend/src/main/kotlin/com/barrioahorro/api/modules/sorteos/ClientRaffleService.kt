@@ -158,50 +158,118 @@ class ClientRaffleService(
         // Sin filtro de visibilidad: el historial se muestra aunque el comercio ya no esté visible.
         val items = jdbc.query(
             """
-            SELECT s.id, s.estado::text AS estado_sorteo, s.fecha_sorteo,
-                   cs.premio_nombre, cs.premio_descripcion, cs.premio_foto_url,
-                   pc.nombre_negocio,
-                   COUNT(t.id) AS mios,
-                   COALESCE(SUM(t.puntos_costo), 0) AS gastados,
-                   COUNT(t.id) FILTER (WHERE t.estado = 'GANADOR') AS ganados,
-                   (SELECT COUNT(*) FROM tickets_sorteo x
-                     WHERE x.sorteo_id = s.id AND x.estado = 'VIGENTE') AS total_vigentes,
-                   array_agg(t.id ORDER BY t.id) AS numeros
-            FROM tickets_sorteo t
-            JOIN sorteos s ON s.id = t.sorteo_id
-            JOIN compromisos_sorteo cs ON cs.id = s.compromiso_sorteo_id
-            JOIN perfiles_comercio pc ON pc.usuario_id = cs.comercio_id
-            WHERE t.cliente_id = :userId
-            GROUP BY s.id, cs.id, pc.usuario_id
-            ORDER BY (s.estado::text = 'ACTIVO') DESC, s.fecha_sorteo DESC, s.id DESC
-            """.trimIndent(),
+        SELECT s.id,
+               s.estado::text AS estado_sorteo,
+               s.fecha_sorteo,
+               cs.premio_nombre,
+               cs.premio_descripcion,
+               cs.premio_foto_url,
+               pc.nombre_negocio,
+               COUNT(t.id) AS mios,
+               COALESCE(SUM(t.puntos_costo), 0) AS gastados,
+               COUNT(t.id) FILTER (WHERE t.estado = 'GANADOR') AS ganados,
+
+               (
+                   SELECT COUNT(*)
+                   FROM tickets_sorteo x
+                   WHERE x.sorteo_id = s.id
+                     AND x.estado = 'VIGENTE'
+               ) AS total_vigentes,
+
+               array_agg(t.id ORDER BY t.id) AS numeros,
+
+               -- Ticket que obtuvo el premio en este sorteo.
+               (
+                   SELECT p.ticket_id
+                   FROM premios_sorteo p
+                   WHERE p.sorteo_id = s.id
+                     AND p.cliente_id = :userId
+               ) AS ticket_premio,
+
+               -- Estado actual del premio.
+               (
+                   SELECT CASE
+                       WHEN p.canjeado_en IS NOT NULL THEN 'CANJEADO'
+                       WHEN p.vence_en <= now() THEN 'VENCIDO'
+                       ELSE 'CANJEABLE'
+                   END
+                   FROM premios_sorteo p
+                   WHERE p.sorteo_id = s.id
+                     AND p.cliente_id = :userId
+               ) AS estado_premio
+
+        FROM tickets_sorteo t
+        JOIN sorteos s
+            ON s.id = t.sorteo_id
+        JOIN compromisos_sorteo cs
+            ON cs.id = s.compromiso_sorteo_id
+        JOIN perfiles_comercio pc
+            ON pc.usuario_id = cs.comercio_id
+
+        WHERE t.cliente_id = :userId
+
+        GROUP BY s.id, cs.id, pc.usuario_id
+
+        ORDER BY
+            (s.estado::text = 'ACTIVO') DESC,
+            s.fecha_sorteo DESC,
+            s.id DESC
+        """.trimIndent(),
             MapSqlParameterSource("userId", userId),
         ) { rs, _ ->
+
             val status = rs.getString("estado_sorteo")
             val mine = rs.getInt("mios")
+
+            val winningTicketId = rs.getLong("ticket_premio")
+                .takeIf { !rs.wasNull() }
 
             MyRaffleTicketsResponse(
                 raffleId = rs.getLong("id"),
                 raffleStatus = status,
-                prizeName = rs.getString("premio_nombre")?.takeIf { it.isNotBlank() }
+
+                prizeName = rs.getString("premio_nombre")
+                    ?.takeIf { it.isNotBlank() }
                     ?: rs.getString("premio_descripcion"),
-                prizeDescription = rs.getString("premio_descripcion")?.takeIf { it.isNotBlank() },
-                prizePhotoUrl = rs.getString("premio_foto_url")?.takeIf { it.isNotBlank() },
+
+                prizeDescription = rs.getString("premio_descripcion")
+                    ?.takeIf { it.isNotBlank() },
+
+                prizePhotoUrl = rs.getString("premio_foto_url")
+                    ?.takeIf { it.isNotBlank() },
+
                 businessName = rs.getString("nombre_negocio"),
-                drawAt = rs.getObject("fecha_sorteo", OffsetDateTime::class.java),
+
+                drawAt = rs.getObject(
+                    "fecha_sorteo",
+                    OffsetDateTime::class.java
+                ),
+
                 myTickets = mine,
+
                 ticketNumbers = (rs.getArray("numeros").array as Array<*>)
                     .map { (it as Number).toLong() },
+
                 pointsSpent = rs.getInt("gastados"),
+
                 won = rs.getInt("ganados") > 0,
-                oneIn = if (status == "ACTIVO")
+
+                oneIn = if (status == "ACTIVO") {
                     oneIn(rs.getInt("total_vigentes"), mine)
-                else null,
+                } else {
+                    null
+                },
+
+                winningTicketId = winningTicketId,
+
+                prizeStatus = rs.getString("estado_premio"),
             )
         }
 
         return MyTicketsResponse(
-            activeCount = items.count { it.raffleStatus == "ACTIVO" },
+            activeCount = items.count {
+                it.raffleStatus == "ACTIVO"
+            },
             items = items,
         )
     }

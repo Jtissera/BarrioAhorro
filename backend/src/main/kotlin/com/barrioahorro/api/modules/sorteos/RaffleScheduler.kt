@@ -10,16 +10,22 @@ class RaffleScheduler(
 ) {
     private val log = LoggerFactory.getLogger(RaffleScheduler::class.java)
 
-    /** Corre cada hora, 5 minutos después del CommitmentScheduler. */
-    @Scheduled(cron = "0 10 * * * *", zone = "America/Argentina/Buenos_Aires")
+    @Scheduled(cron = "0 * * * * *", zone = "America/Argentina/Buenos_Aires")
     fun run() {
         try {
-            draws.programNextDraw()
+            val programmed = draws.programNextDraw()
+            if (programmed > 0) {
+                log.info("Sorteos nuevos programados: {}", programmed)
+            }
         } catch (e: Exception) {
             log.error("No se pudieron programar sorteos", e)
         }
+
         try {
-            draws.executeDue()
+            val executed = draws.executeDue()
+            if (executed > 0) {
+                log.info("Sorteos ejecutados: {}", executed)
+            }
         } catch (e: Exception) {
             log.error("No se pudieron ejecutar sorteos", e)
         }

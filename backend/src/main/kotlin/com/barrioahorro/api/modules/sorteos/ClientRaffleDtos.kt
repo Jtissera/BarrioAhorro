@@ -57,4 +57,7 @@ data class MyRaffleTicketsResponse(
     val won: Boolean,
     /** Solo en sorteos activos: "1 en N". */
     val oneIn: Int?,
+    val winningTicketId: Long?,
+    /** CANJEABLE | CANJEADO | VENCIDO, solo si ganó. */
+    val prizeStatus: String?,
 )
