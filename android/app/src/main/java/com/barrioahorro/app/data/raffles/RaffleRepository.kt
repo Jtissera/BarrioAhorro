@@ -26,6 +26,21 @@ class RaffleRepository @Inject constructor(
         if (!response.isSuccessful) throw HttpException(response)
     }
 
+    suspend fun getPendingWinnerNotices(): Result<List<WinnerNoticeDto>> = call { api.getPendingWinnerNotices() }
+
+    suspend fun markWinnerNoticeSeen(ticketId: Long): Result<Unit> = call {
+        val response = api.markWinnerNoticeSeen(ticketId)
+        if (!response.isSuccessful) throw HttpException(response)
+    }
+
+    suspend fun getPrize(ticketId: Long): Result<PrizeDetailDto> = call { api.getPrize(ticketId) }
+
+    suspend fun verifyPrize(code: String): Result<PrizeScanResultDto> =
+        call { api.verifyPrize(ScanCodeRequestDto(code)) }
+
+    suspend fun redeemPrize(code: String): Result<PrizeScanResultDto> =
+        call { api.redeemPrize(ScanCodeRequestDto(code)) }
+
     private suspend fun <T> call(block: suspend () -> T): Result<T> =
         try {
             Result.success(block())

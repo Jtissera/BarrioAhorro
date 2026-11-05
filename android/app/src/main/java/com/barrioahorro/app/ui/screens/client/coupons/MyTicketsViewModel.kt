@@ -16,9 +16,11 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
 
-enum class MyTicketStatus { ACTIVE, WON, NOT_WON, REFUNDED }
+enum class MyTicketStatus { ACTIVE, WON, REDEEMED, EXPIRED, NOT_WON, REFUNDED }
 
 enum class MyTicketsTab { ACTIVOS, RESULTADOS }
+
+
 
 data class MyTicketUi(
     val raffleId: Long,
@@ -29,6 +31,7 @@ data class MyTicketUi(
     val drawDate: String,
     val tickets: Int,
     val numbersLabel: String,
+    val winningTicketId: Long?,
 )
 
 data class MyTicketsState(
@@ -77,7 +80,11 @@ class MyTicketsViewModel @Inject constructor(
     private fun toUi(dto: MyRaffleTicketsDto) = MyTicketUi(
         raffleId = dto.raffleId,
         status = when {
-            dto.won -> MyTicketStatus.WON
+            dto.won -> when (dto.prizeStatus) {
+                "CANJEADO" -> MyTicketStatus.REDEEMED
+                "VENCIDO" -> MyTicketStatus.EXPIRED
+                else -> MyTicketStatus.WON
+            }
             dto.raffleStatus == "ACTIVO" || dto.raffleStatus == "CERRADO" -> MyTicketStatus.ACTIVE
             dto.raffleStatus == "ANULADO" -> MyTicketStatus.REFUNDED
             else -> MyTicketStatus.NOT_WON
@@ -88,6 +95,7 @@ class MyTicketsViewModel @Inject constructor(
         drawDate = formatDay(dto.drawAt),
         tickets = dto.myTickets,
         numbersLabel = numbersLabel(dto.ticketNumbers),
+        winningTicketId = dto.winningTicketId,
     )
 
     private fun numbersLabel(numbers: List<Long>): String {

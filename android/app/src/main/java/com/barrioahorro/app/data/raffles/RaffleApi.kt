@@ -58,6 +58,43 @@ data class MyRaffleTicketsDto(
     val pointsSpent: Int,
     val won: Boolean,
     val oneIn: Int?,
+    val winningTicketId: Long?,
+    val prizeStatus: String?
+)
+
+data class WinnerNoticeDto(
+    val ticketId: Long,
+    val raffleTitle: String,
+    val prizeName: String,
+    val prizePhotoUrl: String?,
+    val businessName: String?,
+)
+
+data class PrizeDetailDto(
+    val ticketId: Long,
+    val ticketNumber: Long,
+    val prizeName: String,
+    val prizeDescription: String?,
+    val prizePhotoUrl: String?,
+    val businessName: String?,
+    val status: String,
+    val expiresAt: String,
+    val redeemedAt: String?,
+    val qrPayload: String?,
+)
+
+data class ScanCodeRequestDto(val code: String)
+
+data class PrizeScanResultDto(
+    val valid: Boolean,
+    val reason: String?,
+    val message: String,
+    val prizeName: String?,
+    val prizeDescription: String?,
+    val prizePhotoUrl: String?,
+    val ticketNumber: Long?,
+    val winnerName: String?,
+    val expiresAt: String?,
 )
 
 interface RaffleApi {
@@ -76,4 +113,19 @@ interface RaffleApi {
 
     @POST("api/cliente/sorteos/desbloqueo-visto")
     suspend fun markUnlockSeen(): Response<Unit>
+
+    @GET("api/cliente/sorteos/premios/pendientes")
+    suspend fun getPendingWinnerNotices(): List<WinnerNoticeDto>
+
+    @POST("api/cliente/sorteos/premios/{ticketId}/visto")
+    suspend fun markWinnerNoticeSeen(@Path("ticketId") ticketId: Long): Response<Unit>
+
+    @GET("api/cliente/sorteos/premios/{ticketId}")
+    suspend fun getPrize(@Path("ticketId") ticketId: Long): PrizeDetailDto
+
+    @POST("api/comercio/sorteos/premios/verificar")
+    suspend fun verifyPrize(@Body body: ScanCodeRequestDto): PrizeScanResultDto
+
+    @POST("api/comercio/sorteos/premios/canjear")
+    suspend fun redeemPrize(@Body body: ScanCodeRequestDto): PrizeScanResultDto
 }

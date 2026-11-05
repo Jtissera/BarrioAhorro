@@ -1,3 +1,4 @@
+
 package com.barrioahorro.app.ui.cuponera.scanner
 
 import android.Manifest
@@ -111,6 +112,9 @@ fun QrScannerScreen(
     var hasPermission by remember { mutableStateOf(context.hasCameraPermission()) }
     var deniedOnce by remember { mutableStateOf(false) }
 
+    // QR de premio actualmente abierto.
+    var prizeCode by remember { mutableStateOf<String?>(null) }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -118,58 +122,103 @@ fun QrScannerScreen(
         if (!granted) deniedOnce = true
     }
 
-    // Si el usuario concede el permiso desde los ajustes, al volver se detecta.
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { hasPermission = context.hasCameraPermission() }
-
-    LaunchedEffect(Unit) {
-        if (!hasPermission) permissionLauncher.launch(Manifest.permission.CAMERA)
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        hasPermission = context.hasCameraPermission()
     }
 
-    when (val current = state) {
-        is ScannerUiState.Finished -> ScanResultContent(
-            outcome = current.outcome,
-            data = current.data,
-            onScanAgain = viewModel::scanAgain,
-            onBack = onBack,
-        )
+    LaunchedEffect(Unit) {
+        if (!hasPermission) {
+            permissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
 
-        is ScannerUiState.Failed -> ScanErrorContent(
-            message = current.message,
-            onRetry = viewModel::retry,
-            onScanAgain = viewModel::scanAgain,
-            onBack = onBack,
-        )
+    Box(modifier = Modifier.fillMaxSize()) {
 
-        else -> if (hasPermission) {
-            CameraContent(
-                processing = current is ScannerUiState.Processing,
-                onCode = viewModel::onCodeScanned,
+        when (val current = state) {
+            is ScannerUiState.Finished -> ScanResultContent(
+                outcome = current.outcome,
+                data = current.data,
+                onScanAgain = viewModel::scanAgain,
                 onBack = onBack,
             )
-        } else {
-            val activity = context.findActivity()
-            val canAskAgain = !deniedOnce ||
-                    (activity != null &&
-                            ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA))
 
-            PermissionContent(
-                canAskAgain = canAskAgain,
-                onRequest = { permissionLauncher.launch(Manifest.permission.CAMERA) },
-                onOpenSettings = {
-                    context.startActivity(
-                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                            data = Uri.fromParts("package", context.packageName, null)
-                        },
-                    )
-                },
+            is ScannerUiState.Failed -> ScanErrorContent(
+                message = current.message,
+                onRetry = viewModel::retry,
+                onScanAgain = viewModel::scanAgain,
                 onBack = onBack,
+            )
+
+            else -> if (hasPermission) {
+                CameraContent(
+                    processing = current is ScannerUiState.Processing ||
+                            prizeCode != null,
+                    onCode = { raw ->
+                        val code = raw.trim()
+
+                        if (code.isEmpty()) return@CameraContent
+
+                        if (code.startsWith(PRIZE_QR_PREFIX)) {
+                            // El QR pertenece a un premio.
+                            // No pasa por la validación de cupones.
+                            if (prizeCode == null) {
+                                prizeCode = code
+                            }
+                        } else {
+                            // Conserva el flujo original de cupones.
+                            viewModel.onCodeScanned(code)
+                        }
+                    },
+                    onBack = onBack,
+                )
+            } else {
+                val activity = context.findActivity()
+                val canAskAgain = !deniedOnce ||
+                        (activity != null &&
+                                ActivityCompat.shouldShowRequestPermissionRationale(
+                                    activity,
+                                    Manifest.permission.CAMERA,
+                                ))
+
+                PermissionContent(
+                    canAskAgain = canAskAgain,
+                    onRequest = {
+                        permissionLauncher.launch(Manifest.permission.CAMERA)
+                    },
+                    onOpenSettings = {
+                        context.startActivity(
+                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts(
+                                    "package",
+                                    context.packageName,
+                                    null,
+                                )
+                            },
+                        )
+                    },
+                    onBack = onBack,
+                )
+            }
+        }
+
+        // El canje se muestra encima del escáner.
+        // La cámara permanece pausada mientras prizeCode no sea null.
+        prizeCode?.let { code ->
+            PrizeClaimHost(
+                code = code,
+                onDismiss = {
+                    prizeCode = null
+                },
             )
         }
     }
 }
 
 private fun Context.hasCameraPermission(): Boolean =
-    ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+    ContextCompat.checkSelfPermission(
+        this,
+        Manifest.permission.CAMERA,
+    ) == PackageManager.PERMISSION_GRANTED
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
@@ -217,8 +266,13 @@ private fun CameraContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.White)
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Volver",
+                    tint = Color.White,
+                )
             }
+
             Text(
                 text = "Escáner QR",
                 style = MaterialTheme.typography.titleMedium,
@@ -226,11 +280,20 @@ private fun CameraContent(
                 color = Color.White,
                 modifier = Modifier.weight(1f),
             )
+
             if (hasTorch) {
                 IconButton(onClick = { torchOn = !torchOn }) {
                     Icon(
-                        imageVector = if (torchOn) Icons.Default.FlashOn else Icons.Default.FlashOff,
-                        contentDescription = if (torchOn) "Apagar linterna" else "Encender linterna",
+                        imageVector = if (torchOn) {
+                            Icons.Default.FlashOn
+                        } else {
+                            Icons.Default.FlashOff
+                        },
+                        contentDescription = if (torchOn) {
+                            "Apagar linterna"
+                        } else {
+                            "Encender linterna"
+                        },
                         tint = Color.White,
                     )
                 }
@@ -260,7 +323,11 @@ private fun CameraContent(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     CircularProgressIndicator(color = Color.White)
-                    Text("Validando canje…", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Validando canje…",
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
             }
         }
@@ -305,10 +372,12 @@ private fun CameraPreview(
 
     DisposableEffect(lifecycleOwner) {
         val executor = Executors.newSingleThreadExecutor()
+
         val analyzer = QrAnalyzer(
             isActive = { !latestPaused },
             onCode = { latestOnCode(it) },
         )
+
         val providerFuture = ProcessCameraProvider.getInstance(context)
         var provider: ProcessCameraProvider? = null
 
@@ -321,18 +390,25 @@ private fun CameraPreview(
                     val preview = Preview.Builder().build().also {
                         it.surfaceProvider = previewView.surfaceProvider
                     }
+
                     val analysis = ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .setBackpressureStrategy(
+                            ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST,
+                        )
                         .build()
-                        .also { it.setAnalyzer(executor, analyzer) }
+                        .also {
+                            it.setAnalyzer(executor, analyzer)
+                        }
 
                     cameraProvider.unbindAll()
+
                     val bound = cameraProvider.bindToLifecycle(
                         lifecycleOwner,
                         CameraSelector.DEFAULT_BACK_CAMERA,
                         preview,
                         analysis,
                     )
+
                     camera = bound
                     latestOnTorchAvailable(bound.cameraInfo.hasFlashUnit())
                 } catch (e: Exception) {
@@ -353,7 +429,10 @@ private fun CameraPreview(
         camera?.cameraControl?.enableTorch(torchOn)
     }
 
-    AndroidView(factory = { previewView }, modifier = modifier)
+    AndroidView(
+        factory = { previewView },
+        modifier = modifier,
+    )
 }
 
 /** Solo QR: ignora cualquier otro formato de código de barras. */
@@ -371,17 +450,26 @@ private class QrAnalyzer(
     @androidx.annotation.OptIn(ExperimentalGetImage::class)
     override fun analyze(imageProxy: ImageProxy) {
         val mediaImage = imageProxy.image
+
         if (mediaImage == null || !isActive()) {
             imageProxy.close()
             return
         }
 
-        val input = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+        val input = InputImage.fromMediaImage(
+            mediaImage,
+            imageProxy.imageInfo.rotationDegrees,
+        )
+
         scanner.process(input)
             .addOnSuccessListener { codes ->
-                codes.firstNotNullOfOrNull { it.rawValue }?.let(onCode)
+                if (isActive()) {
+                    codes.firstNotNullOfOrNull { it.rawValue }?.let(onCode)
+                }
             }
-            .addOnCompleteListener { imageProxy.close() }
+            .addOnCompleteListener {
+                imageProxy.close()
+            }
     }
 
     fun close() = scanner.close()
@@ -394,8 +482,20 @@ private fun ViewfinderOverlay(modifier: Modifier = Modifier) {
         val stroke = 5.dp.toPx()
 
         fun corner(x: Float, y: Float, dx: Float, dy: Float) {
-            drawLine(Color.White, Offset(x, y), Offset(x + dx * length, y), stroke, StrokeCap.Round)
-            drawLine(Color.White, Offset(x, y), Offset(x, y + dy * length), stroke, StrokeCap.Round)
+            drawLine(
+                Color.White,
+                Offset(x, y),
+                Offset(x + dx * length, y),
+                stroke,
+                StrokeCap.Round,
+            )
+            drawLine(
+                Color.White,
+                Offset(x, y),
+                Offset(x, y + dy * length),
+                stroke,
+                StrokeCap.Round,
+            )
         }
 
         corner(0f, 0f, 1f, 1f)
@@ -419,7 +519,10 @@ private fun PermissionContent(
             .fillMaxSize()
             .background(Cream),
     ) {
-        ContributionTopBar(title = "Escáner QR", onBack = onBack)
+        ContributionTopBar(
+            title = "Escáner QR",
+            onBack = onBack,
+        )
 
         Column(
             modifier = Modifier
@@ -427,7 +530,10 @@ private fun PermissionContent(
                 .fillMaxWidth()
                 .padding(horizontal = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically),
+            verticalArrangement = Arrangement.spacedBy(
+                14.dp,
+                Alignment.CenterVertically,
+            ),
         ) {
             Box(
                 modifier = Modifier
@@ -436,8 +542,13 @@ private fun PermissionContent(
                     .background(PrimaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Default.NoPhotography, contentDescription = null, tint = Primary)
+                Icon(
+                    Icons.Default.NoPhotography,
+                    contentDescription = null,
+                    tint = Primary,
+                )
             }
+
             Text(
                 text = "Necesitamos acceso a la cámara",
                 style = MaterialTheme.typography.headlineSmall,
@@ -445,12 +556,14 @@ private fun PermissionContent(
                 color = InkBlack,
                 textAlign = TextAlign.Center,
             )
+
             Text(
                 text = "Para validar los cupones de los vecinos en el mostrador, Barrio Ahorro necesita usar tu cámara.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = WarmGray,
                 textAlign = TextAlign.Center,
             )
+
             if (!canAskAgain) {
                 Text(
                     text = "Activá el permiso de cámara desde los ajustes del teléfono.",
@@ -459,15 +572,22 @@ private fun PermissionContent(
                     textAlign = TextAlign.Center,
                 )
             }
+
             Button(
                 onClick = if (canAskAgain) onRequest else onOpenSettings,
                 shape = RoundedCornerShape(27.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = OnPrimary),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Primary,
+                    contentColor = OnPrimary,
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
             ) {
-                Text(if (canAskAgain) "Permitir cámara" else "Abrir ajustes", fontWeight = FontWeight.Bold)
+                Text(
+                    if (canAskAgain) "Permitir cámara" else "Abrir ajustes",
+                    fontWeight = FontWeight.Bold,
+                )
             }
         }
     }
@@ -475,25 +595,52 @@ private fun PermissionContent(
 
 // ---- Resultado del canje ---------------------------------------------------------
 
-private data class ResultCopy(val title: String, val message: String)
+private data class ResultCopy(
+    val title: String,
+    val message: String,
+)
 
 private fun ScanOutcome.copy(): ResultCopy = when (this) {
-    ScanOutcome.VALIDATED -> ResultCopy("Canje validado", "Ya podés entregarle el producto al vecino.")
-    ScanOutcome.ALREADY_USED -> ResultCopy("No se pudo validar", "Este código ya fue usado.")
-    ScanOutcome.EXPIRED -> ResultCopy("No se pudo validar", "Este código venció.")
-    ScanOutcome.CANCELLED -> ResultCopy("No se pudo validar", "Este canje fue cancelado.")
-    ScanOutcome.OTHER_BUSINESS -> ResultCopy("No se pudo validar", "Este código es de otro comercio.")
-    ScanOutcome.NOT_FOUND -> ResultCopy("No se pudo validar", "No reconocemos este código QR.")
+    ScanOutcome.VALIDATED ->
+        ResultCopy("Canje validado", "Ya podés entregarle el producto al vecino.")
+
+    ScanOutcome.ALREADY_USED ->
+        ResultCopy("No se pudo validar", "Este código ya fue usado.")
+
+    ScanOutcome.EXPIRED ->
+        ResultCopy("No se pudo validar", "Este código venció.")
+
+    ScanOutcome.CANCELLED ->
+        ResultCopy("No se pudo validar", "Este canje fue cancelado.")
+
+    ScanOutcome.OTHER_BUSINESS ->
+        ResultCopy("No se pudo validar", "Este código es de otro comercio.")
+
+    ScanOutcome.NOT_FOUND ->
+        ResultCopy("No se pudo validar", "No reconocemos este código QR.")
+
     ScanOutcome.INSUFFICIENT_POINTS ->
-        ResultCopy("No se pudo validar", "El vecino no tiene puntos suficientes para este canje.")
-    ScanOutcome.UNKNOWN -> ResultCopy("No se pudo validar", "No pudimos validar este código.")
+        ResultCopy(
+            "No se pudo validar",
+            "El vecino no tiene puntos suficientes para este canje.",
+        )
+
+    ScanOutcome.UNKNOWN ->
+        ResultCopy("No se pudo validar", "No pudimos validar este código.")
 }
 
-private val DATE_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
-private val SCAN_ZONE: ZoneId = ZoneId.of("America/Argentina/Buenos_Aires")
+private val DATE_TIME: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+
+private val SCAN_ZONE: ZoneId =
+    ZoneId.of("America/Argentina/Buenos_Aires")
 
 private fun formatDateTime(iso: String?): String? = iso?.let {
-    runCatching { OffsetDateTime.parse(it).atZoneSameInstant(SCAN_ZONE).format(DATE_TIME) }.getOrDefault(it)
+    runCatching {
+        OffsetDateTime.parse(it)
+            .atZoneSameInstant(SCAN_ZONE)
+            .format(DATE_TIME)
+    }.getOrDefault(it)
 }
 
 @Composable
@@ -505,6 +652,7 @@ private fun ScanResultContent(
 ) {
     val success = outcome == ScanOutcome.VALIDATED
     val copy = outcome.copy()
+
     val dateLabel = when (outcome) {
         ScanOutcome.VALIDATED -> "Validado el"
         ScanOutcome.ALREADY_USED -> "Usado el"
@@ -516,7 +664,10 @@ private fun ScanResultContent(
             .fillMaxSize()
             .background(Cream),
     ) {
-        ContributionTopBar(title = "Resultado del canje", onBack = onBack)
+        ContributionTopBar(
+            title = "Resultado del canje",
+            onBack = onBack,
+        )
 
         Column(
             modifier = Modifier
@@ -535,7 +686,11 @@ private fun ScanResultContent(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = if (success) Icons.Default.Check else Icons.Default.Close,
+                    imageVector = if (success) {
+                        Icons.Default.Check
+                    } else {
+                        Icons.Default.Close
+                    },
                     contentDescription = null,
                     tint = OnPrimary,
                     modifier = Modifier.size(44.dp),
@@ -549,6 +704,7 @@ private fun ScanResultContent(
                 color = InkBlack,
                 textAlign = TextAlign.Center,
             )
+
             Text(
                 text = copy.message,
                 style = MaterialTheme.typography.bodyMedium,
@@ -567,11 +723,19 @@ private fun ScanResultContent(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         DetailRow("Producto", data.productName)
-                        data.neighbor?.let { DetailRow("Vecino", it) }
-                        data.points?.let { DetailRow("Puntos", "$it pts") }
-                        data.receiptCode?.let { DetailRow("Código de canje", it) }
+                        data.neighbor?.let {
+                            DetailRow("Vecino", it)
+                        }
+                        data.points?.let {
+                            DetailRow("Puntos", "$it pts")
+                        }
+                        data.receiptCode?.let {
+                            DetailRow("Código de canje", it)
+                        }
                         if (dateLabel != null) {
-                            formatDateTime(data.date)?.let { DetailRow(dateLabel, it) }
+                            formatDateTime(data.date)?.let {
+                                DetailRow(dateLabel, it)
+                            }
                         }
                     }
                 }
@@ -598,7 +762,10 @@ private fun ScanErrorContent(
             .fillMaxSize()
             .background(Cream),
     ) {
-        ContributionTopBar(title = "Resultado del canje", onBack = onBack)
+        ContributionTopBar(
+            title = "Resultado del canje",
+            onBack = onBack,
+        )
 
         Column(
             modifier = Modifier
@@ -606,7 +773,10 @@ private fun ScanErrorContent(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically),
+            verticalArrangement = Arrangement.spacedBy(
+                14.dp,
+                Alignment.CenterVertically,
+            ),
         ) {
             Box(
                 modifier = Modifier
@@ -615,8 +785,14 @@ private fun ScanErrorContent(
                     .background(ErrorRed),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Default.Close, contentDescription = null, tint = OnPrimary, modifier = Modifier.size(44.dp))
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = null,
+                    tint = OnPrimary,
+                    modifier = Modifier.size(44.dp),
+                )
             }
+
             Text(
                 text = "No pudimos validar el canje",
                 style = MaterialTheme.typography.headlineSmall,
@@ -624,12 +800,14 @@ private fun ScanErrorContent(
                 color = InkBlack,
                 textAlign = TextAlign.Center,
             )
+
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = WarmGray,
                 textAlign = TextAlign.Center,
             )
+
             Text(
                 text = "El canje no se registró. Reintentá con el mismo código.",
                 style = MaterialTheme.typography.bodySmall,
@@ -638,7 +816,13 @@ private fun ScanErrorContent(
             )
         }
 
-        ResultActions(primaryLabel = "Reintentar", onPrimary = onRetry, onBack = onBack, secondaryLabel = "Escanear otro código", onSecondary = onScanAgain)
+        ResultActions(
+            primaryLabel = "Reintentar",
+            onPrimary = onRetry,
+            onBack = onBack,
+            secondaryLabel = "Escanear otro código",
+            onSecondary = onScanAgain,
+        )
     }
 }
 
@@ -661,21 +845,32 @@ private fun ResultActions(
         Button(
             onClick = onPrimary,
             shape = RoundedCornerShape(27.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = OnPrimary),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Primary,
+                contentColor = OnPrimary,
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
         ) {
             Text(primaryLabel, fontWeight = FontWeight.Bold)
         }
+
         TextButton(onClick = onSecondary) {
-            Text(secondaryLabel, color = Ink, fontWeight = FontWeight.SemiBold)
+            Text(
+                secondaryLabel,
+                color = Ink,
+                fontWeight = FontWeight.SemiBold,
+            )
         }
     }
 }
 
 @Composable
-private fun DetailRow(label: String, value: String) {
+private fun DetailRow(
+    label: String,
+    value: String,
+) {
     Row(verticalAlignment = Alignment.Top) {
         Text(
             text = label,
@@ -683,6 +878,7 @@ private fun DetailRow(label: String, value: String) {
             color = WarmGray,
             modifier = Modifier.width(120.dp),
         )
+
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,

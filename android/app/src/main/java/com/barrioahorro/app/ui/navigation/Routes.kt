@@ -76,6 +76,9 @@ object ClientRoutes {
     const val REDEMPTION_DETAIL = "client/redemption/{redemptionId}"
 
     const val MY_TICKETS = "client/tickets"
+    const val WINNING_TICKET = "client/ticket/{ticketId}"
+    fun winningTicket(ticketId: Long): String = "client/ticket/$ticketId"
+
 
     fun editLocation(): String = "client/location?edit=true"
     fun postDetail(postId: Long): String = "client/forum/post/$postId"

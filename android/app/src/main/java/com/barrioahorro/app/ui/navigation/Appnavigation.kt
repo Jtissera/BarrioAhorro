@@ -57,6 +57,7 @@ import com.barrioahorro.app.ui.screens.client.profile.MyReviewsScreen
 import com.barrioahorro.app.ui.screens.client.coupons.MyRedemptionsScreen
 import com.barrioahorro.app.ui.screens.client.coupons.RedemptionDetailScreen
 import com.barrioahorro.app.ui.screens.client.coupons.MyTicketsScreen
+import com.barrioahorro.app.ui.screens.client.coupons.WinningTicketScreen
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
@@ -438,6 +439,13 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
     }
 
     composable(
+        route = ClientRoutes.WINNING_TICKET,
+        arguments = listOf(navArgument("ticketId") { type = NavType.LongType }),
+    ) {
+        WinningTicketScreen(onBack = { navController.popBackStack() })
+    }
+
+    composable(
         route = ClientRoutes.LOCATION_PATTERN,
         arguments = listOf(navArgument("edit") { type = NavType.BoolType; defaultValue = false }),
     ) { entry ->
@@ -504,6 +512,7 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
             onMyRedemptions = { navController.navigate(ClientRoutes.MY_REDEMPTIONS) },
             onRedemptionsHistory = { navController.navigate(ClientRoutes.REDEMPTIONS_HISTORY) },
             onMyTickets = { navController.navigate(ClientRoutes.MY_TICKETS) },
+            onOpenWinnerTicket = { id -> navController.navigate(ClientRoutes.winningTicket(id)) },
             )
     }
 
@@ -581,7 +590,10 @@ fun NavGraphBuilder.clientGraph(navController: NavHostController) {
     }
 
     composable(ClientRoutes.MY_TICKETS) {
-        MyTicketsScreen(onBack = { navController.popBackStack() })
+        MyTicketsScreen(
+            onBack = { navController.popBackStack() },
+            onOpenTicket = { id -> navController.navigate(ClientRoutes.winningTicket(id)) },
+        )
     }
 }
 
