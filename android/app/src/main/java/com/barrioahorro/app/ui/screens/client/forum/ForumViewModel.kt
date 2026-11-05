@@ -1,5 +1,6 @@
 package com.barrioahorro.app.ui.screens.client.forum
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barrioahorro.app.data.forum.ForumBusinessDto
@@ -26,12 +27,14 @@ data class ForumFeedUiState(
     val filters: ForumFeedFilters = ForumFeedFilters(),
     val businesses: List<ForumBusinessDto> = emptyList(),
     val locationError: String? = null,
+    val feedbackMessage: String? = null,
 )
 
 @HiltViewModel
 class ForumViewModel @Inject constructor(
     private val forumRepository: ForumRepository,
     private val locationStore: ClientLocationDataStore,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ForumFeedUiState())
@@ -82,6 +85,8 @@ class ForumViewModel @Inject constructor(
                 .onSuccess { list -> _uiState.update { it.copy(businesses = list) } }
         }
     }
+
+
 
     // ---------- Filtros ----------
 
@@ -158,6 +163,58 @@ class ForumViewModel @Inject constructor(
     private fun updatePost(id: Long, transform: (ForumPostDto) -> ForumPostDto) {
         _uiState.update { state ->
             state.copy(posts = state.posts.map { if (it.id == id) transform(it) else it })
+        }
+    }
+
+    fun deletePost(postId: Long) {
+        viewModelScope.launch {
+            forumRepository.deletePost(postId)
+                .onSuccess {
+                    _uiState.update { current ->
+                        current.copy(
+                            posts = current.posts.filterNot { it.id == postId },
+                            feedbackMessage = "Publicación eliminada",
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update { current ->
+                        current.copy(
+                            errorMessage = error.message ?: "No se pudo eliminar la publicación"
+                        )
+                    }
+                }
+        }
+    }
+
+    fun deleteComment(commentId: Long) {
+        viewModelScope.launch {
+            forumRepository.deleteComment(commentId)
+                .onSuccess {
+                    _uiState.update { current ->
+                        current.copy(
+                            feedbackMessage = "Comentario eliminado"
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update { current ->
+                        current.copy(
+                            errorMessage = error.message ?: "No se pudo eliminar el comentario"
+                        )
+                    }
+                }
+        }
+    }
+
+    fun clearFeedbackMessage() {
+        _uiState.update { it.copy(feedbackMessage = null) }
+    }
+
+    fun checkPendingFeedback() {
+        savedStateHandle.get<String>("deleted_feedback")?.let { msg ->
+            _uiState.update { it.copy(feedbackMessage = msg) }
+            savedStateHandle.remove<String>("deleted_feedback")
         }
     }
 }

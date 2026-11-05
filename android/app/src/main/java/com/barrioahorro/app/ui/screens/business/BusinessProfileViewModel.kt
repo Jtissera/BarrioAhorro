@@ -163,7 +163,7 @@ class BusinessProfileViewModel @Inject constructor(
                 it.copy(
                     activeCount = body.activeCount,
                     offers = body.items.map { item ->
-                        OfferUiMapper.toUi(item.offer, businessName, categoryName, item.confirmationsCount)
+                        OfferUiMapper.toUi(item.offer, businessName, categoryName, item.confirmationsCount.toLong())
                     },
                     offersError = null,
                 )

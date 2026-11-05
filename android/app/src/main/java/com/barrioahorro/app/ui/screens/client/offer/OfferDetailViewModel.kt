@@ -7,6 +7,9 @@ import com.barrioahorro.app.data.explore.ExploreRepository
 import com.barrioahorro.app.data.explore.OfferDetailDto
 import com.barrioahorro.app.data.local.datastore.ClientLocationDataStore
 import com.barrioahorro.app.di.BASE_URL
+import com.barrioahorro.app.domain.model.OfferError
+import com.barrioahorro.app.domain.repository.IOfferRepository
+import com.barrioahorro.app.domain.repository.Result
 import com.barrioahorro.app.ui.components.OfferPriceInfo
 import com.barrioahorro.app.ui.components.ordinal
 import com.barrioahorro.app.ui.screens.business.resolvePhotoUrl
@@ -28,7 +31,6 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
-
 data class OfferDetailUi(
     val id: Long,
     val businessId: Long,
@@ -46,6 +48,7 @@ data class OfferDetailUi(
     val dateText: String?,
     val endedText: String?,
     val confirmations: Int,
+    val confirmedByMe: Boolean = false,
     val lastConfirmationText: String?,
     val businessName: String,
     val categoryName: String,
@@ -101,6 +104,7 @@ object OfferDetailMapper {
             },
             endedText = endedAt?.let { "Finalizó el ${it.format(dateFmt)}" },
             confirmations = o.confirmations,
+            confirmedByMe = o.validatedByMe ?: false,
             lastConfirmationText = d.lastConfirmation?.let {
                 "Última confirmación: ${formatRelativeTime(it.at)} por ${it.by}"
             },
@@ -159,6 +163,7 @@ object OfferDetailMapper {
 class OfferDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: ExploreRepository,
+    private val offerRepository: IOfferRepository,
     private val locationStore: ClientLocationDataStore,
     private val favoritesSync: FavoritesSync,
 ) : ViewModel() {
@@ -176,13 +181,64 @@ class OfferDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             val location = locationStore.location.first()
+
             repository.getOfferDetail(offerId, location?.latitude, location?.longitude)
                 .onSuccess { dto ->
-                    _state.update { it.copy(isLoading = false, offer = OfferDetailMapper.toUi(dto)) }
+                    val baseUi = OfferDetailMapper.toUi(dto)
+
+                    val validationResult = offerRepository.getOfferValidations(offerId)
+
+                    val finalUi = when (validationResult) {
+                        is Result.Success -> {
+                            val summary = validationResult.value
+                            baseUi.copy(
+                                confirmations = summary.totalValidations.toInt(),
+                                confirmedByMe = summary.validatedByMe,
+                                lastConfirmationText = if (summary.validatedByMe) "Última confirmación: recién por vos" else baseUi.lastConfirmationText
+                            )
+                        }
+                        is Result.Failure -> {
+                            baseUi
+                        }
+                    }
+
+                    _state.update { it.copy(isLoading = false, offer = finalUi) }
                 }
                 .onFailure { e ->
                     _state.update { it.copy(isLoading = false, error = e.message ?: "No pudimos cargar la oferta") }
                 }
+        }
+    }
+    fun confirmValidity() {
+        val currentOffer = _state.value.offer ?: return
+        if (currentOffer.confirmedByMe) return
+
+        viewModelScope.launch {
+            when (val result = offerRepository.validateOffer(currentOffer.id)) {
+                is Result.Success -> {
+                    val summary = result.value
+                    _state.update { current ->
+                        current.copy(
+                            offer = current.offer?.copy(
+                                confirmations = summary.totalValidations.toInt(),
+                                confirmedByMe = summary.validatedByMe,
+                                lastConfirmationText = "Última confirmación: recién por vos",
+                            ),
+                            message = "¡Gracias por ayudar al barrio!",
+                        )
+                    }
+                }
+                is Result.Failure -> {
+                    val errorMsg = when (val err = result.error) {
+                        is OfferError.NoConnection -> "Sin conexión a internet"
+                        is OfferError.Rejected -> err.message // <- corregido de .reason a .message
+                        is OfferError.NotABusiness -> "Solo los vecinos pueden validar ofertas"
+                        is OfferError.Unknown -> err.message ?: "No pudimos confirmar la oferta"
+                        else -> "No pudimos confirmar la oferta"
+                    }
+                    _state.update { it.copy(message = errorMsg) }
+                }
+            }
         }
     }
 
@@ -212,4 +268,6 @@ class OfferDetailViewModel @Inject constructor(
     fun onMessageShown() {
         _state.update { it.copy(message = null) }
     }
+
+
 }

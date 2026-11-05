@@ -141,6 +141,7 @@ data class OfferResponse(
     val detallePorMayor: OfferPorMayorDetailResponse? = null,
     val detalleCantidad: OfferCantidadDetailResponse? = null,
     val detallePorcentaje: OfferPorcentajeDetailResponse? = null,
+    val totalValidaciones: Long = 0L,
 )
 
 data class OfferPhotoUploadResponse(
@@ -155,4 +156,9 @@ data class ActiveOfferItemResponse(
 data class ActiveOffersResponse(
     val activeCount: Int,
     val items: List<ActiveOfferItemResponse>,
+)
+
+data class OfferValidationSummaryDto(
+    val totalValidations: Long,
+    val validatedByMe: Boolean
 )

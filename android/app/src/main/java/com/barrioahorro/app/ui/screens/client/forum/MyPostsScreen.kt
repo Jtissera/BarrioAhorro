@@ -22,6 +22,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Star
@@ -37,8 +39,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -91,19 +95,19 @@ fun MyPostsScreen(
     viewModel: MyPostsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    var selectedTab by rememberSaveable { mutableStateOf(MyPostsTab.PUBLICACIONES) }
-    val snackbarHostState = remember { SnackbarHostState() }
 
-    // Escucha el mensaje de borrado del ViewModel y lo muestra
+    var selectedTab by rememberSaveable { mutableStateOf(MyPostsTab.PUBLICACIONES) }
+
+    // Al volver de editar (u otra pantalla) se recarga la actividad (comentado mientras probamos)
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshOnResume() }
+
+    // Temporizador: cuando el ViewModel emite un mensaje, espera 3 segundos y lo limpia
     LaunchedEffect(state.feedbackMessage) {
-        state.feedbackMessage?.let { msg ->
-            snackbarHostState.showSnackbar(msg)
+        if (state.feedbackMessage != null) {
+            kotlinx.coroutines.delay(3000)
             viewModel.clearFeedbackMessage()
         }
     }
-
-    // Al volver de editar (u otra pantalla) se recarga la actividad.
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshOnResume() }
 
     state.editingComment?.let { comment ->
         EditCommentDialog(
@@ -115,20 +119,16 @@ fun MyPostsScreen(
         )
     }
 
-    Scaffold(
-        containerColor = Cream,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        modifier = modifier.fillMaxSize(),
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-        ) {
-            // Toldo del mockup: franjas de 10dp alternando rojo y crema
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Cream)
+    ) {
+        // 1. CAPA DE FONDO: Toda tu pantalla y listas
+        Column(modifier = Modifier.fillMaxSize()) {
             ToldoConFranjas(stripes = 12, height = 10.dp, altColor = Cream)
 
-            // Header con flecha atrás y título (pantalla apilada sobre el perfil)
+            // Header con flecha atrás y título
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -164,7 +164,6 @@ fun MyPostsScreen(
                         CircularProgressIndicator(color = Primary)
                     }
                 }
-
                 state.errorMessage != null -> {
                     MyPostsMessageView(
                         icon = Icons.Outlined.ErrorOutline,
@@ -174,7 +173,6 @@ fun MyPostsScreen(
                         onAction = { viewModel.loadMyActivity() },
                     )
                 }
-
                 else -> {
                     LazyColumn(
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
@@ -192,7 +190,6 @@ fun MyPostsScreen(
                                     fillScreen = false,
                                 )
                             }
-
                             selectedTab == MyPostsTab.COMENTARIOS && state.comments.isEmpty() -> item(key = "empty") {
                                 MyPostsMessageView(
                                     icon = Icons.Outlined.ChatBubbleOutline,
@@ -201,7 +198,6 @@ fun MyPostsScreen(
                                     fillScreen = false,
                                 )
                             }
-
                             selectedTab == MyPostsTab.PUBLICACIONES -> items(state.posts, key = { "post-${it.id}" }) { post ->
                                 MyPostCard(
                                     post = post,
@@ -210,7 +206,6 @@ fun MyPostsScreen(
                                     onDelete = { viewModel.deletePost(post.id) },
                                 )
                             }
-
                             else -> items(state.comments, key = { "comment-${it.id}" }) { comment ->
                                 MyCommentCard(
                                     comment = comment,
@@ -221,14 +216,25 @@ fun MyPostsScreen(
                             }
                         }
 
-                        item { Spacer(modifier = Modifier.height(12.dp)) }
+                        // Espacio extra al final de la lista para hacer scroll cómodo
+                        item { Spacer(modifier = Modifier.height(90.dp)) }
                     }
                 }
             }
         }
+
+        // 2. CAPA SUPERIOR: El banner flotando por encima, leyendo DIRECTAMENTE de state.feedbackMessage
+        state.feedbackMessage?.let { message ->
+            DeletedFeedbackBanner(
+                message = message,
+                onDismiss = { viewModel.clearFeedbackMessage() },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 80.dp) // Suficiente elevación para quedar sobre la BottomBar
+            )
+        }
     }
 }
-
 @Composable
 private fun MyPostsTabs(
     selectedTab: MyPostsTab,
@@ -576,6 +582,62 @@ private fun MyActivityFooter(
 }
 
 @Composable
+fun DeletedFeedbackBanner(
+    message: String,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(32.dp),
+        color = Color(0xFF261D16),
+        shadowElevation = 4.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .background(Color(0xFF2E7D52), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+
+            Text(
+                text = message,
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f),
+            )
+
+            // Cruz para cerrar
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Cerrar",
+                tint = Color(0xFFC7BDB5),
+                modifier = Modifier
+                    .size(18.dp)
+                    .clip(CircleShape)
+                    .clickable { onDismiss() },
+            )
+        }
+    }
+}
+
+@Composable
 private fun MyPostsMessageView(
     icon: ImageVector,
     title: String,
@@ -635,4 +697,5 @@ private fun MyPostsMessageView(
             }
         }
     }
+
 }
