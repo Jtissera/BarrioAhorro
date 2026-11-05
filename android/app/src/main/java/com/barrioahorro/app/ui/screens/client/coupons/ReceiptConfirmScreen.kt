@@ -44,7 +44,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.barrioahorro.app.ui.components.ConfettiOverlay
 import com.barrioahorro.app.ui.theme.BadgeOrange
 import com.barrioahorro.app.ui.theme.CardWhite
 import com.barrioahorro.app.ui.theme.Cream
@@ -104,9 +103,6 @@ fun ReceiptConfirmScreen(
                 }
             }
         }
-
-        // Confeti al verificarse el canje (una sola pasada, no bloquea toques).
-        if (state.redemption != null) ConfettiOverlay(Modifier.fillMaxSize())
     }
 }
 

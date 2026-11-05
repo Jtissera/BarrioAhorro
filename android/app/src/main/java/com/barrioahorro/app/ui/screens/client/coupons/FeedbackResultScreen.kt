@@ -132,7 +132,8 @@ fun FeedbackResultScreen(
             }
         }
 
-        ConfettiOverlay(Modifier.fillMaxSize())
+       
+        if (thanks) ConfettiOverlay(Modifier.fillMaxSize())
     }
 }
 
