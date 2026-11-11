@@ -19,7 +19,8 @@ private val PUBLIC_ENDPOINTS = arrayOf(
     "/api/location/validate",
     "/swagger-ui/**",
     "/v3/api-docs/**",
-    "/uploads/**", // fotos públicas de los comercios
+    "/uploads/**",
+    "/app/rechazo/**",
 )
 
 @Configuration

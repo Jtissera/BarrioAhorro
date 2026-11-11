@@ -1,5 +1,6 @@
 package com.barrioahorro.api.modules.admin
 
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.HttpStatus
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
@@ -28,7 +29,10 @@ private const val PENDING_SQL = """
 """
 
 @Service
-class AdminService(private val jdbc: NamedParameterJdbcTemplate) {
+class AdminService(
+    private val jdbc: NamedParameterJdbcTemplate,
+    private val events: ApplicationEventPublisher,
+) {
 
     fun pending(): List<AdminPublicationResponse> =
         jdbc.query("SELECT * FROM ($PENDING_SQL) p ORDER BY submitted_at DESC", MapSqlParameterSource()) { rs, _ -> map(rs) }
@@ -57,17 +61,23 @@ class AdminService(private val jdbc: NamedParameterJdbcTemplate) {
         }
         val params = MapSqlParameterSource().addValue("id", id).addValue("reason", reason)
 
-        when (kind) {
+        val event: ProductRejectedEvent = when (kind) {
             PublicationKind.CUPON -> {
-                val commitmentId = jdbc.queryForList(
+                val row = jdbc.query(
                     """UPDATE cupones_cuponera cu
                        SET estado_revision = 'RECHAZADO', motivo_rechazo = :reason, revisado_en = now()
                        FROM compromisos_cuponera cc
                        WHERE cu.id = :id AND cu.estado_revision = 'PENDIENTE'
                          AND cc.id = cu.compromiso_id AND cc.estado = 'RATIFICADO'
-                       RETURNING cu.compromiso_id""",
-                    params, Long::class.java,
-                ).firstOrNull() ?: throw notFound()
+                       RETURNING cu.compromiso_id AS compromiso_id,
+                                 cc.comercio_id AS comercio_id,
+                                 cu.nombre_producto AS producto""",
+                    params,
+                ) { rs, _ ->
+                    Triple(rs.getLong("compromiso_id"), rs.getLong("comercio_id"), rs.getString("producto").orEmpty())
+                }.firstOrNull() ?: throw notFound()
+
+                val (commitmentId, comercioId, producto) = row
 
                 // El compromiso vuelve a PENDIENTE: el comercio debe ratificarlo de nuevo.
                 val reopened = jdbc.update(
@@ -75,18 +85,29 @@ class AdminService(private val jdbc: NamedParameterJdbcTemplate) {
                     MapSqlParameterSource("cid", commitmentId),
                 )
                 if (reopened != 1) throw notFound()
+
+                ProductRejectedEvent(kind, comercioId, producto, reason)
             }
+
             PublicationKind.SORTEO -> {
-                val updated = jdbc.update(
+                val row = jdbc.query(
                     """UPDATE compromisos_sorteo
                        SET estado_revision = 'RECHAZADO', motivo_rechazo = :reason,
                            revisado_en = now(), estado = 'PENDIENTE'
-                       WHERE id = :id AND estado_revision = 'PENDIENTE' AND estado = 'RATIFICADO'""",
+                       WHERE id = :id AND estado_revision = 'PENDIENTE' AND estado = 'RATIFICADO'
+                       RETURNING comercio_id AS comercio_id,
+                                 COALESCE(premio_nombre, premio_descripcion) AS producto""",
                     params,
-                )
-                if (updated != 1) throw notFound()
+                ) { rs, _ ->
+                    rs.getLong("comercio_id") to rs.getString("producto").orEmpty()
+                }.firstOrNull() ?: throw notFound()
+
+                ProductRejectedEvent(kind, row.first, row.second, reason)
             }
         }
+
+        // Se procesa recién después del commit (ver RejectionEmailListener).
+        events.publishEvent(event)
     }
 
     private fun notFound() =

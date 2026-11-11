@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.barrioahorro.app.ui.theme.CardWhite
 import com.barrioahorro.app.ui.theme.Primary
 
+
 @Composable
 fun ToldoConFranjas(
     modifier: Modifier = Modifier,

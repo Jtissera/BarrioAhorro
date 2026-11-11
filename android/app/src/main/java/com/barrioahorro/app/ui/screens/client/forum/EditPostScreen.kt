@@ -210,35 +210,6 @@ fun EditPostScreen(
                     )
                 }
 
-                EditCard {
-                    FieldLabel(text = "Precio de la oferta")
-                    SingleLineCreamField(
-                        value = state.price,
-                        onValueChange = viewModel::onPriceChanged,
-                        placeholder = "Ej: 1200",
-                        keyboardType = KeyboardType.Number,
-                        leading = {
-                            Text(text = "$", color = WarmGray, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        },
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    FieldLabel(text = "Ubicación o intersección")
-                    SingleLineCreamField(
-                        value = state.locationDescription,
-                        onValueChange = viewModel::onLocationDescriptionChanged,
-                        placeholder = "Ej: Yrigoyen y Pavón",
-                        keyboardType = KeyboardType.Text,
-                        leading = {
-                            Icon(
-                                imageVector = Icons.Default.Place,
-                                contentDescription = null,
-                                tint = WarmGray,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        },
-                    )
-                }
-
                 UpvotesKeptCard(upvotesCount = post.upvotesCount)
 
                 Row(

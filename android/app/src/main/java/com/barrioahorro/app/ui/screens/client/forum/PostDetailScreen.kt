@@ -145,7 +145,7 @@ fun PostDetailScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            ToldoConFranjas()
+            ToldoConFranjas(altColor = Cream)
 
             // Header con flecha atrás y título dinámico
             Row(
@@ -592,20 +592,6 @@ private fun PostDetailHeaderCard(
                         )
                     }
 
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(PillBeige)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                    ) {
-                        Text(
-                            text = "Aporte de vecino",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = PillBeigeText,
-                        )
-                    }
-
                     if (onEdit != null && onDelete != null) {
                         Spacer(modifier = Modifier.width(8.dp))
                         ForumOptionsMenu(
@@ -646,68 +632,6 @@ private fun PostDetailHeaderCard(
                     fontSize = 14.sp,
                     lineHeight = 20.sp,
                 )
-
-                // Badges opcionales
-                val locationLabel = post.locationLabel()
-                if (post.precioObservado != null || locationLabel != null) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        post.precioObservado?.let { precio ->
-                            val formattedPrice = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("es-AR")).apply {
-                                maximumFractionDigits = 0
-                            }.format(precio)
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(LightSalmon)
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.LocalOffer,
-                                    contentDescription = null,
-                                    tint = Primary,
-                                    modifier = Modifier.size(13.dp),
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = formattedPrice,
-                                    color = Primary,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                )
-                            }
-                        }
-
-                        if (locationLabel != null) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(SageGreen)
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Place,
-                                    contentDescription = null,
-                                    tint = SageGreenText,
-                                    modifier = Modifier.size(13.dp),
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = locationLabel,
-                                    color = SageGreenText,
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 12.sp,
-                                )
-                            }
-                        }
-                    }
-                }
 
                 // Footer
                 Row(

@@ -120,12 +120,13 @@ fun MyTicketsScreen(
                     itemsIndexed(shown, key = { _, it -> it.raffleId }) { index, t ->
                         MyTicketCard(
                             t,
-                            stripe = if (index % 2 == 0) Primary else TicketGreen,
+                            stripe = Primary,
                             onOpen = t.winningTicketId?.let { id ->
                                 { onOpenTicket(id) }
                             }
                         )
                     }
+
                     item { InfoNote() }
                 }
             }
@@ -194,10 +195,26 @@ private fun MyTicketCard(
                     Spacer(Modifier.width(8.dp))
                     TicketStatusPill(t.status)
                 }
-
-                Text(t.prizeName, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, color = InkBlack, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                t.description?.let {
-                    Text(it, fontSize = 12.sp, color = WarmGray, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ProductThumb(
+                        photoUrl = t.photoUrl,
+                        name = t.prizeName,
+                        size = 72.dp,
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            t.prizeName,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 18.sp,
+                            color = InkBlack,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        t.description?.let {
+                            Text(it, fontSize = 12.sp, color = WarmGray, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
                 }
 
                 PerforatedLine()
@@ -239,10 +256,10 @@ private fun TicketStatusPill(status: MyTicketStatus) {
     val (label, bg, fg) = when (status) {
         MyTicketStatus.ACTIVE -> Triple("Participando", TicketGreenSoft, TicketGreen)
         MyTicketStatus.WON -> Triple("¡Ganaste!", TicketGreen, Color.White)
-        MyTicketStatus.NOT_WON -> Triple("No salió", TicketGray, WarmGray)
         MyTicketStatus.REFUNDED -> Triple("Reembolsado", TicketGray, WarmGray)
         MyTicketStatus.REDEEMED -> Triple("Canjeado", TicketGreenSoft, TicketGreen)
         MyTicketStatus.EXPIRED -> Triple("Vencido", TicketGray, WarmGray)
+        MyTicketStatus.NOT_WON -> Triple("No salió sorteado", TicketGray, WarmGray)
     }
     Surface(shape = RoundedCornerShape(50), color = bg) {
         Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = fg, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))

@@ -54,8 +54,9 @@ object CuponeraRoutes {
 
 object GateRoutes {
     const val GATE = "gate"
+    const val REJECTION_PATTERN = "gate/rejection/{kind}"
+    const val REJECTION_DEEP_LINK = "barrioahorro://rechazo/{kind}"
 }
-
 object ClientRoutes {
     const val ENTRY = "client/entry"
     const val LOCATION = "client/location"

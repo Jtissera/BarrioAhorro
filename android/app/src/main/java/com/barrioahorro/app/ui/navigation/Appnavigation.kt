@@ -58,6 +58,7 @@ import com.barrioahorro.app.ui.screens.client.coupons.MyRedemptionsScreen
 import com.barrioahorro.app.ui.screens.client.coupons.RedemptionDetailScreen
 import com.barrioahorro.app.ui.screens.client.coupons.MyTicketsScreen
 import com.barrioahorro.app.ui.screens.client.coupons.WinningTicketScreen
+import androidx.navigation.navDeepLink
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
@@ -108,6 +109,32 @@ fun NavGraphBuilder.authGraph(navController: NavHostController) {
                 }
                 navController.navigate(target) {
                     popUpTo(GateRoutes.GATE) { inclusive = true }
+                }
+            },
+        )
+    }
+
+    composable(
+        route = GateRoutes.REJECTION_PATTERN,
+        arguments = listOf(navArgument("kind") { type = NavType.StringType }),
+        deepLinks = listOf(navDeepLink { uriPattern = GateRoutes.REJECTION_DEEP_LINK }),
+    ) { entry ->
+        val kind = entry.arguments?.getString("kind")
+
+        // Mismo control de acceso que el gate normal: sesión, onboarding y estado real.
+        GateScreen(
+            onResolved = { destination ->
+                val target = when (destination) {
+                    GateDestination.ONBOARDING -> OnboardingRoutes.BUSINESS_NAME
+                    GateDestination.RESTRICTED ->
+                        if (kind == "sorteo") CuponeraRoutes.RAFFLE else CuponeraRoutes.CONTRIBUTION
+                    GateDestination.CUPONERA -> CuponeraRoutes.CONTRIBUTION
+                    GateDestination.HOME -> BusinessRoutes.DASHBOARD
+                    GateDestination.SESSION_EXPIRED -> AuthRoutes.ROLE_SELECTION
+                }
+                navController.navigate(target) {
+                    popUpTo(navController.graph.id) { inclusive = true }
+                    launchSingleTop = true
                 }
             },
         )

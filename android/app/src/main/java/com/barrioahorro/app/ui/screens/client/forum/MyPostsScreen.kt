@@ -415,7 +415,12 @@ private fun MyPostCard(
     onDelete: () -> Unit
 ) {
     MyActivityCard(onClick = onClick, onDelete = onDelete) {
-        MyActivityHeader(comercioNombre = post.comercioNombre, createdAt = post.createdAt, onEdit = onEdit, onDelete = onDelete)
+        MyActivityHeader(
+            comercioNombre = post.comercioNombre,
+            createdAt = post.createdAt,
+            onEdit = onEdit,
+            onDelete = onDelete,
+        )
 
         Text(
             text = post.texto,
@@ -424,37 +429,9 @@ private fun MyPostCard(
             lineHeight = 22.sp,
         )
 
-        val locationLabel = post.locationLabel()
-        if (post.precioObservado != null || locationLabel != null) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                post.precioObservado?.let { precio ->
-                    val formattedPrice = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("es-AR")).apply {
-                        maximumFractionDigits = 0
-                    }.format(precio)
-                    MyTagChip(
-                        icon = Icons.Filled.LocalOffer,
-                        text = formattedPrice,
-                        background = PrimaryContainer,
-                        tint = Primary,
-                        textColor = Primary,
-                    )
-                }
-                if (locationLabel != null) {
-                    MyTagChip(
-                        icon = Icons.Filled.Place,
-                        text = locationLabel,
-                        background = Cream,
-                        tint = WarmGray,
-                        textColor = WarmGray,
-                    )
-                }
-            }
-        }
-
         MyActivityFooter(upvotesCount = post.upvotesCount, commentsCount = post.comentariosCount)
     }
 }
-
 @Composable
 private fun MyCommentCard(
     comment: MyForumCommentDto,
@@ -481,39 +458,6 @@ private fun MyCommentCard(
         )
 
         MyActivityFooter(upvotesCount = comment.upvotesCount, commentsCount = null)
-    }
-}
-
-@Composable
-private fun MyTagChip(
-    icon: ImageVector,
-    text: String,
-    background: Color,
-    tint: Color,
-    textColor: Color,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(background)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = tint,
-            modifier = Modifier.size(13.dp),
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = text,
-            color = textColor,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 12.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
 

@@ -19,8 +19,6 @@ data class EditPostUiState(
     val isLoading: Boolean = true,
     val loadError: String? = null,
     val text: String = "",
-    val price: String = "",
-    val locationDescription: String = "",
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
     val isSaved: Boolean = false,
@@ -54,8 +52,6 @@ class EditPostViewModel @Inject constructor(
                             post = post,
                             isLoading = false,
                             text = post.texto,
-                            price = formatForumPriceInput(post.precioObservado),
-                            locationDescription = post.direccion.orEmpty(),
                         )
                     }
                 }
@@ -73,37 +69,17 @@ class EditPostViewModel @Inject constructor(
         }
     }
 
-    fun onPriceChanged(newPrice: String) {
-        _uiState.update { it.copy(price = sanitizePriceInput(newPrice), errorMessage = null) }
-    }
-
-    fun onLocationDescriptionChanged(newLocation: String) {
-        _uiState.update { it.copy(locationDescription = newLocation, errorMessage = null) }
-    }
-
     fun save() {
         val state = _uiState.value
         val post = state.post ?: return
         val text = state.text.trim()
         if (text.isEmpty() || state.isSaving) return
 
-        val price = parseForumPrice(state.price)
-        if (state.price.isNotBlank() && price == null) {
-            _uiState.update { it.copy(errorMessage = "Ingresá un precio mayor a cero o dejalo vacío.") }
-            return
-        }
-
-        // Se manda el formulario completo. Si la ubicación no cambió se reenvía el punto
-        // original (también sirve para publicaciones viejas sin dirección escrita);
-        // si cambió, el backend la geocodifica; si se borró, se limpia.
-        val direccion = state.locationDescription.trim()
-        val unchangedLocation = direccion == post.direccion.orEmpty().trim()
+        // Se reenvía el punto original; precio y dirección quedan en null (se borran).
         val dto = UpdateForumPostDto(
             texto = text,
-            precioObservado = price,
-            direccion = direccion.ifEmpty { null },
-            latitud = if (unchangedLocation) post.latitud else null,
-            longitud = if (unchangedLocation) post.longitud else null,
+            latitud = post.latitud,
+            longitud = post.longitud,
         )
 
         viewModelScope.launch {

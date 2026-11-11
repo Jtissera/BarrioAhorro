@@ -27,8 +27,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.LocalOffer
-import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
@@ -73,8 +71,6 @@ import com.barrioahorro.app.ui.theme.Cream
 import com.barrioahorro.app.ui.theme.Ink
 import com.barrioahorro.app.ui.theme.Primary
 import com.barrioahorro.app.ui.theme.WarmGray
-import java.text.NumberFormat
-import java.util.Locale
 
 private val YellowAccent = Color(0xFFF2B134)
 private val LightSalmon = Color(0xFFFFEDE6)
@@ -139,7 +135,7 @@ fun ForumFeedScreen(
                     .fillMaxSize()
                     .padding(padding),
             ) {
-                ToldoConFranjas()
+                ToldoConFranjas(altColor = Cream)
 
                 // Header del foro
                 Row(
@@ -425,7 +421,6 @@ private fun ForumPostCard(
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min),
         ) {
-            // Barra de acento amarillo/ámbar en el lateral izquierdo
             Box(
                 modifier = Modifier
                     .width(5.dp)
@@ -436,14 +431,13 @@ private fun ForumPostCard(
                     ),
             )
 
-            // Contenido de la tarjeta
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                // Header: Avatar con iniciales + Nombre + Tiempo + Badge "Aporte de vecino"
+                // Header: avatar + nombre + tiempo
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth(),
@@ -477,23 +471,9 @@ private fun ForumPostCard(
                             fontSize = 12.sp,
                         )
                     }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(PillBeige)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                    ) {
-                        Text(
-                            text = "Aporte de vecino",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = PillBeigeText,
-                        )
-                    }
                 }
 
-                // Píldora del Comercio
+                // Píldora del comercio
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -516,7 +496,6 @@ private fun ForumPostCard(
                     )
                 }
 
-                // Cuerpo del texto
                 Text(
                     text = post.texto,
                     color = Ink,
@@ -524,69 +503,7 @@ private fun ForumPostCard(
                     lineHeight = 20.sp,
                 )
 
-                // Badges opcionales: Precio observado y Ubicación
-                val locationLabel = post.locationLabel()
-                if (post.precioObservado != null || locationLabel != null) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        post.precioObservado?.let { precio ->
-                            val formattedPrice = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("es-AR")).apply {
-                                maximumFractionDigits = 0
-                            }.format(precio)
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(LightSalmon)
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.LocalOffer,
-                                    contentDescription = null,
-                                    tint = Primary,
-                                    modifier = Modifier.size(13.dp),
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = formattedPrice,
-                                    color = Primary,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                )
-                            }
-                        }
-
-                        if (locationLabel != null) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(SageGreen)
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Place,
-                                    contentDescription = null,
-                                    tint = SageGreenText,
-                                    modifier = Modifier.size(13.dp),
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = locationLabel,
-                                    color = SageGreenText,
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 12.sp,
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Footer: Upvotes y Comentarios
+                // Footer: upvotes y comentarios
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -607,12 +524,7 @@ private fun ForumPostCard(
                             .clickable(enabled = !own && !upvoted, onClick = onUpvote)
                             .padding(horizontal = 10.dp, vertical = 4.dp),
                     ) {
-                        Text(
-                            text = "↑",
-                            fontWeight = FontWeight.Bold,
-                            color = upvoteColor,
-                            fontSize = 13.sp,
-                        )
+                        Text(text = "↑", fontWeight = FontWeight.Bold, color = upvoteColor, fontSize = 13.sp)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "${post.upvotesCount}",
@@ -648,7 +560,6 @@ private fun ForumPostCard(
         }
     }
 }
-
 @Composable
 private fun EmptyFeedView(onCreatePost: () -> Unit) {
     Column(

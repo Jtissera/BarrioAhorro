@@ -23,8 +23,6 @@ data class CreatePostUiState(
     val isLoadingBusinesses: Boolean = false,
     val selectedBusiness: ExploreBusinessDto? = null,
     val text: String = "",
-    val price: String = "",
-    val locationDescription: String = "",
     val isSubmitting: Boolean = false,
     val errorMessage: String? = null,
     val isSuccess: Boolean = false,
@@ -120,14 +118,6 @@ class CreatePostViewModel @Inject constructor(
         }
     }
 
-    fun onPriceChanged(newPrice: String) {
-        _uiState.update { it.copy(price = newPrice) }
-    }
-
-    fun onLocationDescriptionChanged(newLocation: String) {
-        _uiState.update { it.copy(locationDescription = newLocation) }
-    }
-
     fun submitPost() {
         val state = _uiState.value
         val business = state.selectedBusiness ?: return
@@ -137,16 +127,12 @@ class CreatePostViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, errorMessage = null) }
 
-            // Extraer valor numérico del precio si fue ingresado
-            val numericPrice = parseForumPrice(state.price)
-
             val clientLoc = locationDataStore.location.firstOrNull()
 
+            // Se conserva el punto para que funcione el filtro "Cerca tuyo".
             val dto = CreateForumPostDto(
                 comercioId = business.id,
                 texto = text,
-                precioObservado = numericPrice,
-                direccion = state.locationDescription.trim().takeIf { it.isNotEmpty() },
                 latitud = clientLoc?.latitude ?: business.latitude,
                 longitud = clientLoc?.longitude ?: business.longitude,
             )

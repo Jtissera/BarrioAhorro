@@ -24,6 +24,7 @@ enum class MyTicketsTab { ACTIVOS, RESULTADOS }
 
 data class MyTicketUi(
     val raffleId: Long,
+    val photoUrl: String?,
     val status: MyTicketStatus,
     val prizeName: String,
     val description: String?,
@@ -96,6 +97,7 @@ class MyTicketsViewModel @Inject constructor(
         tickets = dto.myTickets,
         numbersLabel = numbersLabel(dto.ticketNumbers),
         winningTicketId = dto.winningTicketId,
+        photoUrl = dto.prizePhotoUrl?.takeIf { it.isNotBlank() },
     )
 
     private fun numbersLabel(numbers: List<Long>): String {
