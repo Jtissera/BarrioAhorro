@@ -67,6 +67,9 @@ fun BusinessNameScreen(
     val textPrimary = Ink
     val textSecondary = WarmGray
     val isNameValid = name.trim().length >= MIN_NAME_LENGTH
+    // La descripción es obligatoria: la base la exige para completar el onboarding.
+    val isDescriptionValid = description.isNotBlank()
+    val canContinue = isNameValid && isDescriptionValid
 
     Scaffold(
         containerColor = Cream,
@@ -190,10 +193,21 @@ fun BusinessNameScreen(
                 }
             }
 
+            if (isNameValid && !isDescriptionValid) {
+                Text(
+                    text = "Escribí una descripción de tu comercio para continuar.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = textSecondary,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+
             OnboardingPrimaryButton(
                 text = "Siguiente",
-                onClick = { onContinue(name.trim(), description.trim()) },
-                enabled = isNameValid,
+                onClick = {
+                    if (canContinue) onContinue(name.trim(), description.trim())
+                },
+                enabled = canContinue,
                 modifier = Modifier.padding(top = 8.dp),
             )
         }

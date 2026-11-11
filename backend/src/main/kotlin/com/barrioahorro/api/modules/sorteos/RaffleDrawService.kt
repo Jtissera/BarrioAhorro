@@ -1,5 +1,6 @@
 package com.barrioahorro.api.modules.sorteos
 
+import com.barrioahorro.api.common.PointsPolicy
 import com.barrioahorro.api.modules.explore.ExploreService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -8,13 +9,13 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.support.TransactionTemplate
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.security.SecureRandom
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.math.BigDecimal
-import java.math.RoundingMode
 
 @Service
 class RaffleDrawService(
@@ -22,11 +23,10 @@ class RaffleDrawService(
     private val tx: TransactionTemplate,
     @Value("\${sorteos.max-por-mes:3}") private val maxPerMonth: Int,
     @Value("\${sorteos.dias-minimos-venta:7}") private val minSaleDays: Long,
-    @Value("\${sorteos.pesos-por-punto:1000}") private val pesosPerPoint: Long,
     @Value("\${sorteos.costo-ticket-minimo:10}") private val minTicketCost: Int,
     @Value("\${sorteos.costo-ticket-maximo:200}") private val maxTicketCost: Int,
     @Value("\${sorteos.dias-canje:30}") private val claimDays: Int,
-    ) {
+) {
     private val log = LoggerFactory.getLogger(RaffleDrawService::class.java)
     private val random = SecureRandom()
 
@@ -54,15 +54,16 @@ class RaffleDrawService(
 
     private data class Candidate(val id: Long, val end: LocalDate, val prizeValue: BigDecimal?)
 
-    /** Puntos por ticket según el valor del premio. */
+    /** Puntos por ticket según el valor del premio (misma regla de puntos que la cuponera). */
     internal fun ticketCostFor(prizeValue: BigDecimal?): Int {
         if (prizeValue == null || prizeValue.signum() <= 0) return FALLBACK_TICKET_COST
         val points = prizeValue
-            .divide(BigDecimal(pesosPerPoint), 0, RoundingMode.CEILING)
+            .divide(BigDecimal(PointsPolicy.PESOS_PER_POINT), 0, RoundingMode.CEILING)
             .min(BigDecimal(maxTicketCost))
             .toInt()
         return points.coerceIn(minTicketCost, maxTicketCost)
     }
+
     // ---- Programación ---------------------------------------------------------------
 
     /**

@@ -46,7 +46,7 @@ data class CuponeraUiState(
 ) {
     val minProductos: Int get() = commitment?.minProductos ?: 2
     val maxProductos: Int get() = commitment?.maxProductos ?: 4
-    val pesosPorPunto: Int get() = commitment?.pesosPorPunto ?: 500
+    val pesosPorPunto: Int get() = commitment?.pesosPorPunto ?: 1000
     val suggestions: List<String> get() = commitment?.sugerencias ?: emptyList()
 
     /** Ya ratificado, vencido o fuera de plazo: solo se muestra, no se edita. */

@@ -1,5 +1,6 @@
 package com.barrioahorro.api.modules.cuponera
 
+import com.barrioahorro.api.common.PointsPolicy
 import com.barrioahorro.api.modules.business.PhotoStorage
 import com.barrioahorro.api.modules.cuponera.dto.CuponeraCommitmentResponse
 import com.barrioahorro.api.modules.cuponera.dto.CuponeraCycleResponse
@@ -11,8 +12,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.server.ResponseStatusException
-import java.math.BigDecimal
-import java.math.RoundingMode
 import java.time.OffsetDateTime
 
 @Service
@@ -26,13 +25,6 @@ class CuponeraService(
     companion object {
         const val MIN_PRODUCTS = 2
         const val MAX_PRODUCTS = 4
-        const val PESOS_PER_POINT = 500
-
-        /** 1 punto cada 500 pesos, redondeando hacia arriba y con mínimo 1 (costo_puntos > 0). */
-        fun pointsFor(valor: BigDecimal): Int =
-            valor.divide(BigDecimal(PESOS_PER_POINT), 0, RoundingMode.CEILING)
-                .toInt()
-                .coerceAtLeast(1)
 
         private val DEFAULT_SUGGESTIONS = listOf("Combo de productos", "Producto de estación")
 
@@ -116,7 +108,7 @@ class CuponeraService(
                     descripcion = p.descripcion?.trim(),
                     fotoUrl = p.fotoUrl?.trim()?.takeIf { it.isNotEmpty() },
                     valorComercio = p.valorComercio,
-                    costoPuntos = pointsFor(p.valorComercio),
+                    costoPuntos = PointsPolicy.pointsFor(p.valorComercio),
                     stockComprometido = p.unidadesDisponibles.toShort(),
                 )
             },
@@ -177,7 +169,7 @@ class CuponeraService(
             puedeRatificar = c.estado == "PENDIENTE" && OffsetDateTime.now().isBefore(c.fechaLimiteRatificacion),
             minProductos = MIN_PRODUCTS,
             maxProductos = MAX_PRODUCTS,
-            pesosPorPunto = PESOS_PER_POINT,
+            pesosPorPunto = PointsPolicy.PESOS_PER_POINT,
             productos = products,
             sugerencias = SUGGESTIONS_BY_CATEGORY[rubro] ?: DEFAULT_SUGGESTIONS,
         )

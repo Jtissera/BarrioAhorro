@@ -157,7 +157,9 @@ fun EditBusinessInfoScreen(
                         text = "Guardar cambios",
                         onClick = onSave,
                         icon = Icons.Outlined.CheckCircle,
-                        enabled = !state.isSaving && validateSchedule(state.schedule) == null,
+                        enabled = !state.isSaving &&
+                                validateSchedule(state.schedule) == null &&
+                                state.descripcion.isNotBlank(),
                         isLoading = state.isSaving,
                     )
                 }
@@ -299,6 +301,10 @@ private fun EditProfileForm(
                 textStyle = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.fillMaxWidth(),
             )
+
+            if (state.descripcion.isBlank()) {
+                ErrorHint(text = "La descripción es obligatoria")
+            }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
