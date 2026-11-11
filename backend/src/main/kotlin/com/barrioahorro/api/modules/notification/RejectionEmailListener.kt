@@ -51,7 +51,7 @@ class RejectionEmailListener(
                   <h2 style="color:#d32f12">Rechazaron tu producto</h2>
                   <p>$greeting</p>
                   <p>Un administrador rechazó el producto <b>$product</b>,
-                     que presentaste para la <b>$section</b>.</p>
+                     que presentaste para la sección <b>$section</b>.</p>
                   <p><b>Motivo:</b> $reason</p>
                   <p>Mientras no lo resuelvas, tu comercio no puede avanzar con la publicación.
                      Ingresá a la app para ratificar nuevamente:</p>
