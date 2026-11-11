@@ -1496,7 +1496,7 @@ private fun UpvoteButton(
         modifier = Modifier
             .clip(shape)
             .then(if (chip) Modifier.background(if (upvoted) LightSalmon else Color(0xFFF7F3EE)) else Modifier)
-            .clickable(enabled = !own, onClick = onClick)
+            .clickable(enabled = !own && !upvoted, onClick = onClick)
             .padding(horizontal = if (chip) 10.dp else 4.dp, vertical = 4.dp),
     ) {
         Text(text = "↑", fontWeight = FontWeight.Bold, color = color, fontSize = 13.sp)

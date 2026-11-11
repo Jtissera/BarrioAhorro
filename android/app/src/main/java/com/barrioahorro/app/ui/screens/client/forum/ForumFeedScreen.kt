@@ -604,7 +604,7 @@ private fun ForumPostCard(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (upvoted) LightSalmon else Color(0xFFF7F3EE))
-                            .clickable(enabled = !own, onClick = onUpvote)
+                            .clickable(enabled = !own && !upvoted, onClick = onUpvote)
                             .padding(horizontal = 10.dp, vertical = 4.dp),
                     ) {
                         Text(

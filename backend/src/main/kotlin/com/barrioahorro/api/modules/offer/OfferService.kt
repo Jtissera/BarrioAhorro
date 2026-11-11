@@ -293,6 +293,23 @@ class OfferService(
         return mapOfferToResponse(offerRepository.save(offer))
     }
 
+    @Transactional
+    fun finishOffer(userId: Long, offerId: Long) {
+        if (!businessRepository.existsById(userId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Solo los comercios pueden finalizar ofertas")
+        }
+        val offer = offerRepository.findById(offerId).orElseThrow {
+            ResponseStatusException(HttpStatus.NOT_FOUND, "Oferta no encontrada")
+        }
+        if (offer.comercioId != userId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para finalizar esta oferta")
+        }
+        if (offer.activa) {
+            offer.activa = false
+            offerRepository.save(offer)
+        }
+    }
+
 
     // ------------------------------------------------------------------
     // Validacion de vigencia para las ofertas

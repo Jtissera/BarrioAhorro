@@ -85,6 +85,16 @@ class OfferRepositoryImpl @Inject constructor(
             Result.Failure(OfferError.Unknown(e.message))
         }
 
+    override suspend fun finishOffer(id: Long): Result<Unit, OfferError> =
+        try {
+            val response = offerApiService.finishOffer(id)
+            if (response.isSuccessful) Result.Success(Unit) else Result.Failure(response.toError("No pudimos finalizar la oferta"))
+        } catch (e: IOException) {
+            Result.Failure(OfferError.NoConnection)
+        } catch (e: Exception) {
+            Result.Failure(OfferError.Unknown(e.message))
+        }
+
     override suspend fun uploadPhoto(bytes: ByteArray): Result<String, OfferError> {
         return try {
             val body = bytes.toRequestBody("image/jpeg".toMediaType())

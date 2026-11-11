@@ -8,6 +8,7 @@ import com.barrioahorro.app.data.remote.dto.OfferCreatedDto
 import com.barrioahorro.app.data.remote.dto.OfferPhotoDto
 import com.barrioahorro.app.data.remote.dto.OfferResponseDto
 import com.barrioahorro.app.data.remote.dto.OfferValidationSummaryDto
+import retrofit2.http.PATCH
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Body
@@ -62,6 +63,9 @@ interface OfferApiService {
     suspend fun validateOffer(
         @Path("id") id: Long
     ): Response<OfferValidationSummaryDto>
+
+    @PATCH("api/business/me/offers/{id}/finish")
+    suspend fun finishOffer(@Path("id") id: Long): Response<Unit>
 
     @GET("api/business/{id}/validations")
     suspend fun getOfferValidations(

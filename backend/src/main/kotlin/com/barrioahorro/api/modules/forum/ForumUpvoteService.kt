@@ -39,10 +39,7 @@ class ForumUpvoteService(
     @Transactional
     fun removePostUpvote(userId: Long, postId: Long): UpvoteResponse {
         findActivePost(postId)
-        jdbc.update(
-            "DELETE FROM foro_publicacion_upvotes WHERE publicacion_id = :item AND usuario_id = :user",
-            params(postId, userId),
-        )
+
         return state("foro_publicacion_upvotes", "publicacion_id", postId, userId)
     }
 
@@ -69,10 +66,7 @@ class ForumUpvoteService(
     @Transactional
     fun removeCommentUpvote(userId: Long, commentId: Long): UpvoteResponse {
         findActiveComment(commentId)
-        jdbc.update(
-            "DELETE FROM foro_comentario_upvotes WHERE comentario_id = :item AND usuario_id = :user",
-            params(commentId, userId),
-        )
+
         return state("foro_comentario_upvotes", "comentario_id", commentId, userId)
     }
 

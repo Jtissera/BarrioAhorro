@@ -220,19 +220,15 @@ class PostDetailViewModel @Inject constructor(
     fun togglePostUpvote() {
         val post = _uiState.value.post ?: return
         val key = "post-${post.id}"
-        if (post.esUsuarioActual || key in pendingUpvotes) return
+        if (post.esUsuarioActual || post.upvotedByMe || key in pendingUpvotes) return
         pendingUpvotes += key
 
-        val wasUpvoted = post.upvotedByMe
         _uiState.update {
-            it.copy(post = post.copy(
-                upvotedByMe = !wasUpvoted,
-                upvotesCount = post.upvotesCount + if (wasUpvoted) -1 else 1,
-            ))
+            it.copy(post = post.copy(upvotedByMe = true, upvotesCount = post.upvotesCount + 1))
         }
 
         viewModelScope.launch {
-            forumRepository.togglePostUpvote(post.id, wasUpvoted)
+            forumRepository.togglePostUpvote(post.id, false)
                 .onSuccess { r ->
                     _uiState.update {
                         it.copy(post = it.post?.copy(upvotesCount = r.upvotesCount, upvotedByMe = r.upvotedByMe))
@@ -241,7 +237,7 @@ class PostDetailViewModel @Inject constructor(
                 .onFailure { e ->
                     _uiState.update {
                         it.copy(
-                            post = it.post?.copy(upvotesCount = post.upvotesCount, upvotedByMe = wasUpvoted),
+                            post = it.post?.copy(upvotesCount = post.upvotesCount, upvotedByMe = false),
                             errorMessage = e.message ?: "No pudimos registrar tu voto",
                         )
                     }
@@ -253,30 +249,25 @@ class PostDetailViewModel @Inject constructor(
     fun toggleCommentUpvote(commentId: Long) {
         val comment = _uiState.value.comments.find { it.id == commentId } ?: return
         val key = "comment-$commentId"
-        if (comment.esUsuarioActual || key in pendingUpvotes) return
+        if (comment.esUsuarioActual || comment.upvotedByMe || key in pendingUpvotes) return
         pendingUpvotes += key
 
-        val wasUpvoted = comment.upvotedByMe
         updateComment(commentId) {
-            it.copy(
-                upvotedByMe = !wasUpvoted,
-                upvotesCount = it.upvotesCount + if (wasUpvoted) -1 else 1,
-            )
+            it.copy(upvotedByMe = true, upvotesCount = it.upvotesCount + 1)
         }
 
         viewModelScope.launch {
-            forumRepository.toggleCommentUpvote(commentId, wasUpvoted)
+            forumRepository.toggleCommentUpvote(commentId, false)
                 .onSuccess { r ->
                     updateComment(commentId) { it.copy(upvotesCount = r.upvotesCount, upvotedByMe = r.upvotedByMe) }
                 }
                 .onFailure { e ->
-                    updateComment(commentId) { it.copy(upvotesCount = comment.upvotesCount, upvotedByMe = wasUpvoted) }
+                    updateComment(commentId) { it.copy(upvotesCount = comment.upvotesCount, upvotedByMe = false) }
                     _uiState.update { it.copy(errorMessage = e.message ?: "No pudimos registrar tu voto") }
                 }
             pendingUpvotes -= key
         }
     }
-
     private fun updateComment(id: Long, transform: (ForumCommentDto) -> ForumCommentDto) {
         _uiState.update { state ->
             state.copy(comments = state.comments.map { if (it.id == id) transform(it) else it })

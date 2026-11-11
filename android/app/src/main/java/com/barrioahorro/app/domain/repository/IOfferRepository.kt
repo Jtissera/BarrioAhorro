@@ -14,4 +14,7 @@ interface IOfferRepository {
     suspend fun deleteOffer(id: Long): Result<Unit, OfferError>
     suspend fun validateOffer(id: Long): Result<OfferValidationSummaryDto, OfferError>
     suspend fun getOfferValidations(id: Long): Result<OfferValidationSummaryDto, OfferError>
+
+    suspend fun finishOffer(id: Long): Result<Unit, OfferError>
+
 }

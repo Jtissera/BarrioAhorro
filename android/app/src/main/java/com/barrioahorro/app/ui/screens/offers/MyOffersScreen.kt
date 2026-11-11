@@ -48,6 +48,16 @@ import com.barrioahorro.app.ui.theme.Secondary
 import com.barrioahorro.app.ui.theme.SecondaryContainer
 import com.barrioahorro.app.ui.theme.SurfaceFieldAlt
 import com.barrioahorro.app.ui.theme.WarmGray
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.outlined.Flag
 
 private data class MyOffersColors(
     val primary: Color,
@@ -84,6 +94,32 @@ fun MyOffersScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val c = myOffersColors()
+
+    val context = LocalContext.current
+    var offerToFinish by remember { mutableStateOf<MyOfferItemUi?>(null) }
+
+    LaunchedEffect(state.errorMessage) {
+        state.errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearError()
+        }
+    }
+
+    offerToFinish?.let { offer ->
+        ConfirmActionDialog(
+            title = "¿Finalizar esta oferta?",
+            message = "Va a dejar de verse para tus vecinos y queda en el historial de Finalizadas.",
+            confirmText = "Finalizar",
+            cancelText = "Cancelar",
+            icon = Icons.Outlined.Flag,
+            c = c,
+            onConfirm = {
+                viewModel.finishOffer(offer.id)
+                offerToFinish = null
+            },
+            onDismiss = { offerToFinish = null },
+        )
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -282,6 +318,7 @@ fun MyOffersScreen(
                         OfferItemCard(
                             offer = offer,
                             onEdit = { onEditOffer(offer.id) },
+                            onFinish = { offerToFinish = offer },
                         )
                     }
                 }
@@ -336,11 +373,11 @@ private fun TabPill(
         }
     }
 }
-
 @Composable
 private fun OfferItemCard(
     offer: MyOfferItemUi,
     onEdit: () -> Unit,
+    onFinish: () -> Unit,
 ) {
     val c = myOffersColors()
 
@@ -525,25 +562,54 @@ private fun OfferItemCard(
                     }
 
                     Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onEdit() }
-                            .padding(horizontal = 6.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(
-                            Icons.Outlined.Edit,
-                            contentDescription = "Editar",
-                            tint = c.primary,
-                            modifier = Modifier.size(15.dp),
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            text = "Editar",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = c.primary,
-                        )
+                        if (offer.isVigente && offer.isActiva) {
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { onFinish() }
+                                    .padding(horizontal = 6.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Block,
+                                    contentDescription = "Finalizar",
+                                    tint = c.textSecondary,
+                                    modifier = Modifier.size(15.dp),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = "Finalizar",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = c.textSecondary,
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onEdit() }
+                                .padding(horizontal = 6.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = "Editar",
+                                tint = c.primary,
+                                modifier = Modifier.size(15.dp),
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = "Editar",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = c.primary,
+                            )
+                        }
                     }
                 }
             }
@@ -551,6 +617,89 @@ private fun OfferItemCard(
     }
 }
 
+@Composable
+private fun ConfirmActionDialog(
+    title: String,
+    message: String,
+    confirmText: String,
+    cancelText: String,
+    icon: ImageVector,
+    c: MyOffersColors,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(28.dp))
+                .background(Color.White)
+                .padding(horizontal = 24.dp, vertical = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(c.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(icon, contentDescription = null, tint = c.primary, modifier = Modifier.size(28.dp))
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            Text(
+                text = title,
+                color = c.textPrimary,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                textAlign = TextAlign.Center,
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = message,
+                color = c.textSecondary,
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                textAlign = TextAlign.Center,
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = c.primary,
+                    contentColor = c.onPrimary,
+                ),
+            ) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(confirmText, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = c.field,
+                    contentColor = c.textPrimary,
+                ),
+                elevation = null,
+            ) {
+                Text(cancelText, fontWeight = FontWeight.SemiBold)
+            }
+        }
+    }
+}
 
 private fun String.toAbsoluteUrl(): String =
     if (startsWith("http://") || startsWith("https://")) this else "${BASE_URL.trimEnd('/')}/${trimStart('/')}"

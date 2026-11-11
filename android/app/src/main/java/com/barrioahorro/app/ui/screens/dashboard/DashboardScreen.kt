@@ -229,6 +229,20 @@ private fun DashboardBody(
             totalViews = data.totalViews,
             viewsByDay = data.viewsByDay
         )
+        DashboardSection(
+            title = "Reseñas recientes",
+            actionLabel = "Ver todas",
+            onAction = onSeeAllReviews
+        ) {
+            if (data.recentReviews.isEmpty()) {
+                EmptyHint("Todavía no recibiste reseñas")
+            }
+
+            data.recentReviews.forEachIndexed { index, review ->
+                if (index > 0) RowDivider()
+                ReviewRow(review)
+            }
+        }
 
         DashboardSection(title = "Ofertas más vistas") {
             if (data.topOffers.isEmpty()) {
@@ -242,21 +256,6 @@ private fun DashboardBody(
                     rank = index + 1,
                     offer = offer
                 )
-            }
-        }
-
-        DashboardSection(
-            title = "Reseñas recientes",
-            actionLabel = "Ver todas",
-            onAction = onSeeAllReviews
-        ) {
-            if (data.recentReviews.isEmpty()) {
-                EmptyHint("Todavía no recibiste reseñas")
-            }
-
-            data.recentReviews.forEachIndexed { index, review ->
-                if (index > 0) RowDivider()
-                ReviewRow(review)
             }
         }
 
@@ -282,7 +281,7 @@ private fun ViewsCard(
     totalViews: Int,
     viewsByDay: List<DayViews>
 ) {
-    DashboardSection(title = "Visualizaciones") {
+    DashboardSection(title = "Vistas al perfil") {
         Text(
             text = formatCount(totalViews),
             fontSize = 34.sp,
@@ -521,7 +520,12 @@ private fun RatingStars(rating: Int) {
 
 @Composable
 private fun ActiveOfferRow(offer: ActiveOffer) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
         offer.badge?.let { badge ->
             androidx.compose.material3.Surface(
                 shape = RoundedCornerShape(8.dp),
@@ -538,27 +542,29 @@ private fun ActiveOfferRow(offer: ActiveOffer) {
             Spacer(Modifier.width(12.dp))
         }
 
-        Text(
-            text = offer.title,
+        Column(
             modifier = Modifier.weight(1f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = Ink,
-        )
-
-        Spacer(Modifier.width(8.dp))
-
-        androidx.compose.material3.Surface(
-            shape = RoundedCornerShape(50),
-            color = BadgeGreen,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
-                text = "Vigente",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = BadgeGreenText,
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                text = offer.title,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                color = Ink,
             )
+
+            androidx.compose.material3.Surface(
+                shape = RoundedCornerShape(50),
+                color = BadgeGreen,
+            ) {
+                Text(
+                    text = "Vigente",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BadgeGreenText,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                )
+            }
         }
     }
 }

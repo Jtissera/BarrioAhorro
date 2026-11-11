@@ -107,6 +107,17 @@ class OfferController(
         return ResponseEntity.noContent().build()
     }
 
+    // ----- Finalizar (queda en el historial) -----
+
+    @PatchMapping("/me/offers/{id}/finish")
+    fun finishOffer(
+        authentication: Authentication,
+        @PathVariable id: Long,
+    ): ResponseEntity<Void> {
+        offerService.finishOffer(userId(authentication), id)
+        return ResponseEntity.noContent().build()
+    }
+
     // ----- Consultas -----
 
     @GetMapping("/me/offers/active")

@@ -124,23 +124,24 @@ class ForumViewModel @Inject constructor(
         fetchFeed(showSpinner = true)
     }
 
+    fun onUpvoteErrorShown() {
+        _uiState.update { it.copy(upvoteError = null) }
+    }
+
     // ---------- Upvotes ----------
 
     fun toggleUpvote(postId: Long) {
         val post = _uiState.value.posts.find { it.id == postId } ?: return
-        if (post.esUsuarioActual || postId in pendingUpvotes) return
+
+        if (post.esUsuarioActual || post.upvotedByMe || postId in pendingUpvotes) return
         pendingUpvotes += postId
 
-        val wasUpvoted = post.upvotedByMe
         updatePost(postId) {
-            it.copy(
-                upvotedByMe = !wasUpvoted,
-                upvotesCount = it.upvotesCount + if (wasUpvoted) -1 else 1,
-            )
+            it.copy(upvotedByMe = true, upvotesCount = it.upvotesCount + 1)
         }
 
         viewModelScope.launch {
-            forumRepository.togglePostUpvote(postId, wasUpvoted)
+            forumRepository.togglePostUpvote(postId, false)
                 .onSuccess { result ->
                     updatePost(postId) {
                         it.copy(upvotesCount = result.upvotesCount, upvotedByMe = result.upvotedByMe)
@@ -148,18 +149,13 @@ class ForumViewModel @Inject constructor(
                 }
                 .onFailure { error ->
                     updatePost(postId) {
-                        it.copy(upvotesCount = post.upvotesCount, upvotedByMe = wasUpvoted)
+                        it.copy(upvotesCount = post.upvotesCount, upvotedByMe = false)
                     }
                     _uiState.update { it.copy(upvoteError = error.message ?: "No pudimos registrar tu voto") }
                 }
             pendingUpvotes -= postId
         }
     }
-
-    fun onUpvoteErrorShown() {
-        _uiState.update { it.copy(upvoteError = null) }
-    }
-
     private fun updatePost(id: Long, transform: (ForumPostDto) -> ForumPostDto) {
         _uiState.update { state ->
             state.copy(posts = state.posts.map { if (it.id == id) transform(it) else it })

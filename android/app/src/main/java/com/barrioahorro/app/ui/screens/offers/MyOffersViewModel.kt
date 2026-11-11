@@ -128,4 +128,19 @@ class MyOffersViewModel @Inject constructor(
             )
         }
     }
+
+    fun finishOffer(id: Long) {
+        viewModelScope.launch {
+            when (offerRepository.finishOffer(id)) {
+                is Result.Success -> loadData()
+                is Result.Failure -> _uiState.update {
+                    it.copy(errorMessage = "No se pudo finalizar la oferta")
+                }
+            }
+        }
+    }
+
+    fun clearError() {
+        _uiState.update { it.copy(errorMessage = null) }
+    }
 }
