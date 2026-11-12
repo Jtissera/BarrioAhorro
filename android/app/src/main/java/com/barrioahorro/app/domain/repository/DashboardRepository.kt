@@ -4,6 +4,7 @@ import com.barrioahorro.app.domain.model.ActiveOffer
 import com.barrioahorro.app.domain.model.BusinessDashboard
 import com.barrioahorro.app.domain.model.BusinessReview
 import com.barrioahorro.app.domain.model.DayViews
+import com.barrioahorro.app.domain.model.OfferViewSlice
 import com.barrioahorro.app.domain.model.TopOffer
 import kotlinx.coroutines.delay
 import javax.inject.Inject
@@ -24,6 +25,14 @@ val sampleDashboard = BusinessDashboard(
         TopOffer("1", "Tomate perita 1 kg", 412),
         TopOffer("2", "Combo verduras de estación", 305),
         TopOffer("3", "Banana ecuador 1 kg", 198)
+    ),
+    offerViewsPie = listOf(
+        OfferViewSlice("Tomate perita 1 kg", 412, false),
+        OfferViewSlice("Combo verduras de estación", 305, false),
+        OfferViewSlice("Banana ecuador 1 kg", 198, false),
+        OfferViewSlice("Lechuga criolla", 120, false),
+        OfferViewSlice("Papa negra 2 kg", 90, false),
+        OfferViewSlice("Otras", 123, true),
     ),
     recentReviews = listOf(
         BusinessReview("1", "Lucía R.", 5, "Todo fresco y muy buen precio, volveré."),

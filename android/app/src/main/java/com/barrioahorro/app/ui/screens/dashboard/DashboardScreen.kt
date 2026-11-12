@@ -1,5 +1,6 @@
 package com.barrioahorro.app.ui.screens.dashboard
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -37,6 +39,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,27 +48,30 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.barrioahorro.app.domain.model.ActiveOffer
 import com.barrioahorro.app.domain.model.BusinessDashboard
 import com.barrioahorro.app.domain.model.BusinessReview
 import com.barrioahorro.app.domain.model.DayViews
-import com.barrioahorro.app.domain.model.TopOffer
+import com.barrioahorro.app.domain.model.OfferViewSlice
 import com.barrioahorro.app.domain.repository.sampleDashboard
-import com.barrioahorro.app.ui.theme.CardWhite
-import com.barrioahorro.app.ui.theme.Cream
-import com.barrioahorro.app.ui.theme.Ink
-import com.barrioahorro.app.ui.theme.Primary
-import com.barrioahorro.app.ui.theme.PrimaryContainer
-import com.barrioahorro.app.ui.theme.WarmGray
-import java.text.NumberFormat
-import java.util.Locale
-import androidx.compose.material.icons.outlined.Storefront
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LifecycleEventEffect
 import com.barrioahorro.app.ui.theme.BadgeGreen
 import com.barrioahorro.app.ui.theme.BadgeGreenText
 import com.barrioahorro.app.ui.theme.BadgeYellowText
+import com.barrioahorro.app.ui.theme.CardWhite
+import com.barrioahorro.app.ui.theme.Cream
+import com.barrioahorro.app.ui.theme.Ink
+import com.barrioahorro.app.ui.theme.MutedLabel
+import com.barrioahorro.app.ui.theme.Primary
+import com.barrioahorro.app.ui.theme.PrimaryContainer
+import com.barrioahorro.app.ui.theme.Secondary
+import com.barrioahorro.app.ui.theme.Tertiary
+import com.barrioahorro.app.ui.theme.WarmGray
+import java.text.NumberFormat
+import java.util.Locale
+import kotlin.math.roundToInt
 
 @Composable
 fun DashboardScreen(
@@ -244,20 +251,7 @@ private fun DashboardBody(
             }
         }
 
-        DashboardSection(title = "Ofertas más vistas") {
-            if (data.topOffers.isEmpty()) {
-                EmptyHint("Todavía no hay visualizaciones")
-            }
-
-            data.topOffers.forEachIndexed { index, offer ->
-                if (index > 0) RowDivider()
-
-                TopOfferRow(
-                    rank = index + 1,
-                    offer = offer
-                )
-            }
-        }
+        OfferViewsPieCard(slices = data.offerViewsPie)
 
         DashboardSection(
             title = "Ofertas activas",
@@ -290,7 +284,7 @@ private fun ViewsCard(
         )
 
         Text(
-            text = "Últimos 7 días",
+            text = "Total histórico",
             fontSize = 12.sp,
             color = WarmGray
         )
@@ -357,6 +351,133 @@ private fun ViewsBarChart(data: List<DayViews>) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Ofertas más vistas: gráfico de torta
+// ---------------------------------------------------------------------------
+
+private val PieColors = listOf(
+    Primary,
+    Tertiary,
+    Secondary,
+    Color(0xFF7A685D),
+    Color(0xFFE59A8E),
+)
+
+/** "Otras" siempre en gris, para distinguirla de las ofertas. */
+private fun sliceColor(index: Int, slice: OfferViewSlice): Color =
+    if (slice.isOthers) MutedLabel else PieColors[index % PieColors.size]
+
+@Composable
+private fun OfferViewsPieCard(slices: List<OfferViewSlice>) {
+    val total = slices.sumOf { it.views }
+
+    DashboardSection(title = "Ofertas más vistas") {
+        if (slices.isEmpty() || total <= 0) {
+            EmptyHint("No hay datos suficientes para generar el gráfico")
+        } else {
+            Text(
+                text = "Últimos 7 días",
+                fontSize = 12.sp,
+                color = WarmGray
+            )
+
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                OfferPieChart(
+                    slices = slices,
+                    total = total,
+                    modifier = Modifier.size(160.dp)
+                )
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                slices.forEachIndexed { index, slice ->
+                    PieLegendRow(
+                        color = sliceColor(index, slice),
+                        slice = slice,
+                        total = total
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OfferPieChart(
+    slices: List<OfferViewSlice>,
+    total: Int,
+    modifier: Modifier = Modifier
+) {
+    Canvas(modifier = modifier) {
+        val separator = Stroke(width = 2.dp.toPx())
+        var startAngle = -90f
+
+        slices.forEachIndexed { index, slice ->
+            val sweep = 360f * slice.views / total
+
+            drawArc(
+                color = sliceColor(index, slice),
+                startAngle = startAngle,
+                sweepAngle = sweep,
+                useCenter = true
+            )
+            // Línea fina entre porciones; con una sola porción no hace falta.
+            if (slices.size > 1) {
+                drawArc(
+                    color = CardWhite,
+                    startAngle = startAngle,
+                    sweepAngle = sweep,
+                    useCenter = true,
+                    style = separator
+                )
+            }
+            startAngle += sweep
+        }
+    }
+}
+
+@Composable
+private fun PieLegendRow(
+    color: Color,
+    slice: OfferViewSlice,
+    total: Int
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(12.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+
+        Spacer(Modifier.width(10.dp))
+
+        Text(
+            text = slice.title,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = Ink
+        )
+
+        Spacer(Modifier.width(8.dp))
+
+        Text(
+            text = "${formatCount(slice.views)} vistas · ${percentLabel(slice.views, total)}",
+            fontSize = 12.sp,
+            color = WarmGray
+        )
+    }
+}
+
+private fun percentLabel(views: Int, total: Int): String {
+    val percent = views * 100f / total
+    return if (percent < 1f) "<1%" else "${percent.roundToInt()}%"
+}
+
 @Composable
 private fun DashboardSection(
     title: String,
@@ -404,49 +525,6 @@ private fun DashboardSection(
 
             content()
         }
-    }
-}
-
-@Composable
-private fun TopOfferRow(
-    rank: Int,
-    offer: TopOffer
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(28.dp)
-                .clip(CircleShape)
-                .background(PrimaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "$rank",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = Primary
-            )
-        }
-
-        Spacer(Modifier.width(12.dp))
-
-        Text(
-            text = offer.title,
-            modifier = Modifier.weight(1f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = Ink
-        )
-
-        Spacer(Modifier.width(8.dp))
-
-        Text(
-            text = "${formatCount(offer.views)} vistas",
-            fontSize = 12.sp,
-            color = WarmGray
-        )
     }
 }
 
@@ -589,9 +667,7 @@ private fun formatCount(n: Int): String =
     NumberFormat.getIntegerInstance(Locale.forLanguageTag("es-AR"))
         .format(n)
 
-
-
-@Preview(showBackground = true, heightDp = 1200)
+@Preview(showBackground = true, heightDp = 1400)
 @Composable
 private fun DashboardPreview() {
     MaterialTheme {
@@ -604,5 +680,3 @@ private fun DashboardPreview() {
         )
     }
 }
-
-

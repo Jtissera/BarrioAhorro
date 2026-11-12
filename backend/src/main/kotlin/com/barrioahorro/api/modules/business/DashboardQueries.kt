@@ -51,21 +51,19 @@ class DashboardQueries(private val jdbc: JdbcTemplate) {
             zone, comercioId, from, to,
         ).toMap()
 
-    fun topOffers(comercioId: Long, from: OffsetDateTime, to: OffsetDateTime, limit: Int): List<TopOfferRow> =
+    fun offerViews(comercioId: Long): List<TopOfferRow> =
         jdbc.query(
             """
-            SELECT o.id, o.nombre_producto, COUNT(v.id) AS vistas
-            FROM ofertas o
-            JOIN visualizaciones_oferta v ON v.oferta_id = o.id
-            WHERE o.comercio_id = ? AND v.created_at >= ? AND v.created_at < ?
-            GROUP BY o.id, o.nombre_producto
-            ORDER BY vistas DESC, o.id
-            LIMIT ?
-            """.trimIndent(),
+        SELECT o.id, o.nombre_producto, COUNT(v.id) AS vistas
+        FROM ofertas o
+        JOIN visualizaciones_oferta v ON v.oferta_id = o.id
+        WHERE o.comercio_id = ?
+        GROUP BY o.id, o.nombre_producto
+        ORDER BY vistas DESC, o.id
+        """.trimIndent(),
             RowMapper { rs, _ -> TopOfferRow(rs.getLong("id"), rs.getString("nombre_producto"), rs.getInt("vistas")) },
-            comercioId, from, to, limit,
+            comercioId,
         )
-
     fun recentReviews(comercioId: Long, limit: Int): List<ReviewRow> =
         jdbc.query(
             """

@@ -65,13 +65,13 @@ data class BusinessResponse(
     val onboardingCompleted: Boolean,
 )
 
-
-
 data class DashboardResponse(
     val businessName: String,
     val totalViews: Int,
     val viewsByDay: List<DashboardDayViews>,
     val topOffers: List<DashboardTopOffer>,
+    /** Torta: hasta 5 ofertas más vistas + "Otras" con la suma del resto. Vacía si no hay visualizaciones. */
+    val offerViewsPie: List<DashboardOfferShare>,
     val recentReviews: List<DashboardReview>,
     val activeOffers: List<DashboardActiveOffer>,
 )
@@ -79,6 +79,14 @@ data class DashboardResponse(
 data class DashboardDayViews(val label: String, val views: Int)
 
 data class DashboardTopOffer(val id: Long, val title: String, val views: Int)
+
+/** Porción de la torta. [others] = true es la porción "Otras" (id nulo). */
+data class DashboardOfferShare(
+    val id: Long?,
+    val title: String,
+    val views: Int,
+    val others: Boolean,
+)
 
 data class DashboardReview(
     val id: Long,

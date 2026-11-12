@@ -4,6 +4,7 @@ import com.barrioahorro.app.domain.model.ActiveOffer
 import com.barrioahorro.app.domain.model.BusinessDashboard
 import com.barrioahorro.app.domain.model.BusinessReview
 import com.barrioahorro.app.domain.model.DayViews
+import com.barrioahorro.app.domain.model.OfferViewSlice
 import com.barrioahorro.app.domain.model.TopOffer
 import java.text.NumberFormat
 import java.util.Locale
@@ -16,6 +17,7 @@ data class DashboardResponseDto(
     val totalViews: Int,
     val viewsByDay: List<DayViewsDto>,
     val topOffers: List<TopOfferDto>,
+    val offerViewsPie: List<OfferViewSliceDto>,
     val recentReviews: List<DashboardReviewDto>,
     val activeOffers: List<ActiveOfferDto>
 )
@@ -23,6 +25,13 @@ data class DashboardResponseDto(
 data class DayViewsDto(val label: String, val views: Int)
 
 data class TopOfferDto(val id: Long, val title: String, val views: Int)
+
+data class OfferViewSliceDto(
+    val id: Long?,
+    val title: String,
+    val views: Int,
+    val others: Boolean,
+)
 
 data class DashboardReviewDto(
     val id: Long,
@@ -44,6 +53,7 @@ fun DashboardResponseDto.toDomain() = BusinessDashboard(
     totalViews = totalViews,
     viewsByDay = viewsByDay.map { DayViews(it.label, it.views) },
     topOffers = topOffers.map { TopOffer(it.id.toString(), it.title, it.views) },
+    offerViewsPie = offerViewsPie.map { OfferViewSlice(it.title, it.views, it.others) },
     recentReviews = recentReviews.map { BusinessReview(it.id.toString(), it.authorName, it.rating, it.comment) },
     activeOffers = activeOffers.map {
         ActiveOffer(it.id.toString(), it.title, it.unitPrice?.let(::formatPrice), it.expiresLabel, it.badge)

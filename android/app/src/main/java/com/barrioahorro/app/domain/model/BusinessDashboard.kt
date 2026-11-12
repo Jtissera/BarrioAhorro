@@ -6,12 +6,19 @@ data class BusinessDashboard(
     val viewsByDay: List<DayViews>,
     val topOffers: List<TopOffer>,
     val recentReviews: List<BusinessReview>,
-    val activeOffers: List<ActiveOffer>
+    val activeOffers: List<ActiveOffer>,
+    val offerViewsPie: List<OfferViewSlice> = emptyList(),
 )
 
 data class DayViews(val label: String, val views: Int)
 
 data class TopOffer(val id: String, val title: String, val views: Int)
+
+data class OfferViewSlice(
+    val title: String,
+    val views: Int,
+    val isOthers: Boolean,
+)
 
 data class BusinessReview(
     val id: String,
