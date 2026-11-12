@@ -22,6 +22,15 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "BASE_URL", "\"http://localhost:8080/\"")
+        }
+        release {
+            buildConfigField("String", "BASE_URL", "\"https://styling-snack-sizably.ngrok-free.dev\"")
+            isMinifyEnabled = false
+            // Solo para la demo: firma con la clave de debug y así no hace falta crear un keystore.
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             optimization {
                 enable = false
@@ -34,6 +43,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

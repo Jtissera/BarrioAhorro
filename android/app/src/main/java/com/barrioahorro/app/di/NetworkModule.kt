@@ -1,5 +1,6 @@
 package com.barrioahorro.app.di
 
+import com.barrioahorro.app.BuildConfig
 import com.barrioahorro.app.data.cuponera.CuponeraApi
 import com.barrioahorro.app.data.explore.ExploreApi
 import com.barrioahorro.app.data.remote.api.AuthApiService
@@ -10,26 +11,43 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
-// TODO: mover a un archivo de config por variante (debug/release) o a BuildConfig
-const val BASE_URL = "http://localhost:8080/"
+// La URL sale del buildType (ver app/build.gradle.kts). Debe terminar en "/".
+// Se mantiene el nombre para no tocar los archivos que ya lo importan.
+val BASE_URL: String = BuildConfig.BASE_URL
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
+    /** Evita la página de advertencia que ngrok (plan gratuito) pone delante del tráfico de navegadores. */
+    private val skipNgrokWarning = Interceptor { chain ->
+        chain.proceed(
+            chain.request().newBuilder()
+                .header("ngrok-skip-browser-warning", "1")
+                .build(),
+        )
+    }
+
     @Provides
     @Singleton
     fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
+        // BODY escribe contraseñas y tokens en logcat: solo en debug.
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
         }
         return OkHttpClient.Builder()
+            .addInterceptor(skipNgrokWarning)
             .addInterceptor(authInterceptor)
             .addInterceptor(logging)
             .build()

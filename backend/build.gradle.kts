@@ -69,15 +69,9 @@ tasks.withType<Test> {
 }
 
 fun loadDotEnv(): Map<String, String> {
-    val envFile = rootProject.file("../.env")
-
-    if (!envFile.exists()) {
-        throw GradleException(
-            "No se encontró el archivo .env en ${envFile.absolutePath}"
-        )
-    }
-
-    return envFile.readLines()
+	val envFile = rootProject.file("../.env")
+	if (!envFile.exists()) return emptyMap()
+	return envFile.readLines()
         .map { it.trim() }
         .filter { it.isNotEmpty() && !it.startsWith("#") }
         .mapNotNull { line ->

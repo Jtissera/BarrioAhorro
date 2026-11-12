@@ -1,0 +1,8 @@
+{
+  "name": "BarrioAhorro demo",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "postStartCommand": "if [ -f .env.demo ]; then docker compose -f docker-compose.demo.yml --env-file .env.demo up -d; else echo 'Falta .env.demo: copiá env.demo.example como .env.demo y completalo'; fi"
+}
